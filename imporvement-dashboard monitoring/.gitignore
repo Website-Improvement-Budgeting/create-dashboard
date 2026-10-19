@@ -1,0 +1,13 @@
+# file konfigurasi
+.env
+
+# virtual environment python
+.venv/
+venv/
+
+# cache python
+__pycache__/
+*.pyc
+
+# sistem macOS
+.DS_Store
