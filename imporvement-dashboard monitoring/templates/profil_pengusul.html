@@ -4,42 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Profil Pengusul | SILOG</title>
 
     <!-- bootstrap -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- bootstrap icons -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    <!-- css login silog -->
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}"
-    >
-
-    <!-- css dashboard silog -->
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/dashboard.css') }}"
-    >
+    <!-- css silog -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <style>
-        /* tampilan dasar */
+        /* tampilan dasar profil */
         .profile-page {
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: #f3f4f6;
             color: #252525;
         }
@@ -56,22 +36,17 @@
             justify-content: flex-end;
         }
 
-        /* tombol profil kanan atas */
         .user-dropdown-toggle {
             display: flex;
             align-items: center;
             gap: 11px;
-
             padding: 8px 12px;
-
             border: none;
             border-radius: 10px;
             background: transparent;
-
             color: #252525;
             text-align: left;
             cursor: pointer;
-
             transition: background 0.2s ease;
         }
 
@@ -85,7 +60,6 @@
             outline-offset: 2px;
         }
 
-        /* informasi nama pengguna */
         .user-dropdown-toggle .user-info {
             text-align: left;
         }
@@ -103,60 +77,47 @@
             color: #777777;
         }
 
-        /* ikon panah dropdown */
         .dropdown-chevron {
             margin-left: 5px;
-            color: #777777;
             font-size: 12px;
-
+            color: #777777;
             transition: transform 0.2s ease;
         }
 
-        .user-dropdown-toggle[aria-expanded="true"]
-        .dropdown-chevron {
+        .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron {
             transform: rotate(180deg);
         }
 
-        /* kotak dropdown */
+        /* menu dropdown profil */
         .user-dropdown-menu {
             min-width: 220px;
             padding: 8px;
-
             background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
-
-            box-shadow:
-                0 12px 30px rgba(0, 0, 0, 0.10);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.10);
         }
 
-        /* header dropdown */
         .user-dropdown-menu .dropdown-header {
             padding: 9px 12px;
-            color: #777777;
             font-size: 12px;
             font-weight: 500;
+            color: #777777;
         }
 
-        /* item dropdown */
         .user-dropdown-menu .dropdown-item {
             display: flex;
             align-items: center;
             gap: 11px;
-
             width: 100%;
             padding: 11px 12px;
-
             border: none;
             border-radius: 8px;
-
             background: transparent;
             color: #404040;
-
             font-size: 13px;
             font-weight: 500;
             text-decoration: none;
-
             cursor: pointer;
         }
 
@@ -166,7 +127,6 @@
             color: #252525;
         }
 
-        /* logout dropdown */
         .user-dropdown-menu .user-logout-item {
             color: #ed1c24;
             font-weight: 600;
@@ -179,11 +139,11 @@
         }
 
         .user-dropdown-menu .dropdown-divider {
-            border-color: #eeeeee;
             margin: 7px 0;
+            border-color: #eeeeee;
         }
 
-        /* konten halaman */
+        /* konten utama */
         .profile-page .dashboard-content {
             padding-top: 38px;
         }
@@ -197,18 +157,14 @@
             display: flex;
             align-items: center;
             gap: 12px;
-
             margin: 0;
-
             font-size: 26px;
             line-height: 1.2;
             font-weight: 700;
             letter-spacing: normal;
-
             color: #252525;
         }
 
-        /* ikon judul */
         .profile-title-icon {
             color: #ed1c24;
             font-size: 27px;
@@ -218,32 +174,23 @@
         .profile-welcome {
             display: flex;
             align-items: center;
-
             min-height: 90px;
             padding: 28px 35px;
             margin-bottom: 25px;
-
-            background: linear-gradient(
-                110deg,
-                #ed1c24 0%,
-                #c5161d 100%
-            );
-
+            background: linear-gradient(110deg, #ed1c24 0%, #c5161d 100%);
             border-radius: 14px;
             color: #ffffff;
         }
 
         .profile-welcome h2 {
             margin: 0;
-
             font-size: 22px;
             line-height: 1.4;
             font-weight: 700;
-
             color: #ffffff;
         }
 
-        /* susunan kartu */
+        /* kartu profil dan password */
         .profile-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -251,53 +198,42 @@
             align-items: stretch;
         }
 
-        /* kartu informasi dan password */
         .profile-card {
             display: flex;
             flex-direction: column;
-
             min-width: 0;
             height: 100%;
             padding: 30px;
-
             background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 20px;
-
-            box-shadow:
-                0 12px 35px rgba(0, 0, 0, 0.045);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.045);
         }
 
-        /* header kartu */
         .profile-card-header {
             margin-bottom: 30px;
         }
 
         .profile-card-header h3 {
             margin: 0;
-
             font-size: 20px;
             line-height: 1.3;
             font-weight: 700;
-
             color: #252525;
         }
 
         .profile-card-header p {
             margin: 10px 0 0;
-
             font-size: 15px;
             line-height: 1.5;
             font-weight: 400;
-
             color: #777777;
         }
 
-        /* informasi profil */
+        /* informasi identitas pengguna */
         .profile-info-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-
             column-gap: 25px;
             row-gap: 30px;
         }
@@ -309,21 +245,16 @@
         .profile-info-item span {
             display: block;
             margin-bottom: 8px;
-
             font-size: 14px;
             font-weight: 600;
-
             color: #404040;
         }
 
-        /* nilai informasi tidak bold */
         .profile-info-item strong {
             display: block;
-
             font-size: 14px;
             line-height: 1.5;
             font-weight: 400;
-
             color: #252525;
             overflow-wrap: anywhere;
         }
@@ -342,50 +273,36 @@
         .profile-form-group label {
             display: block;
             margin-bottom: 8px;
-
             font-size: 14px;
             font-weight: 600;
-
             color: #404040;
         }
 
-        /* input password */
         .password-input-wrapper {
             display: flex;
             align-items: center;
-
             width: 100%;
             height: 50px;
-
             background: #ffffff;
-
             border: 1px solid #d6d6d6;
             border-radius: 9px;
-
-            transition:
-                border-color 0.2s ease,
-                box-shadow 0.2s ease;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .password-input-wrapper:focus-within {
             border-color: #ed1c24;
-            box-shadow:
-                0 0 0 3px rgba(237, 28, 36, 0.10);
+            box-shadow: 0 0 0 3px rgba(237, 28, 36, 0.10);
         }
 
         .password-input-wrapper input {
             flex: 1;
             min-width: 0;
             height: 100%;
-
             padding: 0 15px;
-
             border: none;
             outline: none;
             background: transparent;
-
             color: #252525;
-
             font-size: 14px;
             font-weight: 400;
         }
@@ -395,25 +312,18 @@
             opacity: 1;
         }
 
-        /* tombol tampilkan password */
         .password-toggle {
             display: flex;
             align-items: center;
             justify-content: center;
-
             flex-shrink: 0;
-
             width: 48px;
             height: 100%;
-
             padding: 0;
-
             border: none;
             background: transparent;
-
             color: #777777;
             font-size: 18px;
-
             cursor: pointer;
         }
 
@@ -427,13 +337,10 @@
             border-radius: 4px;
         }
 
-        /* petunjuk password */
         .password-helper {
             margin: 7px 0 0;
-
             font-size: 12px;
             line-height: 1.5;
-
             color: #888888;
         }
 
@@ -443,20 +350,15 @@
             align-items: center;
             justify-content: center;
             gap: 9px;
-
             width: 100%;
             height: 50px;
             margin-top: auto;
-
             border: none;
             border-radius: 9px;
-
             background: #ed1c24;
             color: #ffffff;
-
             font-size: 15px;
             font-weight: 600;
-
             cursor: pointer;
             transition: 0.2s ease;
         }
@@ -464,18 +366,14 @@
         .profile-save-btn:hover {
             background: #cf171e;
             color: #ffffff;
-
             transform: translateY(-1px);
-
-            box-shadow:
-                0 8px 18px rgba(237, 28, 36, 0.20);
+            box-shadow: 0 8px 18px rgba(237, 28, 36, 0.20);
         }
 
         .profile-save-btn:active {
             transform: translateY(0);
         }
 
-        /* footer */
         .profile-page .dashboard-footer {
             margin-top: 35px;
         }
@@ -551,28 +449,26 @@
 </head>
 
 <body class="profile-page">
-
 <div class="dashboard-layout">
 
     <!-- sidebar -->
     <aside class="sidebar">
 
         <div class="sidebar-brand">
-
             <div class="brand-icon">S</div>
 
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
             </div>
-
         </div>
 
         <p class="sidebar-label">MENU UTAMA</p>
 
+        <!-- navigasi sidebar pengusul -->
         <nav class="sidebar-nav">
 
-            <!-- profil -->
+            <!-- menu 1 profil -->
             <a
                 href="{{ url_for('profil') }}"
                 class="nav-item active"
@@ -582,7 +478,7 @@
                 Profil
             </a>
 
-            <!-- dashboard -->
+            <!-- menu 2 dashboard -->
             <a
                 href="{{ url_for('dashboard') }}"
                 class="nav-item"
@@ -591,42 +487,34 @@
                 Dashboard
             </a>
 
-            <!-- pengajuan budget -->
+            <!-- menu 3 budget detail -->
+            <span class="nav-item disabled">
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </span>
+
+            <!-- menu 4 pengajuan budget -->
             <span class="nav-item disabled">
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
             </span>
 
-            <!-- riwayat pengajuan -->
+            <!-- menu 5 riwayat pengajuan -->
             <span class="nav-item disabled">
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
-            </span>
-
-            <!-- budget detail -->
-            <span class="nav-item disabled">
-                <i class="bi bi-wallet2"></i>
-                Budget Detail
             </span>
 
         </nav>
 
         <!-- logout sidebar -->
         <div class="sidebar-bottom">
-
-            <form
-                action="{{ url_for('logout') }}"
-                method="POST"
-            >
-                <button
-                    type="submit"
-                    class="logout-button"
-                >
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button type="submit" class="logout-button">
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
                 </button>
             </form>
-
         </div>
 
     </aside>
@@ -634,12 +522,11 @@
     <!-- konten utama -->
     <main class="main-content">
 
-        <!-- topbar dengan dropdown -->
+        <!-- topbar dengan menu akun -->
         <header class="topbar">
 
             <div class="dropdown">
 
-                <!-- tombol profil -->
                 <button
                     type="button"
                     class="user-profile user-dropdown-toggle"
@@ -647,7 +534,6 @@
                     aria-expanded="false"
                     aria-label="Buka menu akun pengguna"
                 >
-
                     <div class="user-avatar">
                         <i class="bi bi-person-fill"></i>
                     </div>
@@ -658,19 +544,15 @@
                     </div>
 
                     <i class="bi bi-chevron-down dropdown-chevron"></i>
-
                 </button>
 
-                <!-- menu dropdown -->
-                <div
-                    class="dropdown-menu dropdown-menu-end user-dropdown-menu"
-                >
+                <!-- dropdown profil dan logout -->
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
 
                     <div class="dropdown-header">
                         Akun Pengusul
                     </div>
 
-                    <!-- menuju profil -->
                     <a
                         href="{{ url_for('profil') }}"
                         class="dropdown-item"
@@ -681,11 +563,7 @@
 
                     <div class="dropdown-divider"></div>
 
-                    <!-- logout -->
-                    <form
-                        action="{{ url_for('logout') }}"
-                        method="POST"
-                    >
+                    <form action="{{ url_for('logout') }}" method="POST">
                         <button
                             type="submit"
                             class="dropdown-item user-logout-item"
@@ -701,7 +579,7 @@
 
         </header>
 
-        <!-- isi halaman profil -->
+        <!-- halaman profil -->
         <section class="dashboard-content">
 
             <!-- judul halaman -->
@@ -716,7 +594,6 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-
                         <div
                             class="alert alert-{{ category }} alert-dismissible fade show"
                             role="alert"
@@ -730,7 +607,6 @@
                                 aria-label="Close"
                             ></button>
                         </div>
-
                     {% endfor %}
                 {% endif %}
             {% endwith %}
@@ -742,7 +618,7 @@
                 </h2>
             </div>
 
-            <!-- susunan kartu -->
+            <!-- informasi profil dan ubah password -->
             <div class="profile-grid">
 
                 <!-- informasi profil -->
@@ -755,25 +631,21 @@
 
                     <div class="profile-info-grid">
 
-                        <!-- username -->
                         <div class="profile-info-item">
                             <span>Username</span>
                             <strong>{{ user.username | title }}</strong>
                         </div>
 
-                        <!-- kode biro -->
                         <div class="profile-info-item">
                             <span>Kode Biro</span>
                             <strong>{{ user.biro_code }}</strong>
                         </div>
 
-                        <!-- role -->
                         <div class="profile-info-item">
                             <span>Role</span>
                             <strong>{{ user.role }}</strong>
                         </div>
 
-                        <!-- nama biro -->
                         <div class="profile-info-item">
                             <span>Nama Biro</span>
                             <strong>{{ user.biro_name | title }}</strong>
@@ -799,13 +671,9 @@
 
                         <!-- password lama -->
                         <div class="profile-form-group">
-
-                            <label for="password_lama">
-                                Password Lama
-                            </label>
+                            <label for="password_lama">Password Lama</label>
 
                             <div class="password-input-wrapper">
-
                                 <input
                                     type="password"
                                     id="password_lama"
@@ -824,20 +692,14 @@
                                 >
                                     <i class="bi bi-eye"></i>
                                 </button>
-
                             </div>
-
                         </div>
 
                         <!-- password baru -->
                         <div class="profile-form-group">
-
-                            <label for="password_baru">
-                                Password Baru
-                            </label>
+                            <label for="password_baru">Password Baru</label>
 
                             <div class="password-input-wrapper">
-
                                 <input
                                     type="password"
                                     id="password_baru"
@@ -857,24 +719,20 @@
                                 >
                                     <i class="bi bi-eye"></i>
                                 </button>
-
                             </div>
 
                             <p class="password-helper">
-                                Gunakan minimal 8 karakter
+                                Gunakan minimal 8 karakter.
                             </p>
-
                         </div>
 
                         <!-- konfirmasi password -->
                         <div class="profile-form-group">
-
                             <label for="konfirmasi_password">
                                 Konfirmasi Password Baru
                             </label>
 
                             <div class="password-input-wrapper">
-
                                 <input
                                     type="password"
                                     id="konfirmasi_password"
@@ -894,16 +752,11 @@
                                 >
                                     <i class="bi bi-eye"></i>
                                 </button>
-
                             </div>
-
                         </div>
 
-                        <!-- tombol simpan password -->
-                        <button
-                            type="submit"
-                            class="profile-save-btn"
-                        >
+                        <!-- tombol ubah password -->
+                        <button type="submit" class="profile-save-btn">
                             <i class="bi bi-key"></i>
                             Ubah Password
                         </button>
@@ -920,9 +773,7 @@
             </p>
 
         </section>
-
     </main>
-
 </div>
 
 <!-- bootstrap javascript -->

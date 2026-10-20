@@ -1,8 +1,10 @@
+
 import os
 import hmac
 
 import bcrypt
 import psycopg2
+
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -20,14 +22,17 @@ if not app.config["SECRET_KEY"]:
     raise RuntimeError("FLASK_SECRET_KEY belum diatur di .env")
 
 
-# verifikasi password lama dan baru tanpa migrasi otomatis
+# verifikasi password akun
 def verify_password(input_password, stored_password):
+
     if not isinstance(stored_password, str):
         return False
 
+    # password dengan hash werkzeug
     if stored_password.startswith(("scrypt:", "pbkdf2:")):
         return check_password_hash(stored_password, input_password)
 
+    # password dengan hash bcrypt
     if stored_password.startswith(("$2a$", "$2b$", "$2y$")):
         try:
             return bcrypt.checkpw(
@@ -37,88 +42,217 @@ def verify_password(input_password, stored_password):
         except ValueError:
             return False
 
-    # mendukung akun pengujian lama yang belum memakai hash
+    # dukungan password plaintext dari data pengujian lama
     return hmac.compare_digest(input_password, stored_password)
 
 
-# mengambil ringkasan budget sesuai unit dan biro pengusul
-def get_pengusul_budget_summary(entity_id, biro_id, budget_year):
+
+# ringkasan budget sesuai biro, tahun, dan entity
+def get_pengusul_budget_summary(user_id, budget_year, entity_id=None):
+
     conn = get_db_connection()
+
     try:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT
-                    COALESCE(SUM(consumable_budget), 0),
-                    COALESCE(SUM(consumed_budget), 0),
-                    COALESCE(SUM(available_amount), 0)
-                FROM public.budget_master
-                WHERE entity_id = %s
-                  AND biro_id = %s
-                  AND budget_year = %s
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0)
+
+                FROM public.budget_master AS bm
+
+                JOIN public.biro AS b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
+                WHERE b.biro_code = (
+                    SELECT b_user.biro_code
+
+                    FROM public.users AS u
+
+                    JOIN public.biro AS b_user
+                        ON u.biro_id = b_user.biro_id
+                       AND u.entity_id = b_user.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                AND bm.budget_year = %s
+
+                AND (%s::integer IS NULL OR bm.entity_id = %s)
                 """,
-                (entity_id, biro_id, budget_year)
+                (
+                    user_id,
+                    budget_year,
+                    entity_id,
+                    entity_id
+                )
             )
+
             consumable, consumed, available = cursor.fetchone()
 
         return {
             "consumable_budget": consumable,
             "consumed_budget": consumed,
-            "available_amount": available,
+            "available_amount": available
         }
+
     finally:
         conn.close()
 
 
-# mengambil tahun budget yang tersedia
-def get_budget_years(entity_id, biro_id):
+# mengambil periode tahun berdasarkan kode biro lintas entity
+def get_budget_years(user_id):
+
     conn = get_db_connection()
+
     try:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT DISTINCT budget_year
-                FROM public.budget_master
-                WHERE entity_id = %s
-                  AND biro_id = %s
-                  AND budget_year IS NOT NULL
-                ORDER BY budget_year DESC
+                SELECT DISTINCT bm.budget_year
+
+                FROM public.budget_master AS bm
+
+                JOIN public.biro AS b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
+                WHERE b.biro_code = (
+                    SELECT b_user.biro_code
+
+                    FROM public.users AS u
+
+                    JOIN public.biro AS b_user
+                        ON u.biro_id = b_user.biro_id
+                       AND u.entity_id = b_user.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                AND bm.budget_year IS NOT NULL
+
+                ORDER BY bm.budget_year DESC
                 """,
-                (entity_id, biro_id)
+                (user_id,)
             )
+
             return [row[0] for row in cursor.fetchall()]
+
     finally:
         conn.close()
 
 
-# mengambil data grafik per commitment item
-def get_pengusul_commitment_chart(entity_id, biro_id, budget_year):
+# grafik penggunaan per commitment item
+def get_pengusul_commitment_chart(user_id, budget_year, entity_id=None):
+
     conn = get_db_connection()
+
     try:
         with conn.cursor() as cursor:
+
+            # cari kolom nama commitment item yang tersedia
             cursor.execute(
                 """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'commitment_item'
+                """
+            )
+
+            available_columns = {
+                row[0]
+                for row in cursor.fetchall()
+            }
+
+            # pilih nama kolom yang tersedia dalam database
+            if "commitment_item_name" in available_columns:
+                name_expression = "ci.commitment_item_name"
+
+            elif "ci_name" in available_columns:
+                name_expression = "ci.ci_name"
+
+            elif "description" in available_columns:
+                name_expression = "ci.description"
+
+            elif "commitment_item_description" in available_columns:
+                name_expression = "ci.commitment_item_description"
+
+            else:
+                name_expression = "''"
+
+            query = f"""
                 SELECT
                     ci.commitment_item_code,
-                    COALESCE(SUM(bm.consumed_budget), 0) AS total_consumed
+                    {name_expression} AS commitment_item_name,
+                    COALESCE(
+                        SUM(bm.consumed_budget),
+                        0
+                    ) AS total_consumed
+
                 FROM public.budget_master AS bm
+
+                JOIN public.biro AS b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
                 JOIN public.commitment_item AS ci
-                  ON bm.commitment_item_id = ci.commitment_item_id
-                WHERE bm.entity_id = %s
-                  AND bm.biro_id = %s
-                  AND bm.budget_year = %s
-                GROUP BY ci.commitment_item_code
+                    ON bm.commitment_item_id = ci.commitment_item_id
+
+                WHERE b.biro_code = (
+                    SELECT b_user.biro_code
+
+                    FROM public.users AS u
+
+                    JOIN public.biro AS b_user
+                        ON u.biro_id = b_user.biro_id
+                       AND u.entity_id = b_user.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                AND bm.budget_year = %s
+
+                AND (
+                    %s::integer IS NULL
+                    OR bm.entity_id = %s
+                )
+
+                GROUP BY
+                ci.commitment_item_id,
+                    ci.commitment_item_code
+
                 ORDER BY total_consumed DESC
                 LIMIT 10
-                """,
-                (entity_id, biro_id, budget_year)
+            """
+
+            cursor.execute(
+                query,
+                (
+                    user_id,
+                    budget_year,
+                    entity_id,
+                    entity_id
+                )
             )
+
             rows = cursor.fetchall()
 
         return [
-            {"label": str(code), "amount": float(amount)}
-            for code, amount in rows
+            {
+                "label": str(code),
+                "name": str(name or ""),
+                "amount": float(amount)
+            }
+            for code, name, amount in rows
         ]
+
     finally:
         conn.close()
 
@@ -126,6 +260,7 @@ def get_pengusul_commitment_chart(entity_id, biro_id, budget_year):
 # halaman login
 @app.route("/", methods=["GET", "POST"])
 def login():
+
     if request.method == "GET":
         return render_template("login.html")
 
@@ -137,18 +272,29 @@ def login():
         return redirect(url_for("login"))
 
     conn = None
+
     try:
         conn = get_db_connection()
+
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT user_id, username, password, role, entity_id, biro_id
+                SELECT
+                    user_id,
+                    username,
+                    password,
+                    role,
+                    entity_id,
+                    biro_id
+
                 FROM public.users
+
                 WHERE LOWER(username) = LOWER(%s)
                 LIMIT 1
                 """,
                 (username,)
             )
+
             user = cursor.fetchone()
 
         if not user or not verify_password(password, user[2]):
@@ -156,39 +302,64 @@ def login():
             return redirect(url_for("login"))
 
         user_id, db_username, _, role, entity_id, biro_id = user
+
         if role not in ("Pengusul", "Approval"):
             flash("Role pengguna tidak dikenali.", "danger")
             return redirect(url_for("login"))
 
-        if role == "Pengusul" and (entity_id is None or biro_id is None):
-            flash("Identitas Entity atau Biro belum tersedia.", "danger")
-            return redirect(url_for("login"))
+        if role == "Pengusul":
 
+            if entity_id is None or biro_id is None:
+                flash("Identitas Biro belum tersedia.", "danger")
+                return redirect(url_for("login"))
+
+            # validasi relasi biro akun sebelum masuk ke website
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT 1
+                    FROM public.biro
+                    WHERE biro_id = %s
+                      AND entity_id = %s
+                    """,
+                    (biro_id, entity_id)
+                )
+
+                if cursor.fetchone() is None:
+                    flash("Identitas Biro tidak ditemukan.", "danger")
+                    return redirect(url_for("login"))
+
+        # simpan session pengguna
         session.clear()
+
         session.update({
             "user_id": user_id,
             "username": db_username,
             "role": role,
             "entity_id": entity_id,
-            "biro_id": biro_id,
+            "biro_id": biro_id
         })
 
     except psycopg2.Error:
         app.logger.exception("Gagal melakukan login")
         flash("Login gagal diproses.", "danger")
         return redirect(url_for("login"))
+
     finally:
         if conn is not None:
             conn.close()
 
+    # pengusul masuk ke profil, approval masuk ke dashboard
     if role == "Pengusul":
         return redirect(url_for("profil"))
+
     return redirect(url_for("dashboard"))
 
 
-# registrasi approval
+# registrasi akun approval
 @app.route("/register-approval", methods=["GET", "POST"])
 def register_approval():
+
     if request.method == "GET":
         return render_template("register_approval.html")
 
@@ -200,44 +371,67 @@ def register_approval():
     if not username or len(username) > 255:
         flash("Username wajib diisi dan maksimal 255 karakter.", "danger")
         return redirect(url_for("register_approval"))
+
     if len(password) < 8:
         flash("Password minimal 8 karakter.", "danger")
         return redirect(url_for("register_approval"))
+
     if password != confirm_password:
         flash("Konfirmasi password tidak sesuai.", "danger")
         return redirect(url_for("register_approval"))
 
+    # validasi kode registrasi approval
     valid_code = os.getenv("APPROVAL_CODE")
+
     if not valid_code:
         raise RuntimeError("APPROVAL_CODE belum diatur di .env")
+
     if not hmac.compare_digest(approval_code, valid_code):
         flash("Kode Approval tidak sesuai.", "danger")
         return redirect(url_for("register_approval"))
 
     conn = None
+
     try:
         conn = get_db_connection()
+
         with conn:
             with conn.cursor() as cursor:
+
+                # cek username yang sudah terdaftar
                 cursor.execute(
                     """
-                    SELECT 1 FROM public.users
+                    SELECT 1
+
+                    FROM public.users
+
                     WHERE LOWER(username) = LOWER(%s)
                     LIMIT 1
                     """,
                     (username,)
                 )
+
                 if cursor.fetchone():
                     flash("Username sudah digunakan.", "danger")
                     return redirect(url_for("register_approval"))
 
+                # simpan akun approval baru
                 cursor.execute(
                     """
-                    INSERT INTO public.users
-                        (username, password, role, entity_id, biro_id)
+                    INSERT INTO public.users (
+                        username,
+                        password,
+                        role,
+                        entity_id,
+                        biro_id
+                    )
+
                     VALUES (%s, %s, 'Approval', NULL, NULL)
                     """,
-                    (username, generate_password_hash(password))
+                    (
+                        username,
+                        generate_password_hash(password)
+                    )
                 )
 
         flash("Registrasi berhasil! Silakan login.", "success")
@@ -246,46 +440,54 @@ def register_approval():
     except psycopg2.errors.UniqueViolation:
         flash("Username sudah digunakan.", "danger")
         return redirect(url_for("register_approval"))
+
     except psycopg2.Error:
         app.logger.exception("Registrasi approval gagal")
         flash("Registrasi gagal diproses.", "danger")
         return redirect(url_for("register_approval"))
+
     finally:
         if conn is not None:
             conn.close()
 
 
-# halaman profil sebagai halaman awal pengusul
+# halaman profil pengusul
 @app.route("/profil")
 def profil():
+
     if not session.get("user_id"):
         flash("Silakan login terlebih dahulu.", "danger")
         return redirect(url_for("login"))
+
     if session.get("role") != "Pengusul":
         return redirect(url_for("dashboard"))
 
     conn = None
+
     try:
         conn = get_db_connection()
+
         with conn.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT
                     u.username,
                     u.role,
-                    ue.unit_entity,
                     b.biro_code,
                     b.biro_name
+
                 FROM public.users AS u
-                LEFT JOIN public.unit_entity AS ue
-                    ON u.entity_id = ue.entity_id
-                LEFT JOIN public.biro AS b
+
+                JOIN public.biro AS b
                     ON u.biro_id = b.biro_id
                    AND u.entity_id = b.entity_id
-                WHERE u.user_id = %s AND u.role = 'Pengusul'
+
+                WHERE u.user_id = %s
+                  AND u.role = 'Pengusul'
                 """,
                 (session["user_id"],)
             )
+
             result = cursor.fetchone()
 
         if result is None:
@@ -296,16 +498,20 @@ def profil():
         user = {
             "username": result[0],
             "role": result[1],
-            "unit_entity": result[2] or "-",
-            "biro_code": result[3] or "-",
-            "biro_name": result[4] or "-",
+            "biro_code": result[2],
+            "biro_name": result[3]
         }
-        return render_template("profil_pengusul.html", user=user)
+
+        return render_template(
+            "profil_pengusul.html",
+            user=user
+        )
 
     except psycopg2.Error:
         app.logger.exception("Gagal mengambil profil pengusul")
         flash("Data profil gagal dimuat.", "danger")
         return redirect(url_for("dashboard"))
+
     finally:
         if conn is not None:
             conn.close()
@@ -314,9 +520,11 @@ def profil():
 # ubah password pengusul
 @app.route("/ubah-password", methods=["POST"])
 def ubah_password():
+
     if not session.get("user_id"):
         flash("Silakan login terlebih dahulu.", "danger")
         return redirect(url_for("login"))
+
     if session.get("role") != "Pengusul":
         return redirect(url_for("dashboard"))
 
@@ -327,42 +535,62 @@ def ubah_password():
     if not password_lama or not password_baru or not konfirmasi:
         flash("Semua kolom password wajib diisi.", "danger")
         return redirect(url_for("profil"))
+
     if len(password_baru) < 8:
         flash("Password baru minimal 8 karakter.", "danger")
         return redirect(url_for("profil"))
+
     if password_baru != konfirmasi:
         flash("Konfirmasi password baru tidak sesuai.", "danger")
         return redirect(url_for("profil"))
+
     if password_baru == password_lama:
         flash("Password baru harus berbeda dari password lama.", "danger")
         return redirect(url_for("profil"))
 
     conn = None
+
     try:
         conn = get_db_connection()
+
         with conn:
             with conn.cursor() as cursor:
+
                 cursor.execute(
                     """
-                    SELECT password FROM public.users
-                    WHERE user_id = %s AND role = 'Pengusul'
+                    SELECT password
+
+                    FROM public.users
+
+                    WHERE user_id = %s
+                      AND role = 'Pengusul'
+
                     FOR UPDATE
                     """,
                     (session["user_id"],)
                 )
+
                 result = cursor.fetchone()
 
-                if not result or not verify_password(password_lama, result[0]):
+                if not result or not verify_password(
+                    password_lama,
+                    result[0]
+                ):
                     flash("Password lama tidak sesuai.", "danger")
                     return redirect(url_for("profil"))
 
+                # simpan password baru
                 cursor.execute(
                     """
                     UPDATE public.users
                     SET password = %s
-                    WHERE user_id = %s AND role = 'Pengusul'
+                    WHERE user_id = %s
+                      AND role = 'Pengusul'
                     """,
-                    (generate_password_hash(password_baru), session["user_id"])
+                    (
+                        generate_password_hash(password_baru),
+                        session["user_id"]
+                    )
                 )
 
         flash("Password berhasil diperbarui.", "success")
@@ -372,51 +600,250 @@ def ubah_password():
         app.logger.exception("Gagal mengubah password")
         flash("Password gagal diperbarui.", "danger")
         return redirect(url_for("profil"))
+
     finally:
         if conn is not None:
             conn.close()
 
 
+
+# mengambil daftar entity yang dimiliki biro pengusul
+def get_pengusul_entity_options(user_id):
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT
+                    ue.entity_id,
+                    ue.unit_entity
+
+                FROM public.biro AS b
+
+                JOIN public.unit_entity AS ue
+                    ON b.entity_id = ue.entity_id
+
+                WHERE b.biro_code = (
+                    SELECT b_user.biro_code
+
+                    FROM public.users AS u
+
+                    JOIN public.biro AS b_user
+                        ON u.biro_id = b_user.biro_id
+                       AND u.entity_id = b_user.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                ORDER BY ue.unit_entity
+                """,
+                (user_id,)
+            )
+
+            rows = cursor.fetchall()
+
+        return [
+            {
+                "entity_id": row[0],
+                "unit_entity": row[1]
+            }
+            for row in rows
+        ]
+
+    finally:
+        conn.close()
+
+
+
+# mengambil lima commitment item dengan penggunaan terbesar
+def get_pengusul_top5_details(user_id, budget_year, entity_id=None):
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+
+            # membaca nama kolom pada tabel commitment item
+            cursor.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'commitment_item'
+                """
+            )
+
+            columns = {row[0] for row in cursor.fetchall()}
+
+            # memilih kolom nama yang tersedia
+            name_candidates = [
+                "commitment_item_name",
+                "ci_name",
+                "description",
+                "commitment_item_description"
+            ]
+
+            name_column = next(
+                (col for col in name_candidates if col in columns),
+                None
+            )
+
+            # nama kolom hanya dipilih dari daftar tetap di atas
+            if name_column:
+                name_expression = f"MAX(ci.{name_column})"
+            else:
+                name_expression = "''::text"
+
+            cursor.execute(
+                f"""
+                SELECT
+                    ci.commitment_item_code,
+                    {name_expression} AS commitment_item_name,
+                    COALESCE(SUM(bm.consumable_budget), 0) AS consumable,
+                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed,
+                    COALESCE(SUM(bm.available_amount), 0) AS available
+
+                FROM public.budget_master bm
+
+                JOIN public.biro b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
+                JOIN public.commitment_item ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+
+                WHERE b.biro_code = (
+                    SELECT user_biro.biro_code
+
+                    FROM public.users u
+
+                    JOIN public.biro user_biro
+                        ON u.biro_id = user_biro.biro_id
+                       AND u.entity_id = user_biro.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                AND bm.budget_year = %s
+
+                AND (
+                    %s::integer IS NULL
+                    OR bm.entity_id = %s
+                )
+
+                GROUP BY ci.commitment_item_code
+
+                ORDER BY consumed DESC, ci.commitment_item_code
+                LIMIT 5
+                """,
+                (
+                    user_id,
+                    budget_year,
+                    entity_id,
+                    entity_id
+                )
+            )
+
+            rows = cursor.fetchall()
+
+        return [
+            {
+                "commitment_item_code": str(code),
+                "commitment_item_name": str(name or ""),
+                "consumable_budget": consumable,
+                "consumed_budget": consumed,
+                "available_amount": available
+            }
+            for code, name, consumable, consumed, available in rows
+        ]
+
+    finally:
+        conn.close()
+
+
 # dashboard berdasarkan role
 @app.route("/dashboard")
 def dashboard():
+
     if not session.get("user_id"):
         flash("Silakan login terlebih dahulu.", "danger")
         return redirect(url_for("login"))
 
-    if session.get("role") == "Approval":
+    role = session.get("role")
+
+    if role == "Approval":
         return render_template(
             "dashboard_approval.html",
             username=session.get("username")
         )
 
-    if session.get("role") != "Pengusul":
+    if role != "Pengusul":
         session.clear()
         return redirect(url_for("login"))
 
-    entity_id = session.get("entity_id")
-    biro_id = session.get("biro_id")
-    if entity_id is None or biro_id is None:
-        session.clear()
-        flash("Identitas Entity atau Biro belum tersedia.", "danger")
-        return redirect(url_for("login"))
+    user_id = session["user_id"]
 
     try:
-        budget_years = get_budget_years(entity_id, biro_id)
+        # daftar periode yang tersedia
+        budget_years = get_budget_years(user_id)
+
         if not budget_years:
-            flash("Data budget untuk Entity dan Biro ini belum tersedia.", "warning")
+            flash(
+                "Data budget untuk Biro ini belum tersedia.",
+                "warning"
+            )
             return redirect(url_for("profil"))
 
+        # filter tahun
         selected_year = request.args.get("year", type=int)
+
         if selected_year not in budget_years:
             selected_year = budget_years[0]
 
+        # daftar entity sesuai kode biro
+        entity_options = get_pengusul_entity_options(user_id)
+
+        # filter entity
+        selected_entity_id = request.args.get(
+            "entity_id",
+            "all"
+        )
+
+        allowed_entity_ids = {
+            str(item["entity_id"])
+            for item in entity_options
+        }
+
+        if selected_entity_id != "all":
+            if selected_entity_id not in allowed_entity_ids:
+                flash("Unit Entity tidak valid.", "danger")
+                return redirect(url_for("dashboard"))
+
+        # ubah entity id menjadi integer atau none
+        entity_filter = (
+            None
+            if selected_entity_id == "all"
+            else int(selected_entity_id)
+        )
+
+        # ringkasan budget
         budget_summary = get_pengusul_budget_summary(
-            entity_id, biro_id, selected_year
+            user_id,
+            selected_year,
+            entity_filter
         )
-        commitment_chart = get_pengusul_commitment_chart(
-            entity_id, biro_id, selected_year
+
+        # mengambil lima commitment item terbesar
+        top5_details = get_pengusul_top5_details(
+            user_id,
+            selected_year,
+            entity_filter
         )
+
 
         return render_template(
             "dashboard_pengusul.html",
@@ -424,7 +851,9 @@ def dashboard():
             budget_summary=budget_summary,
             budget_years=budget_years,
             selected_year=selected_year,
-            commitment_chart=commitment_chart,
+            entity_options=entity_options,
+            selected_entity_id=selected_entity_id,
+            top5_details=top5_details
         )
 
     except psycopg2.Error:
@@ -433,14 +862,17 @@ def dashboard():
         return redirect(url_for("profil"))
 
 
-# logout menggunakan metode post
+# logout pengguna
 @app.route("/logout", methods=["POST"])
 def logout():
+
     session.clear()
+
     flash("Berhasil logout.", "info")
+
     return redirect(url_for("login"))
 
 
-# menjalankan server lokal
+# menjalankan aplikasi flask lokal
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

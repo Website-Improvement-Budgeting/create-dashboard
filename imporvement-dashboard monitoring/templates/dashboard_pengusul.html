@@ -1,270 +1,1568 @@
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Dashboard Pengusul | SILOG</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- CSS SILOG -->
+    <link
+        href="{{ url_for('static', filename='css/style.css') }}"
+        rel="stylesheet"
+    >
+
+    <link
+        href="{{ url_for('static', filename='css/dashboard.css') }}"
+        rel="stylesheet"
+    >
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ==========================================
+           1. PENGATURAN HALAMAN
+        ========================================== */
+
+        .pengusul-dashboard-page {
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background: #f4f5f7;
+            color: #292b32;
+        }
+
+        .pengusul-dashboard-page button,
+        .pengusul-dashboard-page select {
+            font-family: inherit;
+        }
+
+        .pengusul-dashboard-page .topbar {
+            justify-content: flex-end;
+        }
+
+        .pengusul-dashboard-page .dashboard-content {
+            padding-top: 30px;
+            padding-bottom: 45px;
+        }
+
+        /* ==========================================
+           2. DROPDOWN PROFIL
+        ========================================== */
+
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+
+            padding: 8px 12px;
+
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+
+            color: #292b32;
+            text-align: left;
+            cursor: pointer;
+
+            transition: background 0.2s ease;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle[aria-expanded="true"] {
+            background: #f5f5f5;
+        }
+
+        .user-dropdown-toggle:focus-visible {
+            outline: 2px solid #ed1c24;
+            outline-offset: 2px;
+        }
+
+        .user-dropdown-toggle .user-info {
+            text-align: left;
+        }
+
+        .user-dropdown-toggle .user-info strong {
+            display: block;
+            color: #292b32;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .user-dropdown-toggle .user-info small {
+            display: block;
+            color: #888d98;
+            font-size: 11px;
+        }
+
+        .dropdown-chevron {
+            margin-left: 5px;
+            color: #888d98;
+            font-size: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"]
+        .dropdown-chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            min-width: 220px;
+            padding: 8px;
+
+            background: #ffffff;
+            border: 1px solid #e7e8ed;
+            border-radius: 12px;
+
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            padding: 9px 12px;
+            color: #888d98;
+            font-size: 12px;
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            width: 100%;
+            padding: 11px 12px;
+
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+
+            color: #40434b;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .user-dropdown-menu .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .user-dropdown-menu .user-logout-item {
+            color: #ed1c24;
+            font-weight: 600;
+        }
+
+        .user-dropdown-menu .user-logout-item:hover {
+            background: #fff0f1;
+            color: #c5161d;
+        }
+
+        /* ==========================================
+           3. JUDUL DAN FILTER
+        ========================================== */
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+
+            margin-bottom: 19px;
+        }
+
+        .section-title {
+            margin: 0;
+
+            color: #292b32;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: -0.4px;
+        }
+
+        .section-title-icon {
+            margin-right: 8px;
+            color: #ed1c24;
+            font-size: 23px;
+        }
+
+        .section-caption {
+            margin: 6px 0 0;
+
+            color: #8c909a;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .summary-filters {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+
+            padding: 10px 14px;
+
+            background: #ffffff;
+            border: 1px solid #e7e8ed;
+            border-radius: 11px;
+
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.025);
+        }
+
+        .summary-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            min-width: 0;
+            padding: 0 13px;
+        }
+
+        .summary-filter-group:first-child {
+            padding-left: 0;
+            border-right: 1px solid #e9eaf0;
+        }
+
+        .summary-filter-group:last-child {
+            padding-right: 0;
+        }
+
+        .summary-filter-group label {
+            color: #9296a0;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .summary-filter-group select {
+            width: 100%;
+            padding: 3px 18px 3px 0;
+
+            background: transparent;
+            border: none;
+            outline: none;
+
+            color: #30323a;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-filter-group select:focus-visible {
+            outline: 2px solid #ed1c24;
+            border-radius: 4px;
+        }
+
+        .year-group {
+            width: 100px;
+        }
+
+        .entity-group {
+            width: 205px;
+        }
+
+        /* ==========================================
+           4. KPI CARD - HORIZONTAL
+        ========================================== */
+
+        .budget-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+
+            margin-bottom: 34px;
+        }
+
+        .budget-kpi-card {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 17px;
+
+            min-width: 0;
+            min-height: 105px;
+            padding: 20px 22px;
+
+            background: #ffffff;
+            border: 1px solid #e7e8ed;
+            border-radius: 14px;
+
+            box-shadow: 0 5px 18px rgba(0, 0, 0, 0.03);
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .budget-kpi-card:hover {
+            transform: translateY(-2px);
+
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.055);
+        }
+
+        /* Ikon di sebelah kiri */
+        .kpi-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            width: 54px;
+            height: 54px;
+
+            background: #fff0f1;
+            border-radius: 13px;
+
+            color: #ed1c24;
+            font-size: 24px;
+        }
+
+        /* Label dan angka di sebelah kanan */
+        .kpi-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 7px;
+
+            min-width: 0;
+        }
+
+        .kpi-label {
+            display: block;
+            padding: 0;
+
+            color: #828690;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .kpi-value {
+            margin: 0;
+
+            color: #292b32;
+            font-size: clamp(20px, 2vw, 28px);
+            font-weight: 750;
+            line-height: 1.2;
+            letter-spacing: -0.6px;
+            white-space: nowrap;
+        }
+
+        /* ==========================================
+           5. VISUALISASI BUDGET
+        ========================================== */
+
+        .visual-header {
+            margin-bottom: 18px;
+        }
+
+        .budget-charts-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+            gap: 18px;
+
+            align-items: stretch;
+        }
+
+        .budget-chart-card {
+            display: flex;
+            flex-direction: column;
+
+            min-width: 0;
+            min-height: 350px;
+            padding: 23px;
+
+            background: #ffffff;
+            border: 1px solid #e7e8ed;
+            border-radius: 15px;
+
+            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.03);
+        }
+
+        .budget-chart-heading h3 {
+            margin: 0;
+
+            color: #31333b;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .budget-chart-heading p {
+            margin: 6px 0 0;
+
+            color: #9699a2;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* ==========================================
+           6. KOMPOSISI BUDGET
+        ========================================== */
+
+        .donut-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+
+            padding-top: 14px;
+        }
+
+        .donut-wrapper {
+            position: relative;
+
+            width: 205px;
+            height: 205px;
+            max-width: 100%;
+        }
+
+        .donut-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .donut-center {
+            position: absolute;
+            inset: 0;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .donut-center strong {
+            color: #292b32;
+            font-size: 27px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .donut-center span {
+            margin-top: 4px;
+
+            color: #9699a2;
+            font-size: 11px;
+        }
+
+        .donut-legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+
+            margin-top: 21px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            color: #81858f;
+            font-size: 12px;
+        }
+
+        .legend-dot {
+            flex-shrink: 0;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+        }
+
+        .legend-consumed {
+            background: #ed1c24;
+        }
+
+        .legend-available {
+            background: #e5e7eb;
+        }
+
+        /* ==========================================
+           7. TOP 5 COMMITMENT ITEM
+        ========================================== */
+
+        .top5-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+            gap: 16px;
+
+            margin-top: 20px;
+        }
+
+        .top5-row {
+            display: grid;
+            grid-template-columns:
+                minmax(100px, 155px)
+                minmax(0, 1fr)
+                85px;
+
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top5-item-label {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .top5-code {
+            display: block;
+
+            color: #40434b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .top5-name {
+            display: block;
+            margin-top: 4px;
+
+            color: #9699a2;
+            font-size: 11px;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .top5-progress {
+            width: 100%;
+            height: 9px;
+
+            background: #f0f0f3;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .top5-progress-fill {
+            height: 100%;
+
+            background: #ed1c24;
+            border-radius: inherit;
+        }
+
+        .top5-amount {
+            color: #686d78;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .chart-empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+
+            min-height: 200px;
+            padding: 20px;
+
+            color: #9296a0;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* ==========================================
+           8. RESPONSIVE
+        ========================================== */
+
+        @media (max-width: 1100px) {
+
+            .summary-header {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .summary-filters {
+                align-self: flex-start;
+            }
+
+            .budget-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .kpi-value {
+                font-size: 25px;
+            }
+        }
+
+        @media (max-width: 950px) {
+
+            .budget-charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .budget-chart-card {
+                min-height: 340px;
+            }
+        }
+
+        @media (max-width: 750px) {
+
+            .budget-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+
+            .pengusul-dashboard-page .dashboard-content {
+                padding-top: 23px;
+            }
+
+            .section-title {
+                font-size: 21px;
+            }
+
+            .section-title-icon {
+                font-size: 21px;
+            }
+
+            .summary-filters {
+                width: 100%;
+            }
+
+            .summary-filter-group {
+                flex: 1;
+            }
+
+            .year-group {
+                width: 35%;
+                flex: 0 0 35%;
+            }
+
+            .entity-group {
+                width: auto;
+            }
+
+            .budget-kpi-grid {
+                gap: 12px;
+                margin-bottom: 28px;
+            }
+
+            .budget-kpi-card {
+                min-height: 95px;
+                padding: 17px 19px;
+                gap: 15px;
+            }
+
+            .kpi-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 21px;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+
+            .budget-chart-card {
+                min-height: 325px;
+                padding: 20px;
+            }
+
+            .donut-wrapper {
+                width: 190px;
+                height: 190px;
+            }
+
+            .top5-row {
+                grid-template-columns:
+                    minmax(88px, 110px)
+                    minmax(0, 1fr)
+                    66px;
+
+                gap: 8px;
+            }
+
+            .top5-code {
+                font-size: 11px;
+            }
+
+            .top5-name {
+                font-size: 10px;
+            }
+
+            .top5-amount {
+                font-size: 10px;
+            }
+
+            .user-dropdown-toggle {
+                padding: 6px;
+            }
+        }
+
+    </style>
 </head>
 
-<body>
+
+<body class="pengusul-dashboard-page">
+
 <div class="dashboard-layout">
 
-    <!-- sidebar -->
+    <!-- =====================================
+         SIDEBAR
+    ===================================== -->
+
     <aside class="sidebar">
+
         <div class="sidebar-brand">
-            <div class="brand-icon">S</div>
+
+            <div class="brand-icon">
+                S
+            </div>
+
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
             </div>
+
         </div>
 
-        <p class="sidebar-label">MENU UTAMA</p>
+        <p class="sidebar-label">
+            MENU UTAMA
+        </p>
 
         <nav class="sidebar-nav">
-            <span class="nav-item disabled">
+
+            <!-- Profil -->
+            <a
+                href="{{ url_for('profil') }}"
+                class="nav-item"
+            >
                 <i class="bi bi-person-circle"></i>
                 Profil
-            </span>
+            </a>
 
-            <a href="{{ url_for('dashboard') }}" class="nav-item active">
+            <!-- Dashboard -->
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="nav-item active"
+                aria-current="page"
+            >
                 <i class="bi bi-grid-1x2"></i>
                 Dashboard
             </a>
 
+            <!-- Budget Detail -->
+            <span class="nav-item disabled">
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </span>
+
+            <!-- Pengajuan Budget -->
             <span class="nav-item disabled">
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
             </span>
 
+            <!-- Riwayat Pengajuan -->
             <span class="nav-item disabled">
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
             </span>
 
-            <span class="nav-item disabled">
-                <i class="bi bi-wallet2"></i>
-                Budget Detail
-            </span>
         </nav>
 
+        <!-- Logout Sidebar -->
         <div class="sidebar-bottom">
-            <form action="{{ url_for('logout') }}" method="POST">
-                <button type="submit" class="logout-button">
+
+            <form
+                action="{{ url_for('logout') }}"
+                method="POST"
+            >
+                <button
+                    type="submit"
+                    class="logout-button"
+                >
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
                 </button>
             </form>
+
         </div>
+
     </aside>
 
-    <!-- konten utama -->
+
+    <!-- =====================================
+         MAIN CONTENT
+    ===================================== -->
+
     <main class="main-content">
 
+        <!-- TOPBAR -->
         <header class="topbar">
-            <span class="topbar-label">
-                Budget Monitoring & Approval System
-            </span>
 
-            <div class="user-profile">
-                <div class="user-avatar">
-                    <i class="bi bi-person-fill"></i>
+            <div class="dropdown">
+
+                <button
+                    type="button"
+                    class="user-profile user-dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="Buka menu akun pengguna"
+                >
+
+                    <div class="user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+
+                    <div class="user-info">
+
+                        <strong>
+                            {{ username | title }}
+                        </strong>
+
+                        <small>
+                            Pengusul Budget
+                        </small>
+
+                    </div>
+
+                    <i class="bi bi-chevron-down dropdown-chevron"></i>
+
+                </button>
+
+
+                <!-- Dropdown Menu -->
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+
+                    <div class="dropdown-header">
+                        Akun Pengusul
+                    </div>
+
+                    <a
+                        href="{{ url_for('profil') }}"
+                        class="dropdown-item"
+                    >
+                        <i class="bi bi-person-circle"></i>
+                        Profil
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <form
+                        action="{{ url_for('logout') }}"
+                        method="POST"
+                    >
+                        <button
+                            type="submit"
+                            class="dropdown-item user-logout-item"
+                        >
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </button>
+                    </form>
+
                 </div>
-                <div class="user-info">
-                    <strong>{{ username }}</strong>
-                    <small>Pengusul Budget</small>
-                </div>
+
             </div>
+
         </header>
+
+
+        <!-- =====================================
+             DASHBOARD PENGUSUL
+        ===================================== -->
 
         <section class="dashboard-content">
 
-            <!-- judul dan filter -->
-            <div class="page-heading">
-                <div>
-                    <h1>Dashboard Pengusul</h1>
-                    <p>
-                        Monitoring dan ringkasan penggunaan budget
-                        berdasarkan periode tahun.
+            <!-- FLASH MESSAGE -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                    {% for category, message in messages %}
+
+                        <div
+                            class="alert alert-{{ category }} alert-dismissible fade show"
+                            role="alert"
+                        >
+
+                            {{ message }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Tutup"
+                            ></button>
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+
+            <!-- =====================================
+                 A. RINGKASAN BUDGET
+            ===================================== -->
+
+            <div class="summary-header">
+
+                <div class="summary-heading">
+
+                    <h1 class="section-title">
+
+                        <i class="bi bi-wallet2 section-title-icon"></i>
+
+                        Ringkasan Budget
+
+                    </h1>
+
+                    <p class="section-caption">
+                        Overview anggaran biro
                     </p>
+
                 </div>
 
-                <form method="GET" action="{{ url_for('dashboard') }}"
-                      class="year-filter">
-                    <label for="year">Periode Tahun</label>
-                    <select id="year" name="year"
-                            class="form-select"
-                            onchange="this.form.submit()">
-                        {% for year in budget_years %}
-                            <option value="{{ year }}"
-                                {% if year == selected_year %}selected{% endif %}>
-                                {{ year }}
+
+                <!-- FILTER TAHUN DAN ENTITY -->
+                <form
+                    method="GET"
+                    action="{{ url_for('dashboard') }}"
+                    class="summary-filters"
+                    id="dashboardFilterForm"
+                >
+
+                    <!-- Filter Tahun -->
+                    <div class="summary-filter-group year-group">
+
+                        <label for="year">
+                            Tahun
+                        </label>
+
+                        <select
+                            id="year"
+                            name="year"
+                            onchange="this.form.submit()"
+                        >
+
+                            {% for year in budget_years %}
+
+                                <option
+                                    value="{{ year }}"
+                                    {% if year == selected_year %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ year }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Filter Unit Entity -->
+                    <div class="summary-filter-group entity-group">
+
+                        <label for="entity_id">
+                            Unit Entity
+                        </label>
+
+                        <select
+                            id="entity_id"
+                            name="entity_id"
+                            onchange="this.form.submit()"
+                        >
+
+                            <option
+                                value="all"
+                                {% if selected_entity_id | default('all') | string == 'all' %}
+                                    selected
+                                {% endif %}
+                            >
+                                Semua Entity
                             </option>
-                        {% endfor %}
-                    </select>
+
+                            {% for entity in entity_options | default([]) %}
+
+                                <option
+                                    value="{{ entity.entity_id }}"
+                                    {% if selected_entity_id | default('all') | string == entity.entity_id | string %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ entity.unit_entity }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
                 </form>
+
             </div>
 
-            <!-- banner -->
-            <div class="welcome-card">
-                <div>
-                    <span class="welcome-label">BUDGET MONITORING</span>
-                    <h2>Selamat Datang, {{ username }}</h2>
-                    <p>
-                        Pantau ketersediaan dan penggunaan budget
-                        pada periode {{ selected_year }}.
-                    </p>
-                </div>
-                <div class="welcome-icon">
-                    <i class="bi bi-bar-chart-line"></i>
-                </div>
-            </div>
 
-            <!-- ringkasan budget -->
-            <div class="section-heading">
-                <h3>Ringkasan Budget</h3>
-                <p>Informasi budget yang dapat diakses Pengusul.</p>
-            </div>
+            <!-- =====================================
+                 B. TIGA KPI CARD HORIZONTAL
+            ===================================== -->
 
-            <div class="kpi-grid">
-                <div class="kpi-card">
+            <div class="budget-kpi-grid">
+
+                <!-- CONSUMABLE BUDGET -->
+                <div class="budget-kpi-card">
+
                     <div class="kpi-icon">
                         <i class="bi bi-wallet2"></i>
                     </div>
-                    <span class="kpi-label">Consumable Budget</span>
-                    <h3>
-                        Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
-                    </h3>
-                    <p>Budget yang telah dibuka untuk digunakan</p>
+
+                    <div class="kpi-info">
+
+                        <span class="kpi-label">
+                            Consumable Budget
+                        </span>
+
+                        <h2
+                            class="kpi-value"
+                            id="consumableValue"
+                            title="Rp {{ '{:,.0f}'.format(budget_summary.consumable_budget).replace(',', '.') }}"
+                        >
+                            Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
+                        </h2>
+
+                    </div>
+
                 </div>
 
-                <div class="kpi-card">
+
+                <!-- CONSUMED BUDGET -->
+                <div class="budget-kpi-card">
+
                     <div class="kpi-icon">
                         <i class="bi bi-graph-up-arrow"></i>
                     </div>
-                    <span class="kpi-label">Consumed Budget</span>
-                    <h3>
-                        Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
-                    </h3>
-                    <p>Budget yang sudah digunakan</p>
+
+                    <div class="kpi-info">
+
+                        <span class="kpi-label">
+                            Consumed Budget
+                        </span>
+
+                        <h2
+                            class="kpi-value"
+                            id="consumedValue"
+                            title="Rp {{ '{:,.0f}'.format(budget_summary.consumed_budget).replace(',', '.') }}"
+                        >
+                            Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
+                        </h2>
+
+                    </div>
+
                 </div>
 
-                <div class="kpi-card">
+
+                <!-- AVAILABLE AMOUNT -->
+                <div class="budget-kpi-card">
+
                     <div class="kpi-icon">
                         <i class="bi bi-cash-stack"></i>
                     </div>
-                    <span class="kpi-label">Available Amount</span>
-                    <h3>
-                        Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
-                    </h3>
-                    <p>Budget yang masih tersedia</p>
-                </div>
-            </div>
 
-            <!-- grafik -->
-            <div class="section-heading chart-section-title">
-                <h3>Visualisasi Budget</h3>
-                <p>Analisis penggunaan budget tahun {{ selected_year }}.</p>
-            </div>
+                    <div class="kpi-info">
 
-            <div class="charts-grid">
+                        <span class="kpi-label">
+                            Available Amount
+                        </span>
 
-                <div class="chart-card">
-                    <h4>Komposisi Penggunaan Budget</h4>
-                    <p>Perbandingan Consumed dan Available Amount</p>
-                    <div class="chart-container">
-                        <canvas id="budgetDonutChart"></canvas>
+                        <h2
+                            class="kpi-value"
+                            id="availableValue"
+                            title="Rp {{ '{:,.0f}'.format(budget_summary.available_amount).replace(',', '.') }}"
+                        >
+                            Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
+                        </h2>
+
                     </div>
-                </div>
 
-                <div class="chart-card">
-                    <h4>Penggunaan per Commitment Item</h4>
-                    <p>Commitment Item dengan nominal penggunaan terbesar</p>
-                    <div class="chart-container">
-                        <canvas id="commitmentBarChart"></canvas>
-                    </div>
                 </div>
 
             </div>
 
-            <p class="dashboard-footer">
-                SILOG Budget Monitoring & Approval System
-            </p>
+
+            <!-- =====================================
+                 C. VISUALISASI BUDGET
+            ===================================== -->
+
+            <div class="visual-header">
+
+                <h2 class="section-title">
+                     <i class="bi bi-bar-chart-line section-title-icon"></i>
+                        Visualisasi Budget
+                </h2>
+
+                <p class="section-caption">
+                    Distribusi penggunaan anggaran
+                </p>
+
+            </div>
+
+
+            <div class="budget-charts-grid">
+
+                <!-- =====================================
+                     1. KOMPOSISI BUDGET
+                ===================================== -->
+
+                <div class="budget-chart-card">
+
+                    <div class="budget-chart-heading">
+
+                        <h3>
+                            Komposisi Budget
+                        </h3>
+
+                        <p>
+                            Perbandingan budget terpakai dan tersedia
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="donut-content"
+                        id="donutChartContainer"
+                    >
+
+                        <div class="donut-wrapper">
+
+                            <canvas id="budgetDonutChart"></canvas>
+
+                            <div class="donut-center">
+
+                                <strong id="usedPercentage">
+                                    —
+                                </strong>
+
+                                <span>
+                                    Terpakai
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- LEGENDA -->
+                        <div class="donut-legend">
+
+                            <div class="legend-item">
+
+                                <span
+                                    class="legend-dot legend-consumed"
+                                ></span>
+
+                                Consumed Budget
+
+                            </div>
+
+                            <div class="legend-item">
+
+                                <span
+                                    class="legend-dot legend-available"
+                                ></span>
+
+                                Available Budget
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     2. TOP 5 COMMITMENT ITEM
+                ===================================== -->
+
+                <div class="budget-chart-card">
+
+                    <div class="budget-chart-heading">
+
+                        <h3>
+                            Top 5 Commitment Item
+                        </h3>
+
+                        <p>
+                            Berdasarkan nominal penggunaan terbesar
+                        </p>
+
+                    </div>
+
+
+                    {% set top_items = top5_details | default([]) %}
+
+                    {% if top_items %}
+
+                        {% set max_consumed = top_items[0].consumed_budget | float %}
+
+                        <div class="top5-list">
+
+                            {% for item in top_items %}
+
+                                {% set amount = item.consumed_budget | float %}
+
+                                {% set bar_percent = (
+                                    amount / max_consumed * 100
+                                    if max_consumed > 0
+                                    else 0
+                                ) %}
+
+                                <div class="top5-row">
+
+                                    <!-- KODE DAN NAMA CI -->
+                                    <div
+                                        class="top5-item-label"
+                                        title="{{ item.commitment_item_code }} - {{ item.commitment_item_name or 'Nama belum tersedia' }}"
+                                    >
+
+                                        <span class="top5-code">
+                                            {{ item.commitment_item_code }}
+                                        </span>
+
+                                        <span class="top5-name">
+                                            {{ item.commitment_item_name or "Nama belum tersedia" }}
+                                        </span>
+
+                                    </div>
+
+
+                                    <!-- PROGRESS BAR -->
+                                    <div class="top5-progress">
+
+                                        <div
+                                            class="top5-progress-fill"
+                                            style="width: {{ [0, [100, bar_percent] | min] | max }}%"
+                                        ></div>
+
+                                    </div>
+
+
+                                    <!-- NOMINAL -->
+                                    <span
+                                        class="top5-amount"
+                                        data-amount="{{ amount }}"
+                                        title="Rp {{ '{:,.0f}'.format(amount).replace(',', '.') }}"
+                                    >
+                                        Rp {{ "{:,.0f}".format(amount).replace(",", ".") }}
+                                    </span>
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="chart-empty-state">
+
+                            Belum ada data penggunaan Commitment Item
+                            untuk filter yang dipilih.
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
 
         </section>
+
     </main>
 
 </div>
 
-<script>
-    // data grafik dari flask
-    const consumed = {{ budget_summary.consumed_budget | float | tojson }};
-    const available = {{ budget_summary.available_amount | float | tojson }};
-    const commitmentData = {{ commitment_chart | tojson }};
 
-    // grafik komposisi budget
-    if (consumed >= 0 && available >= 0 && consumed + available > 0) {
-        new Chart(document.getElementById("budgetDonutChart"), {
-            type: "doughnut",
-            data: {
-                labels: ["Consumed Budget", "Available Amount"],
-                datasets: [{
-                    data: [consumed, available],
-                    backgroundColor: ["#ed1c24", "#f6b4b7"],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "68%",
-                plugins: {
-                    legend: {
-                        position: "bottom"
-                    }
-                }
-            }
-        });
-    } else {
-        document.getElementById("budgetDonutChart").replaceWith(
-            document.createTextNode("Belum ada data grafik yang dapat ditampilkan.")
-        );
+<!-- =====================================
+     BOOTSTRAP JAVASCRIPT
+===================================== -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
+
+
+<!-- =====================================
+     DASHBOARD JAVASCRIPT
+===================================== -->
+
+<script>
+
+    /* =====================================
+       1. DATA BUDGET DARI FLASK
+    ===================================== */
+
+    const consumable =
+        {{ budget_summary.consumable_budget | float | tojson }};
+
+    const consumed =
+        {{ budget_summary.consumed_budget | float | tojson }};
+
+    const available =
+        {{ budget_summary.available_amount | float | tojson }};
+
+
+    /* =====================================
+       2. FORMAT RUPIAH
+    ===================================== */
+
+    const rupiahFormatter = new Intl.NumberFormat(
+        "id-ID",
+        {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
+        }
+    );
+
+
+    function formatCompactRupiah(value) {
+
+        const abs = Math.abs(value);
+
+        if (abs >= 1000000000000) {
+
+            return "Rp" +
+                (value / 1000000000000).toLocaleString(
+                    "id-ID",
+                    { maximumFractionDigits: 2 }
+                ) + " T";
+        }
+
+        if (abs >= 1000000000) {
+
+            return "Rp" +
+                (value / 1000000000).toLocaleString(
+                    "id-ID",
+                    { maximumFractionDigits: 2 }
+                ) + " M";
+        }
+
+        if (abs >= 1000000) {
+
+            return "Rp" +
+                (value / 1000000).toLocaleString(
+                    "id-ID",
+                    { maximumFractionDigits: 2 }
+                ) + " Jt";
+        }
+
+        if (abs >= 1000) {
+
+            return "Rp" +
+                (value / 1000).toLocaleString(
+                    "id-ID",
+                    { maximumFractionDigits: 1 }
+                ) + " Rb";
+        }
+
+        return rupiahFormatter.format(value);
     }
 
-    // grafik penggunaan per commitment item
-    new Chart(document.getElementById("commitmentBarChart"), {
-        type: "bar",
-        data: {
-            labels: commitmentData.map(item => item.label),
-            datasets: [{
-                label: "Consumed Budget",
-                data: commitmentData.map(item => item.amount),
-                backgroundColor: "#ed1c24",
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: "y",
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true
-                }
+
+    /* =====================================
+       3. TAMPILKAN KPI
+    ===================================== */
+
+    document.getElementById("consumableValue").textContent =
+        formatCompactRupiah(consumable);
+
+    document.getElementById("consumedValue").textContent =
+        formatCompactRupiah(consumed);
+
+    document.getElementById("availableValue").textContent =
+        formatCompactRupiah(available);
+
+
+    /* =====================================
+       4. UTILIZATION DI DONUT
+    ===================================== */
+
+    const utilization = consumable > 0
+        ? (consumed / consumable) * 100
+        : null;
+
+
+    function formatPercentage(value) {
+
+        return value.toLocaleString(
+            "id-ID",
+            {
+                maximumFractionDigits: 1
             }
+        ) + "%";
+    }
+
+
+    document.getElementById("usedPercentage").textContent =
+        utilization !== null
+            ? formatPercentage(utilization)
+            : "—";
+
+
+    /* =====================================
+       5. TOP 5 COMMITMENT ITEM
+    ===================================== */
+
+    document.querySelectorAll("[data-amount]").forEach(
+        element => {
+
+            const value = Number(
+                element.dataset.amount
+            );
+
+            element.textContent =
+                formatCompactRupiah(value);
+
         }
-    });
+    );
+
+
+    /* =====================================
+       6. DONUT CHART
+    ===================================== */
+
+    if (typeof Chart !== "undefined") {
+
+        Chart.defaults.font.family =
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+        Chart.defaults.color = "#777777";
+
+
+        if (
+            consumed >= 0 &&
+            available >= 0 &&
+            consumed + available > 0
+        ) {
+
+            new Chart(
+                document.getElementById("budgetDonutChart"),
+                {
+                    type: "doughnut",
+
+                    data: {
+
+                        labels: [
+                            "Consumed Budget",
+                            "Available Amount"
+                        ],
+
+                        datasets: [{
+                            data: [
+                                consumed,
+                                available
+                            ],
+
+                            backgroundColor: [
+                                "#ed1c24",
+                                "#e5e7eb"
+                            ],
+
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "77%",
+
+                        plugins: {
+
+                            legend: {
+                                display: false
+                            },
+
+                            tooltip: {
+
+                                callbacks: {
+
+                                    label: function(context) {
+
+                                        return (
+                                            context.label +
+                                            ": " +
+                                            rupiahFormatter.format(
+                                                context.raw
+                                            )
+                                        );
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+        } else {
+
+            document.getElementById(
+                "donutChartContainer"
+            ).innerHTML = `
+                <div class="chart-empty-state">
+                    Komposisi budget tidak dapat ditampilkan
+                    karena data kosong atau memiliki nilai negatif.
+                </div>
+            `;
+
+        }
+
+    } else {
+
+        document.getElementById(
+            "donutChartContainer"
+        ).innerHTML = `
+            <div class="chart-empty-state">
+                Grafik tidak dapat dimuat.
+            </div>
+        `;
+
+    }
+
 </script>
 
 </body>
