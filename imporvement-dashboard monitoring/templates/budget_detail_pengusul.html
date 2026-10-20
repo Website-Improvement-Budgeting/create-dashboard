@@ -1,0 +1,1717 @@
+
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Budget Detail Pengusul | SILOG</title>
+
+    <!-- Bootstrap -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    >
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <!-- SILOG -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/dashboard.css') }}"
+    >
+
+    <style>
+        /* ==========================================
+           1. GLOBAL
+        ========================================== */
+
+        .budget-detail-page {
+            --silog-red: #ed1c24;
+            --silog-red-soft: #fff0f1;
+            --silog-text: #292b32;
+            --silog-muted: #8c909a;
+            --silog-border: #e7e8ed;
+
+            font-family: -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+            background: #f4f5f7;
+            color: var(--silog-text);
+        }
+
+        .budget-detail-page button,
+        .budget-detail-page input,
+        .budget-detail-page select {
+            font-family: inherit;
+        }
+
+        .budget-detail-page .topbar {
+            justify-content: flex-end;
+        }
+
+        .budget-detail-page .dashboard-content {
+            padding-top: 30px;
+            padding-bottom: 45px;
+        }
+
+        /* ==========================================
+           2. PROFILE DROPDOWN
+        ========================================== */
+
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--silog-text);
+            text-align: left;
+            cursor: pointer;
+            transition: background .2s ease;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle[aria-expanded="true"] {
+            background: #f5f5f5;
+        }
+
+        .user-dropdown-toggle:focus-visible {
+            outline: 2px solid var(--silog-red);
+            outline-offset: 2px;
+        }
+
+        .user-dropdown-toggle .user-info strong {
+            display: block;
+            color: var(--silog-text);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .user-dropdown-toggle .user-info small {
+            display: block;
+            color: #888d98;
+            font-size: 11px;
+        }
+
+        .dropdown-chevron {
+            margin-left: 5px;
+            color: #888d98;
+            font-size: 12px;
+            transition: transform .2s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"]
+        .dropdown-chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            min-width: 220px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid var(--silog-border);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.09);
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            padding: 9px 12px;
+            color: #888d98;
+            font-size: 12px;
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 11px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: #40434b;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .user-dropdown-menu .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .user-dropdown-menu .user-logout-item {
+            color: var(--silog-red);
+            font-weight: 600;
+        }
+
+        .user-dropdown-menu .user-logout-item:hover {
+            background: var(--silog-red-soft);
+        }
+
+        /* ==========================================
+           3. PAGE TITLE
+        ========================================== */
+
+        .detail-page-header {
+            margin-bottom: 22px;
+        }
+
+        .section-title {
+            margin: 0;
+            color: var(--silog-text);
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: -.4px;
+        }
+
+        .section-title-icon {
+            margin-right: 8px;
+            color: var(--silog-red);
+            font-size: 23px;
+        }
+
+        .section-caption {
+            margin: 6px 0 0;
+            color: var(--silog-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* ==========================================
+           4. MAIN CARD
+        ========================================== */
+
+        .detail-card {
+            background: #fff;
+            border: 1px solid var(--silog-border);
+            border-radius: 15px;
+            box-shadow: 0 6px 22px rgba(0,0,0,.03);
+            overflow: hidden;
+        }
+
+        /*
+           Header baru:
+           Baris 1: judul + badge
+           Baris 2: search + filter
+        */
+
+        .detail-card-header {
+            padding: 22px 24px 20px;
+        }
+
+        .detail-heading-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .detail-card-heading h2 {
+            margin: 0;
+            color: #31333b;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .detail-card-heading p {
+            margin: 5px 0 0;
+            color: #9699a2;
+            font-size: 12px;
+        }
+
+        .detail-record-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+            padding: 8px 12px;
+            background: var(--silog-red-soft);
+            border-radius: 8px;
+            color: #d91d27;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Separator yang halus */
+        .detail-header-divider {
+            height: 1px;
+            margin: 19px 0;
+            background: #f0f1f4;
+        }
+
+        /* ==========================================
+           5. SEARCH & FILTER TOOLBAR
+        ========================================== */
+
+        .detail-toolbar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .detail-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 180px;
+            max-width: 430px;
+            height: 39px;
+            padding: 0 13px;
+            background: #fff;
+            border: 1px solid #e4e6eb;
+            border-radius: 9px;
+            transition:
+                border-color .2s ease,
+                box-shadow .2s ease;
+        }
+
+        .detail-search:focus-within {
+            border-color: var(--silog-red);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.08);
+        }
+
+        .detail-search i {
+            color: #9a9da7;
+            font-size: 15px;
+        }
+
+        .detail-search input {
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #30323a;
+            font-size: 12px;
+        }
+
+        .detail-search input::placeholder {
+            color: #a0a4ae;
+        }
+
+        .detail-filters {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .detail-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .detail-filter-group label {
+            margin: 0;
+            color: #9296a0;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .detail-filter-group select {
+            height: 39px;
+            padding: 0 34px 0 12px;
+            background: #fff;
+            border: 1px solid #e4e6eb;
+            border-radius: 9px;
+            color: #30323a;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .detail-filter-group select:hover {
+            border-color: #cfd3dc;
+        }
+
+        .detail-filter-group select:focus-visible {
+            outline: 2px solid var(--silog-red);
+            outline-offset: 2px;
+        }
+
+        .year-group select {
+            width: 105px;
+        }
+
+        .entity-group select {
+            width: 205px;
+            max-width: 100%;
+        }
+
+        /* ==========================================
+           6. BUDGET TABLE
+        ========================================== */
+
+        .budget-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .budget-table {
+            width: 100%;
+            min-width: 1100px;
+            margin: 0;
+            border-collapse: collapse;
+        }
+
+        .budget-table thead {
+            background: #f8f9fb;
+        }
+
+        .budget-table th {
+            padding: 16px 14px;
+            border-bottom: 1px solid #e7e9ee;
+            color: #858c9b;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .35px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .budget-table td {
+            padding: 18px 14px;
+            border-bottom: 1px solid #edf0f3;
+            color: #48546a;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
+        .budget-table th:first-child,
+        .budget-table td:first-child {
+            padding-left: 24px;
+        }
+
+        .budget-table th:last-child,
+        .budget-table td:last-child {
+            padding-right: 24px;
+        }
+
+        .budget-table tbody tr:hover {
+            background: #fafbfc;
+        }
+
+        .budget-table tbody tr[hidden] {
+            display: none !important;
+        }
+
+        .budget-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .ci-column {
+            width: 25%;
+        }
+
+        .entity-column {
+            width: 16%;
+        }
+
+        .amount-column {
+            width: 14%;
+        }
+
+        .utilization-column {
+            width: 17%;
+        }
+
+        /* ==========================================
+           7. SORT BUTTONS
+        ========================================== */
+
+        .sort-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            width: 100%;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+            font-weight: 700;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            cursor: pointer;
+        }
+
+        .sort-button.align-right {
+            justify-content: flex-end;
+        }
+
+        .sort-button:hover {
+            color: var(--silog-red);
+        }
+
+        .sort-button i {
+            color: #a9aeba;
+            font-size: 12px;
+        }
+
+        .sort-button.active i {
+            color: var(--silog-red);
+        }
+
+        .sort-button:focus-visible {
+            outline: 2px solid var(--silog-red);
+            outline-offset: 3px;
+        }
+
+        /* ==========================================
+           8. COMMITMENT ITEM & NOMINAL
+        ========================================== */
+
+        .ci-code {
+            display: block;
+            color: #364257;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .ci-name {
+            display: block;
+            margin-top: 5px;
+            color: #909bab;
+            font-size: 11px;
+            line-height: 1.5;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+        }
+
+        .entity-name {
+            color: #526073;
+            font-size: 12px;
+            font-weight: 500;
+            overflow-wrap: anywhere;
+        }
+
+        .amount-value {
+            color: #48546a;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .available-value {
+            color: #16825d;
+            font-weight: 700;
+        }
+
+        .available-value.negative {
+            color: #d72736;
+        }
+
+        /* ==========================================
+           9. UTILIZATION
+        ========================================== */
+
+        .utilization-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .utilization-progress {
+            flex: 1;
+            min-width: 65px;
+            height: 8px;
+            background: #e8ebef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .utilization-fill {
+            display: block;
+            height: 100%;
+            background: var(--silog-red);
+            border-radius: inherit;
+        }
+
+        .utilization-fill.over-budget {
+            background: #b81520;
+        }
+
+        .utilization-value {
+            min-width: 50px;
+            color: #6c7890;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .utilization-value.over-budget {
+            color: #c51e2d;
+        }
+
+        /* ==========================================
+           10. EMPTY STATE
+        ========================================== */
+
+        .empty-table-row td {
+            padding: 52px 20px;
+            text-align: center;
+        }
+
+        .empty-table-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #969eaa;
+        }
+
+        .empty-table-content i {
+            font-size: 26px;
+        }
+
+        .empty-table-content strong {
+            color: #626b79;
+            font-size: 13px;
+        }
+
+        .empty-table-content span {
+            font-size: 12px;
+        }
+
+        /* ==========================================
+           11. PAGINATION
+        ========================================== */
+
+        .detail-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 24px;
+            border-top: 1px solid #eceef1;
+        }
+
+        .table-information {
+            color: #8c909a;
+            font-size: 12px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .page-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 9px;
+            background: #fff;
+            border: 1px solid #e7e8ed;
+            border-radius: 8px;
+            color: #707783;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .page-button:hover:not(:disabled) {
+            background: #fff0f1;
+            border-color: #ffd3d7;
+            color: var(--silog-red);
+        }
+
+        .page-button.active {
+            background: var(--silog-red);
+            border-color: var(--silog-red);
+            color: #fff;
+        }
+
+        .page-button:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .page-button:focus-visible {
+            outline: 2px solid var(--silog-red);
+            outline-offset: 2px;
+        }
+
+        .detail-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin-top: 15px;
+            color: #9699a2;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        /* ==========================================
+           12. RESPONSIVE
+        ========================================== */
+
+        @media (max-width: 1000px) {
+            .detail-toolbar {
+                flex-wrap: wrap;
+            }
+
+            .detail-search {
+                max-width: none;
+            }
+
+            .detail-filters {
+                margin-left: auto;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .budget-detail-page .dashboard-content {
+                padding-top: 23px;
+            }
+
+            .section-title {
+                font-size: 21px;
+            }
+
+            .detail-card-header {
+                padding: 19px 18px;
+            }
+
+            .detail-heading-row {
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .detail-card-heading h2 {
+                font-size: 14px;
+            }
+
+            .detail-record-count {
+                font-size: 11px;
+                padding: 7px 9px;
+            }
+
+            .detail-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 13px;
+            }
+
+            .detail-search {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .detail-filters {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .detail-filter-group {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .year-group {
+                flex: 0 0 32%;
+            }
+
+            .entity-group {
+                flex: 1;
+            }
+
+            .year-group select,
+            .entity-group select {
+                width: 100%;
+            }
+
+            .detail-card-footer {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 18px;
+            }
+
+            .pagination-controls {
+                align-self: flex-end;
+            }
+
+            .user-dropdown-toggle {
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+
+<body class="budget-detail-page">
+
+<div class="dashboard-layout">
+
+    <!-- ==========================================
+         SIDEBAR
+    ========================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon">S</div>
+
+            <div>
+                <strong>SILOG</strong>
+                <small>Budget Monitoring & Approval</small>
+            </div>
+        </div>
+
+        <p class="sidebar-label">MENU UTAMA</p>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('profil') }}" class="nav-item">
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </a>
+
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
+                <i class="bi bi-grid-1x2"></i>
+                Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('budget_detail_pengusul') }}"
+                class="nav-item active"
+                aria-current="page"
+            >
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </a>
+
+            <span class="nav-item disabled">
+                <i class="bi bi-file-earmark-plus"></i>
+                Pengajuan Budget
+            </span>
+
+            <span class="nav-item disabled">
+                <i class="bi bi-clock-history"></i>
+                Riwayat Pengajuan
+            </span>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button type="submit" class="logout-button">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- ==========================================
+         MAIN CONTENT
+    ========================================== -->
+
+    <main class="main-content">
+
+        <header class="topbar">
+
+            <div class="dropdown">
+
+                <button
+                    type="button"
+                    class="user-profile user-dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="Buka menu akun pengguna"
+                >
+                    <div class="user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+
+                    <div class="user-info">
+                        <strong>{{ username | title }}</strong>
+                        <small>Pengusul Budget</small>
+                    </div>
+
+                    <i class="bi bi-chevron-down dropdown-chevron"></i>
+                </button>
+
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+
+                    <div class="dropdown-header">
+                        Akun Pengusul
+                    </div>
+
+                    <a href="{{ url_for('profil') }}" class="dropdown-item">
+                        <i class="bi bi-person-circle"></i>
+                        Profil
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <form action="{{ url_for('logout') }}" method="POST">
+                        <button
+                            type="submit"
+                            class="dropdown-item user-logout-item"
+                        >
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div
+                        class="alert alert-{{ category }} alert-dismissible fade show"
+                        role="alert"
+                    >
+                        {{ message }}
+
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Tutup"
+                        ></button>
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- ======================================
+                 PAGE TITLE
+            ====================================== -->
+
+            <div class="detail-page-header">
+
+                <h1 class="section-title">
+                    <i class="bi bi-wallet2 section-title-icon"></i>
+                    Budget Detail
+                </h1>
+
+                <p class="section-caption">
+                    Rincian penggunaan anggaran berdasarkan commitment item
+                </p>
+
+            </div>
+
+            <!-- ======================================
+                 BUDGET DETAIL CARD
+            ====================================== -->
+
+            <div class="detail-card">
+
+                <!-- HEADER DUA BARIS -->
+                <div class="detail-card-header">
+
+                    <!-- BARIS 1: JUDUL & JUMLAH DATA -->
+                    <div class="detail-heading-row">
+
+                        <div class="detail-card-heading">
+                            <h2>Daftar Commitment Item</h2>
+                        </div>
+
+                        <span class="detail-record-count">
+                            <i class="bi bi-list-ul"></i>
+
+                            <span id="totalCiCount">
+                                {{ budget_details | length }}
+                            </span>
+
+                            Data
+                        </span>
+
+                    </div>
+
+                    <div class="detail-header-divider"></div>
+
+                    <!-- BARIS 2: SEARCH & FILTER -->
+                    <div class="detail-toolbar">
+
+                        <!-- SEARCH -->
+                        <label
+                            class="detail-search"
+                            for="searchCommitment"
+                        >
+                            <i class="bi bi-search"></i>
+
+                            <input
+                                type="search"
+                                id="searchCommitment"
+                                placeholder="Cari Commitment Item atau Unit Entity..."
+                                autocomplete="off"
+                            >
+                        </label>
+
+                        <!-- FILTER TAHUN & ENTITY -->
+                        <form
+                            method="GET"
+                            action="{{ url_for('budget_detail_pengusul') }}"
+                            class="detail-filters"
+                            id="budgetDetailFilterForm"
+                        >
+
+                            <div class="detail-filter-group year-group">
+
+                                <label for="year">
+                                    Tahun
+                                </label>
+
+                                <select
+                                    id="year"
+                                    name="year"
+                                    onchange="this.form.submit()"
+                                >
+                                    {% for year in budget_years %}
+                                        <option
+                                            value="{{ year }}"
+                                            {% if year == selected_year %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {{ year }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                            </div>
+
+                            <div class="detail-filter-group entity-group">
+
+                                <label for="entity_id">
+                                    Unit Entity
+                                </label>
+
+                                <select
+                                    id="entity_id"
+                                    name="entity_id"
+                                    onchange="this.form.submit()"
+                                >
+                                    <option
+                                        value="all"
+                                        {% if selected_entity_id | default('all') | string == 'all' %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        Semua Entity
+                                    </option>
+
+                                    {% for entity in entity_options | default([]) %}
+                                        <option
+                                            value="{{ entity.entity_id }}"
+                                            {% if selected_entity_id | default('all') | string == entity.entity_id | string %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {{ entity.unit_entity }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+                <!-- ======================================
+                     BUDGET TABLE
+                ====================================== -->
+
+                <div class="budget-table-wrapper">
+
+                    <table
+                        class="budget-table"
+                        id="budgetTable"
+                    >
+
+                        <thead>
+                            <tr>
+
+                                <th
+                                    scope="col"
+                                    class="ci-column"
+                                    data-column="ci"
+                                    aria-sort="none"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button"
+                                        data-sort="ci"
+                                    >
+                                        COMMITMENT ITEM
+                                        <i class="bi bi-arrow-down-up"></i>
+                                    </button>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="entity-column"
+                                    data-column="entity"
+                                    aria-sort="none"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button"
+                                        data-sort="entity"
+                                    >
+                                        UNIT ENTITY
+                                        <i class="bi bi-arrow-down-up"></i>
+                                    </button>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="amount-column text-right"
+                                    data-column="consumable"
+                                    aria-sort="none"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button align-right"
+                                        data-sort="consumable"
+                                    >
+                                        CONSUMABLE
+                                        <i class="bi bi-arrow-down-up"></i>
+                                    </button>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="amount-column text-right"
+                                    data-column="consumed"
+                                    aria-sort="none"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button align-right"
+                                        data-sort="consumed"
+                                    >
+                                        CONSUMED
+                                        <i class="bi bi-arrow-down-up"></i>
+                                    </button>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="amount-column text-right"
+                                    data-column="available"
+                                    aria-sort="none"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button align-right"
+                                        data-sort="available"
+                                    >
+                                        AVAILABLE
+                                        <i class="bi bi-arrow-down-up"></i>
+                                    </button>
+                                </th>
+
+                                <th
+                                    scope="col"
+                                    class="utilization-column"
+                                    data-column="utilization"
+                                    aria-sort="descending"
+                                >
+                                    <button
+                                        type="button"
+                                        class="sort-button active"
+                                        data-sort="utilization"
+                                    >
+                                        UTILIZATION
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
+                                </th>
+
+                            </tr>
+                        </thead>
+
+                        <tbody id="budgetTableBody">
+
+                            {% for item in budget_details %}
+
+                                <tr
+                                    class="budget-data-row"
+                                    data-ci-code="{{ item.commitment_item_code }}"
+                                    data-ci-name="{{ item.commitment_item_name }}"
+                                    data-entity="{{ item.unit_entity }}"
+                                    data-consumable="{{ item.consumable_budget }}"
+                                    data-consumed="{{ item.consumed_budget }}"
+                                    data-available="{{ item.available_amount }}"
+                                    data-utilization="{{ item.utilization if item.utilization is not none else '' }}"
+                                >
+
+                                    <!-- COMMITMENT ITEM -->
+                                    <td>
+                                        <span class="ci-code">
+                                            {{ item.commitment_item_code }}
+                                        </span>
+
+                                        <span class="ci-name">
+                                            {{ item.commitment_item_name | upper }}
+                                        </span>
+                                    </td>
+
+                                    <!-- UNIT ENTITY -->
+                                    <td>
+                                        <span class="entity-name">
+                                            {{ item.unit_entity }}
+                                        </span>
+                                    </td>
+
+                                    <!-- CONSUMABLE -->
+                                    <td class="text-right">
+                                        <span class="amount-value">
+                                            Rp {{ "{:,.0f}".format(item.consumable_budget).replace(",", ".") }}
+                                        </span>
+                                    </td>
+
+                                    <!-- CONSUMED -->
+                                    <td class="text-right">
+                                        <span class="amount-value">
+                                            Rp {{ "{:,.0f}".format(item.consumed_budget).replace(",", ".") }}
+                                        </span>
+                                    </td>
+
+                                    <!-- AVAILABLE -->
+                                    <td class="text-right">
+                                        <span
+                                            class="amount-value available-value {% if item.available_amount < 0 %}negative{% endif %}"
+                                        >
+                                            Rp {{ "{:,.0f}".format(item.available_amount).replace(",", ".") }}
+                                        </span>
+                                    </td>
+
+                                    <!-- UTILIZATION -->
+                                    <td>
+
+                                        {% if item.utilization is not none %}
+
+                                            {% set percent = item.utilization | float %}
+                                            {% set bar_width = [0, [100, percent] | min] | max %}
+
+                                            <div class="utilization-wrapper">
+
+                                                <div
+                                                    class="utilization-progress"
+                                                    role="progressbar"
+                                                    aria-label="Utilization {{ item.commitment_item_code }}"
+                                                    aria-valuenow="{{ bar_width }}"
+                                                    aria-valuemin="0"
+                                                    aria-valuemax="100"
+                                                >
+                                                    <span
+                                                        class="utilization-fill {% if percent > 100 %}over-budget{% endif %}"
+                                                        style="width: {{ bar_width }}%"
+                                                    ></span>
+                                                </div>
+
+                                                <span
+                                                    class="utilization-value {% if percent > 100 %}over-budget{% endif %}"
+                                                >
+                                                    {{ "{:,.1f}".format(percent).replace(".", ",") }}%
+                                                </span>
+
+                                            </div>
+
+                                        {% else %}
+
+                                            <span class="utilization-value">
+                                                —
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                            <!-- EMPTY STATE -->
+                            <tr
+                                id="emptyTableRow"
+                                class="empty-table-row"
+                                hidden
+                            >
+                                <td colspan="6">
+                                    <div class="empty-table-content">
+
+                                        <i class="bi bi-inbox"></i>
+
+                                        <strong id="emptyTableTitle">
+                                            Tidak ada data
+                                        </strong>
+
+                                        <span id="emptyTableMessage">
+                                            Belum ada data yang dapat ditampilkan.
+                                        </span>
+
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- ======================================
+                     PAGINATION
+                ====================================== -->
+
+                <div class="detail-card-footer">
+
+                    <div
+                        class="table-information"
+                        id="tableInformation"
+                        aria-live="polite"
+                    >
+                        Memuat data...
+                    </div>
+
+                    <nav
+                        class="pagination-controls"
+                        id="paginationControls"
+                        aria-label="Navigasi halaman Budget Detail"
+                    ></nav>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    "use strict";
+
+    /* ==========================================
+       1. DOM & STATE
+    ========================================== */
+
+    const searchInput = document.getElementById("searchCommitment");
+    const tableBody = document.getElementById("budgetTableBody");
+    const emptyTableRow = document.getElementById("emptyTableRow");
+    const emptyTableTitle = document.getElementById("emptyTableTitle");
+    const emptyTableMessage = document.getElementById("emptyTableMessage");
+    const tableInformation = document.getElementById("tableInformation");
+    const paginationControls = document.getElementById("paginationControls");
+    const totalCiCount = document.getElementById("totalCiCount");
+    const sortButtons = document.querySelectorAll("[data-sort]");
+
+    const allRows = Array.from(
+        tableBody.querySelectorAll(".budget-data-row")
+    );
+
+    // Tetap 5 baris per halaman.
+    const pageSize = 5;
+    let currentPage = 1;
+
+    // Default: utilization tertinggi.
+    let sortColumn = "utilization";
+    let sortDirection = "desc";
+
+    /* ==========================================
+       2. UTILITIES
+    ========================================== */
+
+    function normalizeText(value) {
+        return String(value ?? "")
+            .toLocaleLowerCase("id-ID")
+            .trim();
+    }
+
+    function getNumericValue(row, column) {
+        const raw = row.dataset[column];
+
+        if (raw === undefined || raw === "") {
+            return null;
+        }
+
+        const value = Number(raw);
+        return Number.isFinite(value) ? value : null;
+    }
+
+    function compareRows(a, b) {
+
+        if (sortColumn === "ci" || sortColumn === "entity") {
+
+            const key = sortColumn === "ci"
+                ? "ciCode"
+                : "entity";
+
+            const comparison = (a.dataset[key] || "").localeCompare(
+                b.dataset[key] || "",
+                "id-ID",
+                { numeric: true }
+            );
+
+            if (comparison !== 0) {
+                return sortDirection === "asc"
+                    ? comparison
+                    : -comparison;
+            }
+
+        } else {
+
+            const aValue = getNumericValue(a, sortColumn);
+            const bValue = getNumericValue(b, sortColumn);
+
+            // Nilai NULL selalu terakhir.
+            if (aValue === null && bValue !== null) return 1;
+            if (aValue !== null && bValue === null) return -1;
+
+            if (aValue !== null && bValue !== null) {
+
+                const comparison = aValue - bValue;
+
+                if (comparison !== 0) {
+                    return sortDirection === "asc"
+                        ? comparison
+                        : -comparison;
+                }
+            }
+        }
+
+        // Tie-break supaya sorting stabil.
+        const ciComparison = (a.dataset.ciCode || "").localeCompare(
+            b.dataset.ciCode || "",
+            "id-ID",
+            { numeric: true }
+        );
+
+        if (ciComparison !== 0) {
+            return ciComparison;
+        }
+
+        return (a.dataset.entity || "").localeCompare(
+            b.dataset.entity || "",
+            "id-ID"
+        );
+    }
+
+    function getFilteredRows() {
+
+        const keyword = normalizeText(searchInput.value);
+
+        return allRows
+            .filter(row => {
+
+                const code = normalizeText(row.dataset.ciCode);
+                const name = normalizeText(row.dataset.ciName);
+                const entity = normalizeText(row.dataset.entity);
+
+                return (
+                    code.includes(keyword) ||
+                    name.includes(keyword) ||
+                    entity.includes(keyword)
+                );
+            })
+            .sort(compareRows);
+    }
+
+    /* ==========================================
+       3. SORTING
+    ========================================== */
+
+    function updateSortIndicators() {
+
+        sortButtons.forEach(button => {
+
+            const active = button.dataset.sort === sortColumn;
+            const icon = button.querySelector("i");
+            const header = button.closest("th");
+
+            button.classList.toggle("active", active);
+
+            header.setAttribute(
+                "aria-sort",
+                active
+                    ? (
+                        sortDirection === "asc"
+                            ? "ascending"
+                            : "descending"
+                    )
+                    : "none"
+            );
+
+            if (icon) {
+                icon.className = active
+                    ? (
+                        sortDirection === "asc"
+                            ? "bi bi-arrow-up"
+                            : "bi bi-arrow-down"
+                    )
+                    : "bi bi-arrow-down-up";
+            }
+        });
+    }
+
+    sortButtons.forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const column = button.dataset.sort;
+
+            if (column === sortColumn) {
+
+                sortDirection = sortDirection === "desc"
+                    ? "asc"
+                    : "desc";
+
+            } else {
+
+                sortColumn = column;
+
+                sortDirection = (
+                    column === "ci" ||
+                    column === "entity"
+                )
+                    ? "asc"
+                    : "desc";
+            }
+
+            currentPage = 1;
+            updateSortIndicators();
+            renderTable();
+        });
+    });
+
+    /* ==========================================
+       4. PAGINATION
+    ========================================== */
+
+    function createPageButton(label, page, options = {}) {
+
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.className = "page-button";
+        button.textContent = label;
+        button.disabled = Boolean(options.disabled);
+
+        if (options.active) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "page");
+        }
+
+        button.setAttribute(
+            "aria-label",
+            options.ariaLabel || `Halaman ${page}`
+        );
+
+        button.addEventListener("click", () => {
+
+            if (button.disabled || page === currentPage) {
+                return;
+            }
+
+            currentPage = page;
+            renderTable();
+        });
+
+        return button;
+    }
+
+    function renderPagination(totalPages) {
+
+        paginationControls.replaceChildren();
+
+        if (totalPages <= 1) {
+            return;
+        }
+
+        // Sebelumnya.
+        paginationControls.appendChild(
+            createPageButton("‹", currentPage - 1, {
+                disabled: currentPage === 1,
+                ariaLabel: "Halaman sebelumnya"
+            })
+        );
+
+        const visibleCount = Math.min(5, totalPages);
+
+        let startPage = Math.max(
+            1,
+            currentPage - Math.floor(visibleCount / 2)
+        );
+
+        startPage = Math.min(
+            startPage,
+            totalPages - visibleCount + 1
+        );
+
+        const endPage = Math.min(
+            totalPages,
+            startPage + visibleCount - 1
+        );
+
+        for (let page = startPage; page <= endPage; page++) {
+
+            paginationControls.appendChild(
+                createPageButton(String(page), page, {
+                    active: page === currentPage
+                })
+            );
+        }
+
+        // Berikutnya.
+        paginationControls.appendChild(
+            createPageButton("›", currentPage + 1, {
+                disabled: currentPage === totalPages,
+                ariaLabel: "Halaman berikutnya"
+            })
+        );
+    }
+
+    /* ==========================================
+       5. RENDER TABLE
+    ========================================== */
+
+    function renderTable() {
+
+        const filteredRows = getFilteredRows();
+        const total = filteredRows.length;
+
+        const totalPages = Math.max(
+            1,
+            Math.ceil(total / pageSize)
+        );
+
+        currentPage = Math.min(
+            Math.max(1, currentPage),
+            totalPages
+        );
+
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+
+        const visibleRows = filteredRows.slice(
+            startIndex,
+            endIndex
+        );
+
+        // Sembunyikan seluruh baris terlebih dahulu.
+        allRows.forEach(row => {
+            row.hidden = true;
+        });
+
+        // Susun baris sesuai sorting.
+        const fragment = document.createDocumentFragment();
+
+        filteredRows.forEach(row => {
+            fragment.appendChild(row);
+        });
+
+        tableBody.insertBefore(fragment, emptyTableRow);
+
+        // Tampilkan hanya 5 baris.
+        visibleRows.forEach(row => {
+            row.hidden = false;
+        });
+
+        // Empty state.
+        const isEmpty = total === 0;
+        emptyTableRow.hidden = !isEmpty;
+
+        if (isEmpty) {
+
+            if (allRows.length === 0) {
+
+                emptyTableTitle.textContent =
+                    "Data budget belum tersedia";
+
+                emptyTableMessage.textContent =
+                    "Belum ada Commitment Item untuk filter yang dipilih.";
+
+            } else {
+
+                emptyTableTitle.textContent =
+                    "Commitment Item tidak ditemukan";
+
+                emptyTableMessage.textContent =
+                    "Coba cari menggunakan kode, nama CI, atau Unit Entity.";
+            }
+        }
+
+        // Badge jumlah data mengikuti pencarian.
+        totalCiCount.textContent =
+            total.toLocaleString("id-ID");
+
+        // Informasi pagination.
+        if (isEmpty) {
+
+            tableInformation.textContent =
+                "Tidak ada data yang ditampilkan";
+
+        } else {
+
+            const first = startIndex + 1;
+            const last = Math.min(endIndex, total);
+
+            tableInformation.textContent =
+                `Menampilkan ${first}–${last} dari ` +
+                `${total.toLocaleString("id-ID")} data`;
+        }
+
+        renderPagination(totalPages);
+    }
+
+    /* ==========================================
+       6. SEARCH
+    ========================================== */
+
+    searchInput.addEventListener("input", () => {
+        currentPage = 1;
+        renderTable();
+    });
+
+    /* ==========================================
+       7. INITIALIZE
+    ========================================== */
+
+    updateSortIndicators();
+    renderTable();
+
+</script>
+
+</body>
+</html>

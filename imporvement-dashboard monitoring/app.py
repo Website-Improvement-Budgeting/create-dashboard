@@ -765,6 +765,144 @@ def get_pengusul_top5_details(user_id, budget_year, entity_id=None):
         conn.close()
 
 
+
+# mengambil seluruh detail budget pengusul berdasarkan biro, tahun, unit entity
+def get_pengusul_budget_detail(user_id, budget_year, entity_id=None):
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    ci.commitment_item_code,
+
+                    COALESCE(
+                        NULLIF(TRIM(ci.commitment_item_name), ''),
+                        'Nama belum tersedia'
+                    ) AS commitment_item_name,
+
+                    ue.entity_id,
+                    ue.unit_entity,
+
+                    COALESCE(
+                        SUM(bm.consumable_budget), 0
+                    ) AS consumable_budget,
+
+                    COALESCE(
+                        SUM(bm.consumed_budget), 0
+                    ) AS consumed_budget,
+
+                    COALESCE(
+                        SUM(bm.available_amount), 0
+                    ) AS available_amount,
+
+                    CASE
+                        WHEN SUM(
+                            COALESCE(bm.consumable_budget, 0)
+                        ) > 0
+                        THEN ROUND(
+                            SUM(COALESCE(bm.consumed_budget, 0))
+                            * 100.0
+                            / NULLIF(
+                                SUM(COALESCE(bm.consumable_budget, 0)),
+                                0
+                            ),
+                            1
+                        )
+                        ELSE NULL
+                    END AS utilization
+
+                FROM public.budget_master AS bm
+
+                JOIN public.biro AS b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
+                JOIN public.commitment_item AS ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+
+                JOIN public.unit_entity AS ue
+                    ON bm.entity_id = ue.entity_id
+
+                WHERE b.biro_code = (
+                    SELECT b_user.biro_code
+                    FROM public.users AS u
+
+                    JOIN public.biro AS b_user
+                        ON u.biro_id = b_user.biro_id
+                       AND u.entity_id = b_user.entity_id
+
+                    WHERE u.user_id = %s
+                      AND u.role = 'Pengusul'
+                )
+
+                AND bm.budget_year = %s
+
+                AND (
+                    %s::integer IS NULL
+                    OR bm.entity_id = %s
+                )
+
+                GROUP BY
+                    ci.commitment_item_id,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    ue.entity_id,
+                    ue.unit_entity
+
+                ORDER BY
+                    utilization DESC NULLS LAST,
+                    consumed_budget DESC,
+                    ci.commitment_item_code ASC,
+                    ue.unit_entity ASC
+                """,
+                (
+                    user_id,
+                    budget_year,
+                    entity_id,
+                    entity_id
+                )
+            )
+
+            rows = cursor.fetchall()
+
+        budget_details = []
+
+        for row in rows:
+            (
+                ci_code,
+                ci_name,
+                entity_id_result,
+                unit_entity,
+                consumable,
+                consumed,
+                available,
+                utilization
+            ) = row
+
+            budget_details.append({
+                "commitment_item_code": str(ci_code),
+                "commitment_item_name": str(ci_name),
+                "entity_id": entity_id_result,
+                "unit_entity": str(unit_entity),
+                "consumable_budget": consumable,
+                "consumed_budget": consumed,
+                "available_amount": available,
+                "utilization": (
+                    float(utilization)
+                    if utilization is not None
+                    else None
+                )
+            })
+
+        return budget_details
+
+    finally:
+        conn.close()
+
+
 # dashboard berdasarkan role
 @app.route("/dashboard")
 def dashboard():
@@ -861,6 +999,112 @@ def dashboard():
         flash("Dashboard gagal dimuat.", "danger")
         return redirect(url_for("profil"))
 
+
+
+# halaman budget detail pengusul
+@app.route("/budget-detail")
+def budget_detail_pengusul():
+
+    # Validasi login
+    if not session.get("user_id"):
+        flash(
+            "Silakan login terlebih dahulu.",
+            "danger"
+        )
+        return redirect(url_for("login"))
+
+    # khusus role pengusul
+    if session.get("role") != "Pengusul":
+        return redirect(url_for("dashboard"))
+
+    user_id = session["user_id"]
+
+    try:
+
+        # 1. ambil tahun yang tersedia
+        budget_years = get_budget_years(user_id)
+
+        if not budget_years:
+            flash(
+                "Data budget untuk Biro ini belum tersedia.",
+                "warning"
+            )
+            return redirect(url_for("dashboard"))
+
+        # 2. filter tahun
+        selected_year = request.args.get(
+            "year",
+            type=int
+        )
+
+        if selected_year not in budget_years:
+            selected_year = budget_years[0]
+
+        # 3. ambil entity yang diizinkan
+        entity_options = get_pengusul_entity_options(
+            user_id
+        )
+
+        allowed_entity_ids = {
+            str(item["entity_id"])
+            for item in entity_options
+        }
+
+        # 4. filter unit entity
+        selected_entity_id = request.args.get(
+            "entity_id",
+            "all"
+        )
+
+        if selected_entity_id != "all":
+
+            if selected_entity_id not in allowed_entity_ids:
+
+                flash(
+                    "Unit Entity tidak valid.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("budget_detail_pengusul")
+                )
+
+        entity_filter = (
+            None
+            if selected_entity_id == "all"
+            else int(selected_entity_id)
+        )
+
+        # 5. ambil detail budget
+        budget_details = get_pengusul_budget_detail(
+            user_id,
+            selected_year,
+            entity_filter
+        )
+
+        # 6. tampilkan halaman
+        return render_template(
+            "budget_detail_pengusul.html",
+            username=session.get("username"),
+            budget_details=budget_details,
+            budget_years=budget_years,
+            selected_year=selected_year,
+            entity_options=entity_options,
+            selected_entity_id=selected_entity_id
+        )
+
+    except psycopg2.Error:
+
+        app.logger.exception(
+            "Gagal memuat Budget Detail Pengusul"
+        )
+
+        flash(
+            "Data Budget Detail gagal dimuat.",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
 
 # logout pengguna
 @app.route("/logout", methods=["POST"])
