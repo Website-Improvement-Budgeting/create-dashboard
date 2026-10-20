@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pengusul | SILOG</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+<div class="dashboard-layout">
+
+    <!-- sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <strong>SILOG</strong>
+                <small>Budget Monitoring & Approval</small>
+            </div>
+        </div>
+
+        <p class="sidebar-label">MENU UTAMA</p>
+
+        <nav class="sidebar-nav">
+            <span class="nav-item disabled">
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </span>
+
+            <a href="{{ url_for('dashboard') }}" class="nav-item active">
+                <i class="bi bi-grid-1x2"></i>
+                Dashboard
+            </a>
+
+            <span class="nav-item disabled">
+                <i class="bi bi-file-earmark-plus"></i>
+                Pengajuan Budget
+            </span>
+
+            <span class="nav-item disabled">
+                <i class="bi bi-clock-history"></i>
+                Riwayat Pengajuan
+            </span>
+
+            <span class="nav-item disabled">
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </span>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button type="submit" class="logout-button">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- konten utama -->
+    <main class="main-content">
+
+        <header class="topbar">
+            <span class="topbar-label">
+                Budget Monitoring & Approval System
+            </span>
+
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="user-info">
+                    <strong>{{ username }}</strong>
+                    <small>Pengusul Budget</small>
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+
+            <!-- judul dan filter -->
+            <div class="page-heading">
+                <div>
+                    <h1>Dashboard Pengusul</h1>
+                    <p>
+                        Monitoring dan ringkasan penggunaan budget
+                        berdasarkan periode tahun.
+                    </p>
+                </div>
+
+                <form method="GET" action="{{ url_for('dashboard') }}"
+                      class="year-filter">
+                    <label for="year">Periode Tahun</label>
+                    <select id="year" name="year"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        {% for year in budget_years %}
+                            <option value="{{ year }}"
+                                {% if year == selected_year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <!-- banner -->
+            <div class="welcome-card">
+                <div>
+                    <span class="welcome-label">BUDGET MONITORING</span>
+                    <h2>Selamat Datang, {{ username }}</h2>
+                    <p>
+                        Pantau ketersediaan dan penggunaan budget
+                        pada periode {{ selected_year }}.
+                    </p>
+                </div>
+                <div class="welcome-icon">
+                    <i class="bi bi-bar-chart-line"></i>
+                </div>
+            </div>
+
+            <!-- ringkasan budget -->
+            <div class="section-heading">
+                <h3>Ringkasan Budget</h3>
+                <p>Informasi budget yang dapat diakses Pengusul.</p>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <span class="kpi-label">Consumable Budget</span>
+                    <h3>
+                        Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
+                    </h3>
+                    <p>Budget yang telah dibuka untuk digunakan</p>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <span class="kpi-label">Consumed Budget</span>
+                    <h3>
+                        Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
+                    </h3>
+                    <p>Budget yang sudah digunakan</p>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <span class="kpi-label">Available Amount</span>
+                    <h3>
+                        Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
+                    </h3>
+                    <p>Budget yang masih tersedia</p>
+                </div>
+            </div>
+
+            <!-- grafik -->
+            <div class="section-heading chart-section-title">
+                <h3>Visualisasi Budget</h3>
+                <p>Analisis penggunaan budget tahun {{ selected_year }}.</p>
+            </div>
+
+            <div class="charts-grid">
+
+                <div class="chart-card">
+                    <h4>Komposisi Penggunaan Budget</h4>
+                    <p>Perbandingan Consumed dan Available Amount</p>
+                    <div class="chart-container">
+                        <canvas id="budgetDonutChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h4>Penggunaan per Commitment Item</h4>
+                    <p>Commitment Item dengan nominal penggunaan terbesar</p>
+                    <div class="chart-container">
+                        <canvas id="commitmentBarChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <p class="dashboard-footer">
+                SILOG Budget Monitoring & Approval System
+            </p>
+
+        </section>
+    </main>
+
+</div>
+
+<script>
+    // data grafik dari flask
+    const consumed = {{ budget_summary.consumed_budget | float | tojson }};
+    const available = {{ budget_summary.available_amount | float | tojson }};
+    const commitmentData = {{ commitment_chart | tojson }};
+
+    // grafik komposisi budget
+    if (consumed >= 0 && available >= 0 && consumed + available > 0) {
+        new Chart(document.getElementById("budgetDonutChart"), {
+            type: "doughnut",
+            data: {
+                labels: ["Consumed Budget", "Available Amount"],
+                datasets: [{
+                    data: [consumed, available],
+                    backgroundColor: ["#ed1c24", "#f6b4b7"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "68%",
+                plugins: {
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
+        });
+    } else {
+        document.getElementById("budgetDonutChart").replaceWith(
+            document.createTextNode("Belum ada data grafik yang dapat ditampilkan.")
+        );
+    }
+
+    // grafik penggunaan per commitment item
+    new Chart(document.getElementById("commitmentBarChart"), {
+        type: "bar",
+        data: {
+            labels: commitmentData.map(item => item.label),
+            datasets: [{
+                label: "Consumed Budget",
+                data: commitmentData.map(item => item.amount),
+                backgroundColor: "#ed1c24",
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: "y",
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

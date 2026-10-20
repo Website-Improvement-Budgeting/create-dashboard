@@ -1,0 +1,768 @@
+
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Profil Pengusul | SILOG</title>
+
+    <!-- bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- bootstrap icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- css login -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <!-- css dashboard -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/dashboard.css') }}"
+    >
+
+    <style>
+
+        /* font dan tampilan dasar */
+        .profile-page {
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background: #f3f4f6;
+            color: #252525;
+        }
+
+        .profile-page button,
+        .profile-page input,
+        .profile-page select,
+        .profile-page textarea {
+            font-family: inherit;
+        }
+
+        /* topbar */
+        .profile-page .topbar {
+            justify-content: flex-end;
+        }
+
+        /* konten utama */
+        .profile-page .dashboard-content {
+            padding-top: 38px;
+        }
+
+        /* judul halaman */
+        .profile-heading {
+            margin-bottom: 25px;
+        }
+
+        .profile-heading h1 {
+            margin: 0;
+            font-size: 26px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: normal;
+            color: #252525;
+        }
+
+        /* banner selamat datang */
+        .profile-welcome {
+            display: flex;
+            align-items: center;
+
+            min-height: 90px;
+            padding: 28px 35px;
+            margin-bottom: 25px;
+
+            background: linear-gradient(
+                110deg,
+                #ed1c24 0%,
+                #c5161d 100%
+            );
+
+            border-radius: 14px;
+            color: #ffffff;
+        }
+
+        .profile-welcome h2 {
+            margin: 0;
+            font-size: 24px;
+            line-height: 1.4;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        /* susunan kartu */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        /* kartu profil dan password */
+        .profile-card {
+            display: flex;
+            flex-direction: column;
+
+            min-width: 0;
+            height: 100%;
+
+            padding: 30px;
+
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+
+            box-shadow:
+                0 12px 35px rgba(0, 0, 0, 0.045);
+        }
+
+        /* header kartu */
+        .profile-card-header {
+            margin-bottom: 30px;
+        }
+
+        .profile-card-header h3 {
+            margin: 0;
+
+            font-size: 20px;
+            line-height: 1.3;
+            font-weight: 700;
+
+            color: #252525;
+        }
+
+        .profile-card-header p {
+            margin: 10px 0 0;
+
+            font-size: 15px;
+            line-height: 1.5;
+            font-weight: 400;
+
+            color: #777777;
+        }
+
+        /* informasi akun */
+        .profile-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: 25px;
+            row-gap: 30px;
+        }
+
+        .profile-info-item {
+            min-width: 0;
+        }
+
+        .profile-info-item span {
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            color: #404040;
+        }
+
+        .profile-info-item strong {
+            display: block;
+
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 400;
+
+            color: #252525;
+            overflow-wrap: anywhere;
+        }
+
+        /* form ubah password */
+        .profile-password-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .profile-form-group {
+            margin-bottom: 22px;
+        }
+
+        .profile-form-group label {
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            color: #404040;
+        }
+
+        /* input password mengikuti halaman login */
+        .password-input-wrapper {
+            display: flex;
+            align-items: center;
+
+            width: 100%;
+            height: 50px;
+
+            background: #ffffff;
+
+            border: 1px solid #d6d6d6;
+            border-radius: 9px;
+
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .password-input-wrapper:focus-within {
+            border-color: #ed1c24;
+
+            box-shadow:
+                0 0 0 3px rgba(237, 28, 36, 0.10);
+        }
+
+        .password-input-wrapper input {
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+
+            padding: 0 15px;
+
+            border: none;
+            outline: none;
+            background: transparent;
+
+            color: #252525;
+
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .password-input-wrapper input::placeholder {
+            color: #a0a0a0;
+            opacity: 1;
+        }
+
+        /* tombol lihat password */
+        .password-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            flex-shrink: 0;
+
+            width: 48px;
+            height: 100%;
+
+            padding: 0;
+
+            border: none;
+            background: transparent;
+
+            color: #777777;
+            font-size: 18px;
+
+            cursor: pointer;
+        }
+
+        .password-toggle:hover {
+            color: #ed1c24;
+        }
+
+        .password-toggle:focus-visible {
+            outline: 2px solid #ed1c24;
+            outline-offset: -4px;
+            border-radius: 4px;
+        }
+
+        /* keterangan password */
+        .password-helper {
+            margin: 7px 0 0;
+
+            font-size: 12px;
+            line-height: 1.5;
+
+            color: #888888;
+        }
+
+        /* tombol simpan */
+        .profile-save-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+
+            width: 100%;
+            height: 50px;
+
+            margin-top: auto;
+
+            border: none;
+            border-radius: 9px;
+
+            background: #ed1c24;
+            color: #ffffff;
+
+            font-size: 15px;
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .profile-save-btn:hover {
+            background: #cf171e;
+            color: #ffffff;
+
+            transform: translateY(-1px);
+
+            box-shadow:
+                0 8px 18px rgba(237, 28, 36, 0.20);
+        }
+
+        .profile-save-btn:active {
+            transform: translateY(0);
+        }
+
+        /* footer */
+        .profile-page .dashboard-footer {
+            margin-top: 35px;
+        }
+
+        /* tablet */
+        @media (max-width: 1000px) {
+
+            .profile-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-card {
+                height: auto;
+            }
+
+            .profile-save-btn {
+                margin-top: 8px;
+            }
+
+        }
+
+        /* mobile */
+        @media (max-width: 650px) {
+
+            .profile-page .dashboard-content {
+                padding-top: 24px;
+            }
+
+            .profile-heading h1 {
+                font-size: 22px;
+            }
+
+            .profile-welcome {
+                padding: 25px;
+            }
+
+            .profile-welcome h2 {
+                font-size: 21px;
+            }
+
+            .profile-card {
+                padding: 25px;
+            }
+
+            .profile-info-grid {
+                grid-template-columns: 1fr;
+                row-gap: 22px;
+            }
+
+            .profile-card-header h3 {
+                font-size: 19px;
+            }
+
+            .profile-card-header p {
+                font-size: 14px;
+            }
+
+            .password-input-wrapper,
+            .profile-save-btn {
+                height: 48px;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body class="profile-page">
+
+<div class="dashboard-layout">
+
+    <!-- sidebar -->
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+
+            <div class="brand-icon">S</div>
+
+            <div>
+                <strong>SILOG</strong>
+                <small>Budget Monitoring & Approval</small>
+            </div>
+
+        </div>
+
+        <p class="sidebar-label">MENU UTAMA</p>
+
+        <nav class="sidebar-nav">
+
+            <!-- profil -->
+            <a
+                href="{{ url_for('profil') }}"
+                class="nav-item active"
+                aria-current="page"
+            >
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </a>
+
+            <!-- dashboard -->
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="nav-item"
+            >
+                <i class="bi bi-grid-1x2"></i>
+                Dashboard
+            </a>
+
+            <!-- pengajuan budget -->
+            <span class="nav-item disabled">
+                <i class="bi bi-file-earmark-plus"></i>
+                Pengajuan Budget
+            </span>
+
+            <!-- riwayat pengajuan -->
+            <span class="nav-item disabled">
+                <i class="bi bi-clock-history"></i>
+                Riwayat Pengajuan
+            </span>
+
+            <!-- budget detail -->
+            <span class="nav-item disabled">
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </span>
+
+        </nav>
+
+        <!-- logout -->
+        <div class="sidebar-bottom">
+
+            <form
+                action="{{ url_for('logout') }}"
+                method="POST"
+            >
+                <button
+                    type="submit"
+                    class="logout-button"
+                >
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+    <!-- konten utama -->
+    <main class="main-content">
+
+        <!-- topbar -->
+        <header class="topbar">
+
+            <div class="user-profile">
+
+                <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+
+                <div class="user-info">
+                    <strong>{{ user.username | title }}</strong>
+                    <small>Pengusul Budget</small>
+                </div>
+
+            </div>
+
+        </header>
+
+        <section class="dashboard-content">
+
+            <!-- judul halaman -->
+            <div class="profile-heading">
+                <h1>
+                    <i class="bi bi-person-circle profile-title-icon"></i>
+                    Profil Pengusul
+                </h1>
+            </div>
+
+            <!-- notifikasi -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                    {% for category, message in messages %}
+
+                        <div
+                            class="alert alert-{{ category }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ message }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"
+                            ></button>
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+            <!-- banner selamat datang -->
+            <div class="profile-welcome">
+
+                <h2>
+                    Selamat Datang, {{ user.biro_name | title }}!
+                </h2>
+
+            </div>
+
+            <!-- kartu informasi -->
+            <div class="profile-grid">
+
+                <!-- informasi profil -->
+                <div class="profile-card">
+
+                    <div class="profile-card-header">
+                        <h3>Informasi Profil</h3>
+                        <p>Identitas akun pengguna</p>
+                    </div>
+
+                    <div class="profile-info-grid">
+
+                        <!-- username -->
+                        <div class="profile-info-item">
+                            <span>Username</span>
+                            <strong>{{ user.username }}</strong>
+                        </div>
+
+                        <!-- kode biro -->
+                        <div class="profile-info-item">
+                            <span>Kode Biro</span>
+                            <strong>{{ user.biro_code }}</strong>
+                        </div>
+
+                        <!-- role -->
+                        <div class="profile-info-item">
+                            <span>Role</span>
+                            <strong>{{ user.role }}</strong>
+                        </div>
+
+                        <!-- nama biro -->
+                        <div class="profile-info-item">
+                            <span>Nama Biro</span>
+                            <strong>{{ user.biro_name | title }}</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ubah password -->
+                <div class="profile-card">
+
+                    <div class="profile-card-header">
+                        <h3>Ubah Password Akun</h3>
+                        <p>Ubah password akun</p>
+                    </div>
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('ubah_password') }}"
+                        class="profile-password-form"
+                    >
+
+                        <!-- password lama -->
+                        <div class="profile-form-group">
+
+                            <label for="password_lama">
+                                Password Lama
+                            </label>
+
+                            <div class="password-input-wrapper">
+
+                                <input
+                                    type="password"
+                                    id="password_lama"
+                                    name="password_lama"
+                                    placeholder="Masukkan password lama"
+                                    autocomplete="current-password"
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    onclick="togglePassword('password_lama', this)"
+                                    aria-label="Lihat atau sembunyikan password lama"
+                                    aria-pressed="false"
+                                >
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <!-- password baru -->
+                        <div class="profile-form-group">
+
+                            <label for="password_baru">
+                                Password Baru
+                            </label>
+
+                            <div class="password-input-wrapper">
+
+                                <input
+                                    type="password"
+                                    id="password_baru"
+                                    name="password_baru"
+                                    placeholder="Masukkan password baru"
+                                    autocomplete="new-password"
+                                    minlength="8"
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    onclick="togglePassword('password_baru', this)"
+                                    aria-label="Lihat atau sembunyikan password baru"
+                                    aria-pressed="false"
+                                >
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                            </div>
+
+                            <p class="password-helper">
+                                Gunakan minimal 8 karakter.
+                            </p>
+
+                        </div>
+
+                        <!-- konfirmasi password -->
+                        <div class="profile-form-group">
+
+                            <label for="konfirmasi_password">
+                                Konfirmasi Password Baru
+                            </label>
+
+                            <div class="password-input-wrapper">
+
+                                <input
+                                    type="password"
+                                    id="konfirmasi_password"
+                                    name="konfirmasi_password"
+                                    placeholder="Ulangi password baru"
+                                    autocomplete="new-password"
+                                    minlength="8"
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    onclick="togglePassword('konfirmasi_password', this)"
+                                    aria-label="Lihat atau sembunyikan konfirmasi password"
+                                    aria-pressed="false"
+                                >
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <!-- tombol simpan -->
+                        <button
+                            type="submit"
+                            class="profile-save-btn"
+                        >
+                            <i class="bi bi-key"></i>
+                            Ubah Password
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            <!-- footer -->
+            <p class="dashboard-footer">
+                SILOG Budget Monitoring & Approval System
+            </p>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- bootstrap javascript -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+
+    // menampilkan atau menyembunyikan password
+    function togglePassword(inputId, button) {
+
+        const input = document.getElementById(inputId);
+        const icon = button.querySelector("i");
+
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.replace("bi-eye", "bi-eye-slash");
+            button.setAttribute("aria-pressed", "true");
+        } else {
+            input.type = "password";
+            icon.classList.replace("bi-eye-slash", "bi-eye");
+            button.setAttribute("aria-pressed", "false");
+        }
+
+    }
+
+</script>
+
+</body>
+</html>
