@@ -1113,7 +1113,7 @@
                                     class="top5-row top5-clickable"
                                     data-ci-tooltip
                                     data-ci-code="{{ item.commitment_item_code }}"
-                                    data-ci-name="{{ item.commitment_item_name or 'Nama belum tersedia' }}"
+                                    data-ci-name="{{ item.commitment_item_name or 'Nama belum tersedia' | upper}}"
                                     data-ci-amount="{{ amount }}"
                                     aria-label="Detail Commitment Item {{ item.commitment_item_code }}: {{ item.commitment_item_name or 'Nama belum tersedia' }}"
                                     aria-expanded="false"
