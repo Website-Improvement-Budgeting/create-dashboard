@@ -5,49 +5,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Dashboard Pengusul | SILOG</title>
 
-    <!-- Bootstrap -->
+    <!-- Libraries -->
     <link
+        rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
     >
-
-    <!-- Bootstrap Icons -->
     <link
+        rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        rel="stylesheet"
     >
 
-    <!-- CSS SILOG -->
-    <link
-        href="{{ url_for('static', filename='css/style.css') }}"
-        rel="stylesheet"
-    >
-
-    <link
-        href="{{ url_for('static', filename='css/dashboard.css') }}"
-        rel="stylesheet"
-    >
+    <!-- SILOG Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
     <style>
         /* ==========================================
-           1. PENGATURAN HALAMAN
+           1. GLOBAL
         ========================================== */
 
         .pengusul-dashboard-page {
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
+            --silog-red: #ed1c24;
+            --silog-text: #292b32;
+            --silog-muted: #8c909a;
+            --silog-border: #e7e8ed;
 
+            font-family: -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
             background: #f4f5f7;
-            color: #292b32;
+            color: var(--silog-text);
         }
 
         .pengusul-dashboard-page button,
@@ -65,24 +56,20 @@
         }
 
         /* ==========================================
-           2. DROPDOWN PROFIL
+           2. PROFILE DROPDOWN
         ========================================== */
 
         .user-dropdown-toggle {
             display: flex;
             align-items: center;
             gap: 11px;
-
             padding: 8px 12px;
-
             background: transparent;
-            border: none;
+            border: 0;
             border-radius: 10px;
-
-            color: #292b32;
+            color: var(--silog-text);
             text-align: left;
             cursor: pointer;
-
             transition: background 0.2s ease;
         }
 
@@ -92,7 +79,7 @@
         }
 
         .user-dropdown-toggle:focus-visible {
-            outline: 2px solid #ed1c24;
+            outline: 2px solid var(--silog-red);
             outline-offset: 2px;
         }
 
@@ -102,7 +89,7 @@
 
         .user-dropdown-toggle .user-info strong {
             display: block;
-            color: #292b32;
+            color: var(--silog-text);
             font-size: 13px;
             font-weight: 600;
         }
@@ -120,19 +107,16 @@
             transition: transform 0.2s ease;
         }
 
-        .user-dropdown-toggle[aria-expanded="true"]
-        .dropdown-chevron {
+        .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron {
             transform: rotate(180deg);
         }
 
         .user-dropdown-menu {
             min-width: 220px;
             padding: 8px;
-
-            background: #ffffff;
-            border: 1px solid #e7e8ed;
+            background: #fff;
+            border: 1px solid var(--silog-border);
             border-radius: 12px;
-
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
         }
 
@@ -146,14 +130,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
-
             width: 100%;
             padding: 11px 12px;
-
             background: transparent;
-            border: none;
+            border: 0;
             border-radius: 8px;
-
             color: #40434b;
             font-size: 13px;
             font-weight: 500;
@@ -165,7 +146,7 @@
         }
 
         .user-dropdown-menu .user-logout-item {
-            color: #ed1c24;
+            color: var(--silog-red);
             font-weight: 600;
         }
 
@@ -175,7 +156,7 @@
         }
 
         /* ==========================================
-           3. JUDUL DAN FILTER
+           3. SECTION HEADINGS AND FILTERS
         ========================================== */
 
         .summary-header {
@@ -183,14 +164,12 @@
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-
             margin-bottom: 19px;
         }
 
         .section-title {
             margin: 0;
-
-            color: #292b32;
+            color: var(--silog-text);
             font-size: 24px;
             font-weight: 700;
             line-height: 1.3;
@@ -199,14 +178,13 @@
 
         .section-title-icon {
             margin-right: 8px;
-            color: #ed1c24;
+            color: var(--silog-red);
             font-size: 23px;
         }
 
         .section-caption {
             margin: 6px 0 0;
-
-            color: #8c909a;
+            color: var(--silog-muted);
             font-size: 12px;
             line-height: 1.5;
         }
@@ -215,13 +193,10 @@
             display: flex;
             align-items: center;
             flex-shrink: 0;
-
             padding: 10px 14px;
-
-            background: #ffffff;
-            border: 1px solid #e7e8ed;
+            background: #fff;
+            border: 1px solid var(--silog-border);
             border-radius: 11px;
-
             box-shadow: 0 3px 12px rgba(0, 0, 0, 0.025);
         }
 
@@ -229,7 +204,6 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-
             min-width: 0;
             padding: 0 13px;
         }
@@ -252,11 +226,9 @@
         .summary-filter-group select {
             width: 100%;
             padding: 3px 18px 3px 0;
-
             background: transparent;
-            border: none;
+            border: 0;
             outline: none;
-
             color: #30323a;
             font-size: 12px;
             font-weight: 600;
@@ -264,7 +236,7 @@
         }
 
         .summary-filter-group select:focus-visible {
-            outline: 2px solid #ed1c24;
+            outline: 2px solid var(--silog-red);
             border-radius: 4px;
         }
 
@@ -277,76 +249,58 @@
         }
 
         /* ==========================================
-           4. KPI CARD - HORIZONTAL
+           4. HORIZONTAL KPI CARDS
         ========================================== */
 
         .budget-kpi-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 16px;
-
             margin-bottom: 34px;
         }
 
         .budget-kpi-card {
             display: flex;
-            flex-direction: row;
             align-items: center;
-            justify-content: flex-start;
             gap: 17px;
-
             min-width: 0;
             min-height: 105px;
             padding: 20px 22px;
-
-            background: #ffffff;
-            border: 1px solid #e7e8ed;
+            background: #fff;
+            border: 1px solid var(--silog-border);
             border-radius: 14px;
-
             box-shadow: 0 5px 18px rgba(0, 0, 0, 0.03);
-
-            transition:
-                transform 0.2s ease,
-                box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .budget-kpi-card:hover {
             transform: translateY(-2px);
-
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.055);
         }
 
-        /* Ikon di sebelah kiri */
         .kpi-icon {
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-
             width: 54px;
             height: 54px;
-
             background: #fff0f1;
             border-radius: 13px;
-
-            color: #ed1c24;
+            color: var(--silog-red);
             font-size: 24px;
         }
 
-        /* Label dan angka di sebelah kanan */
         .kpi-info {
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: 7px;
-
             min-width: 0;
         }
 
         .kpi-label {
             display: block;
-            padding: 0;
-
             color: #828690;
             font-size: 12px;
             font-weight: 600;
@@ -355,8 +309,7 @@
 
         .kpi-value {
             margin: 0;
-
-            color: #292b32;
+            color: var(--silog-text);
             font-size: clamp(20px, 2vw, 28px);
             font-weight: 750;
             line-height: 1.2;
@@ -365,7 +318,7 @@
         }
 
         /* ==========================================
-           5. VISUALISASI BUDGET
+           5. VISUALIZATION CARDS
         ========================================== */
 
         .visual-header {
@@ -376,28 +329,23 @@
             display: grid;
             grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
             gap: 18px;
-
             align-items: stretch;
         }
 
         .budget-chart-card {
             display: flex;
             flex-direction: column;
-
             min-width: 0;
             min-height: 350px;
             padding: 23px;
-
-            background: #ffffff;
-            border: 1px solid #e7e8ed;
+            background: #fff;
+            border: 1px solid var(--silog-border);
             border-radius: 15px;
-
             box-shadow: 0 6px 22px rgba(0, 0, 0, 0.03);
         }
 
         .budget-chart-heading h3 {
             margin: 0;
-
             color: #31333b;
             font-size: 16px;
             font-weight: 700;
@@ -406,14 +354,13 @@
 
         .budget-chart-heading p {
             margin: 6px 0 0;
-
             color: #9699a2;
             font-size: 12px;
             line-height: 1.5;
         }
 
         /* ==========================================
-           6. KOMPOSISI BUDGET
+           6. DONUT CHART
         ========================================== */
 
         .donut-content {
@@ -422,13 +369,11 @@
             align-items: center;
             justify-content: center;
             flex: 1;
-
             padding-top: 14px;
         }
 
         .donut-wrapper {
             position: relative;
-
             width: 205px;
             height: 205px;
             max-width: 100%;
@@ -442,18 +387,16 @@
         .donut-center {
             position: absolute;
             inset: 0;
-
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-
             pointer-events: none;
             text-align: center;
         }
 
         .donut-center strong {
-            color: #292b32;
+            color: var(--silog-text);
             font-size: 27px;
             font-weight: 700;
             line-height: 1.2;
@@ -461,7 +404,6 @@
 
         .donut-center span {
             margin-top: 4px;
-
             color: #9699a2;
             font-size: 11px;
         }
@@ -472,7 +414,6 @@
             justify-content: center;
             flex-wrap: wrap;
             gap: 20px;
-
             margin-top: 21px;
         }
 
@@ -480,20 +421,19 @@
             display: flex;
             align-items: center;
             gap: 7px;
-
             color: #81858f;
             font-size: 12px;
         }
 
         .legend-dot {
-            flex-shrink: 0;
             width: 9px;
             height: 9px;
             border-radius: 50%;
+            flex-shrink: 0;
         }
 
         .legend-consumed {
-            background: #ed1c24;
+            background: var(--silog-red);
         }
 
         .legend-available {
@@ -510,7 +450,6 @@
             justify-content: center;
             flex: 1;
             gap: 16px;
-
             margin-top: 20px;
         }
 
@@ -520,19 +459,48 @@
                 minmax(100px, 155px)
                 minmax(0, 1fr)
                 85px;
-
             align-items: center;
             gap: 12px;
+            width: 100%;
+            min-width: 0;
+            margin: 0;
+            padding: 6px 7px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+        }
+
+        .top5-clickable {
+            cursor: pointer;
+        }
+
+        .top5-clickable:hover,
+        .top5-clickable[aria-expanded="true"] {
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .top5-clickable:hover .top5-progress-fill,
+        .top5-clickable[aria-expanded="true"] .top5-progress-fill {
+            background: #cf1019;
+        }
+
+        .top5-clickable:focus-visible {
+            outline: 2px solid var(--silog-red);
+            outline-offset: 2px;
         }
 
         .top5-item-label {
+            display: block;
             min-width: 0;
             overflow: hidden;
         }
 
         .top5-code {
             display: block;
-
             color: #40434b;
             font-size: 12px;
             font-weight: 700;
@@ -541,29 +509,28 @@
         .top5-name {
             display: block;
             margin-top: 4px;
-
             color: #9699a2;
             font-size: 11px;
-
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .top5-progress {
+            display: block;
             width: 100%;
             height: 9px;
-
             background: #f0f0f3;
             border-radius: 10px;
             overflow: hidden;
         }
 
         .top5-progress-fill {
+            display: block;
             height: 100%;
-
-            background: #ed1c24;
+            background: var(--silog-red);
             border-radius: inherit;
+            transition: background 0.15s ease;
         }
 
         .top5-amount {
@@ -579,21 +546,77 @@
             align-items: center;
             justify-content: center;
             flex: 1;
-
             min-height: 200px;
             padding: 20px;
-
             color: #9296a0;
             font-size: 13px;
             text-align: center;
         }
 
         /* ==========================================
-           8. RESPONSIVE
+           8. DARK TOOLTIP — HOVER LIKE CHART.JS
+        ========================================== */
+
+        .silog-chart-tooltip {
+            position: fixed;
+            z-index: 99999;
+            width: max-content;
+            max-width: min(340px, calc(100vw - 24px));
+            padding: 12px 15px;
+            background: rgba(28, 28, 30, 0.94);
+            color: #fff;
+            border-radius: 7px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1.5;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.12s ease;
+        }
+
+        .silog-chart-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .silog-tooltip-code {
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .silog-tooltip-name {
+            margin-bottom: 11px;
+            color: #eee;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .silog-tooltip-amount {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .silog-tooltip-dot {
+            display: block;
+            flex-shrink: 0;
+            width: 10px;
+            height: 10px;
+            margin-top: 4px;
+            background: var(--silog-red);
+            border: 1px solid #fff;
+        }
+
+        /* ==========================================
+           9. RESPONSIVE
         ========================================== */
 
         @media (max-width: 1100px) {
-
             .summary-header {
                 align-items: stretch;
                 flex-direction: column;
@@ -614,7 +637,6 @@
         }
 
         @media (max-width: 950px) {
-
             .budget-charts-grid {
                 grid-template-columns: 1fr;
             }
@@ -625,14 +647,12 @@
         }
 
         @media (max-width: 750px) {
-
             .budget-kpi-grid {
                 grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 520px) {
-
             .pengusul-dashboard-page .dashboard-content {
                 padding-top: 23px;
             }
@@ -698,18 +718,15 @@
                     minmax(88px, 110px)
                     minmax(0, 1fr)
                     66px;
-
                 gap: 8px;
+                padding: 6px 4px;
             }
 
             .top5-code {
                 font-size: 11px;
             }
 
-            .top5-name {
-                font-size: 10px;
-            }
-
+            .top5-name,
             .top5-amount {
                 font-size: 10px;
             }
@@ -718,50 +735,37 @@
                 padding: 6px;
             }
         }
-
     </style>
 </head>
-
 
 <body class="pengusul-dashboard-page">
 
 <div class="dashboard-layout">
 
-    <!-- =====================================
+    <!-- ==========================================
          SIDEBAR
-    ===================================== -->
+    ========================================== -->
 
     <aside class="sidebar">
 
         <div class="sidebar-brand">
-
-            <div class="brand-icon">
-                S
-            </div>
+            <div class="brand-icon">S</div>
 
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
             </div>
-
         </div>
 
-        <p class="sidebar-label">
-            MENU UTAMA
-        </p>
+        <p class="sidebar-label">MENU UTAMA</p>
 
         <nav class="sidebar-nav">
 
-            <!-- Profil -->
-            <a
-                href="{{ url_for('profil') }}"
-                class="nav-item"
-            >
+            <a href="{{ url_for('profil') }}" class="nav-item">
                 <i class="bi bi-person-circle"></i>
                 Profil
             </a>
 
-            <!-- Dashboard -->
             <a
                 href="{{ url_for('dashboard') }}"
                 class="nav-item active"
@@ -771,19 +775,16 @@
                 Dashboard
             </a>
 
-            <!-- Budget Detail -->
             <span class="nav-item disabled">
                 <i class="bi bi-wallet2"></i>
                 Budget Detail
             </span>
 
-            <!-- Pengajuan Budget -->
             <span class="nav-item disabled">
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
             </span>
 
-            <!-- Riwayat Pengajuan -->
             <span class="nav-item disabled">
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
@@ -791,30 +792,20 @@
 
         </nav>
 
-        <!-- Logout Sidebar -->
         <div class="sidebar-bottom">
-
-            <form
-                action="{{ url_for('logout') }}"
-                method="POST"
-            >
-                <button
-                    type="submit"
-                    class="logout-button"
-                >
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button type="submit" class="logout-button">
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
                 </button>
             </form>
-
         </div>
 
     </aside>
 
-
-    <!-- =====================================
+    <!-- ==========================================
          MAIN CONTENT
-    ===================================== -->
+    ========================================== -->
 
     <main class="main-content">
 
@@ -830,49 +821,30 @@
                     aria-expanded="false"
                     aria-label="Buka menu akun pengguna"
                 >
-
                     <div class="user-avatar">
                         <i class="bi bi-person-fill"></i>
                     </div>
 
                     <div class="user-info">
-
-                        <strong>
-                            {{ username | title }}
-                        </strong>
-
-                        <small>
-                            Pengusul Budget
-                        </small>
-
+                        <strong>{{ username | title }}</strong>
+                        <small>Pengusul Budget</small>
                     </div>
 
                     <i class="bi bi-chevron-down dropdown-chevron"></i>
-
                 </button>
 
-
-                <!-- Dropdown Menu -->
                 <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
 
-                    <div class="dropdown-header">
-                        Akun Pengusul
-                    </div>
+                    <div class="dropdown-header">Akun Pengusul</div>
 
-                    <a
-                        href="{{ url_for('profil') }}"
-                        class="dropdown-item"
-                    >
+                    <a href="{{ url_for('profil') }}" class="dropdown-item">
                         <i class="bi bi-person-circle"></i>
                         Profil
                     </a>
 
                     <div class="dropdown-divider"></div>
 
-                    <form
-                        action="{{ url_for('logout') }}"
-                        method="POST"
-                    >
+                    <form action="{{ url_for('logout') }}" method="POST">
                         <button
                             type="submit"
                             class="dropdown-item user-logout-item"
@@ -883,72 +855,48 @@
                     </form>
 
                 </div>
-
             </div>
-
         </header>
-
-
-        <!-- =====================================
-             DASHBOARD PENGUSUL
-        ===================================== -->
 
         <section class="dashboard-content">
 
-            <!-- FLASH MESSAGE -->
+            <!-- FLASH MESSAGES -->
             {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div
+                        class="alert alert-{{ category }} alert-dismissible fade show"
+                        role="alert"
+                    >
+                        {{ message }}
 
-                {% if messages %}
-
-                    {% for category, message in messages %}
-
-                        <div
-                            class="alert alert-{{ category }} alert-dismissible fade show"
-                            role="alert"
-                        >
-
-                            {{ message }}
-
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="alert"
-                                aria-label="Tutup"
-                            ></button>
-
-                        </div>
-
-                    {% endfor %}
-
-                {% endif %}
-
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Tutup"
+                        ></button>
+                    </div>
+                {% endfor %}
             {% endwith %}
 
-
-            <!-- =====================================
+            <!-- ======================================
                  A. RINGKASAN BUDGET
-            ===================================== -->
+            ====================================== -->
 
             <div class="summary-header">
 
                 <div class="summary-heading">
-
                     <h1 class="section-title">
-
                         <i class="bi bi-wallet2 section-title-icon"></i>
-
                         Ringkasan Budget
-
                     </h1>
 
                     <p class="section-caption">
                         Overview anggaran biro
                     </p>
-
                 </div>
 
-
-                <!-- FILTER TAHUN DAN ENTITY -->
+                <!-- FILTER -->
                 <form
                     method="GET"
                     action="{{ url_for('dashboard') }}"
@@ -956,50 +904,33 @@
                     id="dashboardFilterForm"
                 >
 
-                    <!-- Filter Tahun -->
                     <div class="summary-filter-group year-group">
-
-                        <label for="year">
-                            Tahun
-                        </label>
+                        <label for="year">Tahun</label>
 
                         <select
                             id="year"
                             name="year"
                             onchange="this.form.submit()"
                         >
-
                             {% for year in budget_years %}
-
                                 <option
                                     value="{{ year }}"
-                                    {% if year == selected_year %}
-                                        selected
-                                    {% endif %}
+                                    {% if year == selected_year %}selected{% endif %}
                                 >
                                     {{ year }}
                                 </option>
-
                             {% endfor %}
-
                         </select>
-
                     </div>
 
-
-                    <!-- Filter Unit Entity -->
                     <div class="summary-filter-group entity-group">
-
-                        <label for="entity_id">
-                            Unit Entity
-                        </label>
+                        <label for="entity_id">Unit Entity</label>
 
                         <select
                             id="entity_id"
                             name="entity_id"
                             onchange="this.form.submit()"
                         >
-
                             <option
                                 value="all"
                                 {% if selected_entity_id | default('all') | string == 'all' %}
@@ -1010,7 +941,6 @@
                             </option>
 
                             {% for entity in entity_options | default([]) %}
-
                                 <option
                                     value="{{ entity.entity_id }}"
                                     {% if selected_entity_id | default('all') | string == entity.entity_id | string %}
@@ -1019,33 +949,27 @@
                                 >
                                     {{ entity.unit_entity }}
                                 </option>
-
                             {% endfor %}
-
                         </select>
-
                     </div>
 
                 </form>
 
             </div>
 
-
-            <!-- =====================================
-                 B. TIGA KPI CARD HORIZONTAL
-            ===================================== -->
+            <!-- ======================================
+                 B. TIGA KPI CARD
+            ====================================== -->
 
             <div class="budget-kpi-grid">
 
-                <!-- CONSUMABLE BUDGET -->
+                <!-- CONSUMABLE -->
                 <div class="budget-kpi-card">
-
                     <div class="kpi-icon">
                         <i class="bi bi-wallet2"></i>
                     </div>
 
                     <div class="kpi-info">
-
                         <span class="kpi-label">
                             Consumable Budget
                         </span>
@@ -1057,21 +981,16 @@
                         >
                             Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
                         </h2>
-
                     </div>
-
                 </div>
 
-
-                <!-- CONSUMED BUDGET -->
+                <!-- CONSUMED -->
                 <div class="budget-kpi-card">
-
                     <div class="kpi-icon">
                         <i class="bi bi-graph-up-arrow"></i>
                     </div>
 
                     <div class="kpi-info">
-
                         <span class="kpi-label">
                             Consumed Budget
                         </span>
@@ -1083,21 +1002,16 @@
                         >
                             Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
                         </h2>
-
                     </div>
-
                 </div>
 
-
-                <!-- AVAILABLE AMOUNT -->
+                <!-- AVAILABLE -->
                 <div class="budget-kpi-card">
-
                     <div class="kpi-icon">
                         <i class="bi bi-cash-stack"></i>
                     </div>
 
                     <div class="kpi-info">
-
                         <span class="kpi-label">
                             Available Amount
                         </span>
@@ -1109,125 +1023,69 @@
                         >
                             Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
                         </h2>
-
                     </div>
-
                 </div>
 
             </div>
 
-
-            <!-- =====================================
+            <!-- ======================================
                  C. VISUALISASI BUDGET
-            ===================================== -->
+            ====================================== -->
 
             <div class="visual-header">
-
                 <h2 class="section-title">
-                     <i class="bi bi-bar-chart-line section-title-icon"></i>
-                        Visualisasi Budget
+                    <i class="bi bi-bar-chart-line section-title-icon"></i>
+                    Visualisasi Budget
                 </h2>
 
                 <p class="section-caption">
                     Distribusi penggunaan anggaran
                 </p>
-
             </div>
-
 
             <div class="budget-charts-grid">
 
-                <!-- =====================================
-                     1. KOMPOSISI BUDGET
-                ===================================== -->
-
+                <!-- KOMPOSISI BUDGET -->
                 <div class="budget-chart-card">
 
                     <div class="budget-chart-heading">
-
-                        <h3>
-                            Komposisi Budget
-                        </h3>
-
-                        <p>
-                            Perbandingan budget terpakai dan tersedia
-                        </p>
-
+                        <h3>Komposisi Budget</h3>
+                        <p>Perbandingan budget terpakai dan tersedia</p>
                     </div>
 
-
-                    <div
-                        class="donut-content"
-                        id="donutChartContainer"
-                    >
+                    <div class="donut-content" id="donutChartContainer">
 
                         <div class="donut-wrapper">
-
                             <canvas id="budgetDonutChart"></canvas>
 
                             <div class="donut-center">
-
-                                <strong id="usedPercentage">
-                                    —
-                                </strong>
-
-                                <span>
-                                    Terpakai
-                                </span>
-
+                                <strong id="usedPercentage">—</strong>
+                                <span>Terpakai</span>
                             </div>
-
                         </div>
 
-
-                        <!-- LEGENDA -->
                         <div class="donut-legend">
-
                             <div class="legend-item">
-
-                                <span
-                                    class="legend-dot legend-consumed"
-                                ></span>
-
+                                <span class="legend-dot legend-consumed"></span>
                                 Consumed Budget
-
                             </div>
 
                             <div class="legend-item">
-
-                                <span
-                                    class="legend-dot legend-available"
-                                ></span>
-
+                                <span class="legend-dot legend-available"></span>
                                 Available Budget
-
                             </div>
-
                         </div>
 
                     </div>
-
                 </div>
 
-
-                <!-- =====================================
-                     2. TOP 5 COMMITMENT ITEM
-                ===================================== -->
-
+                <!-- TOP 5 COMMITMENT ITEM -->
                 <div class="budget-chart-card">
 
                     <div class="budget-chart-heading">
-
-                        <h3>
-                            Top 5 Commitment Item
-                        </h3>
-
-                        <p>
-                            Berdasarkan nominal penggunaan terbesar
-                        </p>
-
+                        <h3>Top 5 Commitment Item</h3>
+                        <p>Berdasarkan nominal penggunaan terbesar</p>
                     </div>
-
 
                     {% set top_items = top5_details | default([]) %}
 
@@ -1247,14 +1105,18 @@
                                     else 0
                                 ) %}
 
-                                <div class="top5-row">
+                                <button
+                                    type="button"
+                                    class="top5-row top5-clickable"
+                                    data-ci-tooltip
+                                    data-ci-code="{{ item.commitment_item_code }}"
+                                    data-ci-name="{{ item.commitment_item_name or 'Nama belum tersedia' }}"
+                                    data-ci-amount="{{ amount }}"
+                                    aria-label="Detail Commitment Item {{ item.commitment_item_code }}: {{ item.commitment_item_name or 'Nama belum tersedia' }}"
+                                    aria-expanded="false"
+                                >
 
-                                    <!-- KODE DAN NAMA CI -->
-                                    <div
-                                        class="top5-item-label"
-                                        title="{{ item.commitment_item_code }} - {{ item.commitment_item_name or 'Nama belum tersedia' }}"
-                                    >
-
+                                    <span class="top5-item-label">
                                         <span class="top5-code">
                                             {{ item.commitment_item_code }}
                                         </span>
@@ -1262,31 +1124,23 @@
                                         <span class="top5-name">
                                             {{ item.commitment_item_name or "Nama belum tersedia" }}
                                         </span>
+                                    </span>
 
-                                    </div>
-
-
-                                    <!-- PROGRESS BAR -->
-                                    <div class="top5-progress">
-
-                                        <div
+                                    <span class="top5-progress">
+                                        <span
                                             class="top5-progress-fill"
                                             style="width: {{ [0, [100, bar_percent] | min] | max }}%"
-                                        ></div>
+                                        ></span>
+                                    </span>
 
-                                    </div>
-
-
-                                    <!-- NOMINAL -->
                                     <span
                                         class="top5-amount"
                                         data-amount="{{ amount }}"
-                                        title="Rp {{ '{:,.0f}'.format(amount).replace(',', '.') }}"
                                     >
                                         Rp {{ "{:,.0f}".format(amount).replace(",", ".") }}
                                     </span>
 
-                                </div>
+                                </button>
 
                             {% endfor %}
 
@@ -1295,10 +1149,8 @@
                     {% else %}
 
                         <div class="chart-empty-state">
-
                             Belum ada data penggunaan Commitment Item
                             untuk filter yang dipilih.
-
                         </div>
 
                     {% endif %}
@@ -1308,261 +1160,366 @@
             </div>
 
         </section>
-
     </main>
-
 </div>
 
-
-<!-- =====================================
-     BOOTSTRAP JAVASCRIPT
-===================================== -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-></script>
-
-
-<!-- =====================================
-     DASHBOARD JAVASCRIPT
-===================================== -->
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    "use strict";
 
-    /* =====================================
-       1. DATA BUDGET DARI FLASK
-    ===================================== */
+    /* ==========================================
+       1. DATA FROM FLASK
+    ========================================== */
 
-    const consumable =
-        {{ budget_summary.consumable_budget | float | tojson }};
+    const consumable = {{ budget_summary.consumable_budget | float | tojson }};
+    const consumed = {{ budget_summary.consumed_budget | float | tojson }};
+    const available = {{ budget_summary.available_amount | float | tojson }};
 
-    const consumed =
-        {{ budget_summary.consumed_budget | float | tojson }};
+    /* ==========================================
+       2. RUPIAH FORMATTERS
+    ========================================== */
 
-    const available =
-        {{ budget_summary.available_amount | float | tojson }};
-
-
-    /* =====================================
-       2. FORMAT RUPIAH
-    ===================================== */
-
-    const rupiahFormatter = new Intl.NumberFormat(
-        "id-ID",
-        {
-            style: "currency",
-            currency: "IDR",
-            maximumFractionDigits: 0
-        }
-    );
-
+    const rupiahFormatter = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0
+    });
 
     function formatCompactRupiah(value) {
-
         const abs = Math.abs(value);
 
-        if (abs >= 1000000000000) {
+        const scales = [
+            { limit: 1e12, divisor: 1e12, suffix: " T", digits: 2 },
+            { limit: 1e9, divisor: 1e9, suffix: " M", digits: 2 },
+            { limit: 1e6, divisor: 1e6, suffix: " Jt", digits: 2 },
+            { limit: 1e3, divisor: 1e3, suffix: " Rb", digits: 1 }
+        ];
 
-            return "Rp" +
-                (value / 1000000000000).toLocaleString(
-                    "id-ID",
-                    { maximumFractionDigits: 2 }
-                ) + " T";
+        const scale = scales.find(item => abs >= item.limit);
+
+        if (!scale) {
+            return rupiahFormatter.format(value);
         }
 
-        if (abs >= 1000000000) {
+        const number = (value / scale.divisor).toLocaleString("id-ID", {
+            maximumFractionDigits: scale.digits
+        });
 
-            return "Rp" +
-                (value / 1000000000).toLocaleString(
-                    "id-ID",
-                    { maximumFractionDigits: 2 }
-                ) + " M";
-        }
-
-        if (abs >= 1000000) {
-
-            return "Rp" +
-                (value / 1000000).toLocaleString(
-                    "id-ID",
-                    { maximumFractionDigits: 2 }
-                ) + " Jt";
-        }
-
-        if (abs >= 1000) {
-
-            return "Rp" +
-                (value / 1000).toLocaleString(
-                    "id-ID",
-                    { maximumFractionDigits: 1 }
-                ) + " Rb";
-        }
-
-        return rupiahFormatter.format(value);
+        return "Rp" + number + scale.suffix;
     }
 
+    function formatPercentage(value) {
+        return value.toLocaleString("id-ID", {
+            maximumFractionDigits: 1
+        }) + "%";
+    }
 
-    /* =====================================
-       3. TAMPILKAN KPI
-    ===================================== */
+    /* ==========================================
+       3. KPI VALUES
+    ========================================== */
 
-    document.getElementById("consumableValue").textContent =
-        formatCompactRupiah(consumable);
+    const kpiValues = [
+        ["consumableValue", consumable],
+        ["consumedValue", consumed],
+        ["availableValue", available]
+    ];
 
-    document.getElementById("consumedValue").textContent =
-        formatCompactRupiah(consumed);
+    kpiValues.forEach(([id, value]) => {
+        const element = document.getElementById(id);
 
-    document.getElementById("availableValue").textContent =
-        formatCompactRupiah(available);
+        if (element) {
+            element.textContent = formatCompactRupiah(value);
+        }
+    });
 
-
-    /* =====================================
-       4. UTILIZATION DI DONUT
-    ===================================== */
+    /* ==========================================
+       4. UTILIZATION
+    ========================================== */
 
     const utilization = consumable > 0
         ? (consumed / consumable) * 100
         : null;
 
+    const usedPercentage = document.getElementById("usedPercentage");
 
-    function formatPercentage(value) {
-
-        return value.toLocaleString(
-            "id-ID",
-            {
-                maximumFractionDigits: 1
-            }
-        ) + "%";
-    }
-
-
-    document.getElementById("usedPercentage").textContent =
-        utilization !== null
+    if (usedPercentage) {
+        usedPercentage.textContent = utilization !== null
             ? formatPercentage(utilization)
             : "—";
+    }
 
+    /* ==========================================
+       5. TOP 5 AMOUNT LABELS
+    ========================================== */
 
-    /* =====================================
-       5. TOP 5 COMMITMENT ITEM
-    ===================================== */
+    document.querySelectorAll("[data-amount]").forEach(element => {
+        const value = Number(element.dataset.amount);
 
-    document.querySelectorAll("[data-amount]").forEach(
-        element => {
-
-            const value = Number(
-                element.dataset.amount
-            );
-
-            element.textContent =
-                formatCompactRupiah(value);
-
+        if (Number.isFinite(value)) {
+            element.textContent = formatCompactRupiah(value);
         }
-    );
+    });
 
-
-    /* =====================================
+    /* ==========================================
        6. DONUT CHART
-    ===================================== */
+    ========================================== */
 
-    if (typeof Chart !== "undefined") {
+    const donutContainer = document.getElementById("donutChartContainer");
+    const donutCanvas = document.getElementById("budgetDonutChart");
 
+    if (typeof Chart === "undefined") {
+        donutContainer.innerHTML = `
+            <div class="chart-empty-state">
+                Grafik tidak dapat dimuat.
+            </div>
+        `;
+    } else if (
+        !Number.isFinite(consumed) ||
+        !Number.isFinite(available) ||
+        consumed < 0 ||
+        available < 0 ||
+        consumed + available <= 0
+    ) {
+        donutContainer.innerHTML = `
+            <div class="chart-empty-state">
+                Komposisi budget tidak dapat ditampilkan
+                karena data kosong atau memiliki nilai negatif.
+            </div>
+        `;
+    } else {
         Chart.defaults.font.family =
             '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
         Chart.defaults.color = "#777777";
 
+        new Chart(donutCanvas, {
+            type: "doughnut",
 
-        if (
-            consumed >= 0 &&
-            available >= 0 &&
-            consumed + available > 0
-        ) {
+            data: {
+                labels: [
+                    "Consumed Budget",
+                    "Available Amount"
+                ],
 
-            new Chart(
-                document.getElementById("budgetDonutChart"),
-                {
-                    type: "doughnut",
+                datasets: [{
+                    data: [consumed, available],
+                    backgroundColor: ["#ed1c24", "#e5e7eb"],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
 
-                    data: {
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "77%",
 
-                        labels: [
-                            "Consumed Budget",
-                            "Available Amount"
-                        ],
-
-                        datasets: [{
-                            data: [
-                                consumed,
-                                available
-                            ],
-
-                            backgroundColor: [
-                                "#ed1c24",
-                                "#e5e7eb"
-                            ],
-
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
+                plugins: {
+                    legend: {
+                        display: false
                     },
 
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: "77%",
-
-                        plugins: {
-
-                            legend: {
-                                display: false
-                            },
-
-                            tooltip: {
-
-                                callbacks: {
-
-                                    label: function(context) {
-
-                                        return (
-                                            context.label +
-                                            ": " +
-                                            rupiahFormatter.format(
-                                                context.raw
-                                            )
-                                        );
-                                    }
-
-                                }
+                    tooltip: {
+                        callbacks: {
+                            label(context) {
+                                return context.label + ": " +
+                                    rupiahFormatter.format(context.raw);
                             }
                         }
                     }
                 }
-            );
-
-        } else {
-
-            document.getElementById(
-                "donutChartContainer"
-            ).innerHTML = `
-                <div class="chart-empty-state">
-                    Komposisi budget tidak dapat ditampilkan
-                    karena data kosong atau memiliki nilai negatif.
-                </div>
-            `;
-
-        }
-
-    } else {
-
-        document.getElementById(
-            "donutChartContainer"
-        ).innerHTML = `
-            <div class="chart-empty-state">
-                Grafik tidak dapat dimuat.
-            </div>
-        `;
-
+            }
+        });
     }
 
+    /* ==========================================
+       7. TOP 5 TOOLTIP — HOVER LIKE CHART.JS
+    ========================================== */
+
+    const ciRows = document.querySelectorAll("[data-ci-tooltip]");
+
+    // Buat tooltip satu kali, bukan satu tooltip per baris.
+    const ciTooltip = document.createElement("div");
+    ciTooltip.id = "silogCiTooltip";
+    ciTooltip.className = "silog-chart-tooltip";
+    ciTooltip.setAttribute("role", "tooltip");
+    ciTooltip.setAttribute("aria-hidden", "true");
+
+    const tooltipCode = document.createElement("div");
+    tooltipCode.className = "silog-tooltip-code";
+
+    const tooltipName = document.createElement("div");
+    tooltipName.className = "silog-tooltip-name";
+
+    const tooltipAmount = document.createElement("div");
+    tooltipAmount.className = "silog-tooltip-amount";
+
+    const tooltipDot = document.createElement("span");
+    tooltipDot.className = "silog-tooltip-dot";
+
+    const tooltipAmountText = document.createElement("span");
+
+    tooltipAmount.append(tooltipDot, tooltipAmountText);
+    ciTooltip.append(tooltipCode, tooltipName, tooltipAmount);
+    document.body.appendChild(ciTooltip);
+
+    let activeCiRow = null;
+
+    function closeCiTooltip() {
+        ciTooltip.classList.remove("show");
+        ciTooltip.setAttribute("aria-hidden", "true");
+
+        if (activeCiRow) {
+            activeCiRow.setAttribute("aria-expanded", "false");
+            activeCiRow.removeAttribute("aria-describedby");
+        }
+
+        activeCiRow = null;
+    }
+
+    function positionCiTooltip(row) {
+        const rect = row.getBoundingClientRect();
+        const width = ciTooltip.offsetWidth;
+        const height = ciTooltip.offsetHeight;
+        const margin = 12;
+
+        // Posisi horizontal di dekat progress bar.
+        let left = rect.left + rect.width * 0.60 - width / 2;
+
+        left = Math.max(
+            margin,
+            Math.min(left, window.innerWidth - width - margin)
+        );
+
+        // Prioritaskan posisi di atas baris.
+        let top = rect.top - height - margin;
+
+        // Jika tidak muat, coba di bawah.
+        if (top < margin) {
+            top = rect.bottom + margin;
+        }
+
+        // Pastikan tooltip tidak melewati viewport.
+        if (top + height > window.innerHeight - margin) {
+            top = Math.max(
+                margin,
+                window.innerHeight - height - margin
+            );
+        }
+
+        ciTooltip.style.left = `${left}px`;
+        ciTooltip.style.top = `${top}px`;
+    }
+
+    function showCiTooltip(row) {
+        if (activeCiRow && activeCiRow !== row) {
+            closeCiTooltip();
+        }
+
+        const code = row.dataset.ciCode || "—";
+        const name = row.dataset.ciName || "Nama belum tersedia";
+        const amount = Number(row.dataset.ciAmount);
+
+        // TextContent mencegah nama CI diproses sebagai HTML.
+        tooltipCode.textContent = code;
+        tooltipName.textContent = name;
+
+        tooltipAmountText.textContent = "Consumed Budget: " +
+            (Number.isFinite(amount)
+                ? rupiahFormatter.format(amount)
+                : "—");
+
+        activeCiRow = row;
+
+        row.setAttribute("aria-expanded", "true");
+        row.setAttribute("aria-describedby", "silogCiTooltip");
+
+        ciTooltip.classList.add("show");
+        ciTooltip.setAttribute("aria-hidden", "false");
+
+        positionCiTooltip(row);
+    }
+
+    const hasHover = window.matchMedia(
+        "(hover: hover) and (pointer: fine)"
+    );
+
+    ciRows.forEach(row => {
+        // Desktop: langsung muncul ketika mouse diarahkan.
+        row.addEventListener("mouseenter", () => {
+            if (hasHover.matches) {
+                showCiTooltip(row);
+            }
+        });
+
+        row.addEventListener("mouseleave", () => {
+            if (hasHover.matches) {
+                closeCiTooltip();
+            }
+        });
+
+        // Keyboard: Tab membuka tooltip.
+        row.addEventListener("focus", () => {
+            if (!activeCiRow) {
+                showCiTooltip(row);
+            }
+        });
+
+        row.addEventListener("blur", () => {
+            if (hasHover.matches && row.matches(":hover")) {
+                return;
+            }
+
+            closeCiTooltip();
+        });
+
+        // HP/tablet: tap untuk membuka/menutup.
+        row.addEventListener("click", event => {
+            if (hasHover.matches) {
+                return;
+            }
+
+            event.stopPropagation();
+
+            if (activeCiRow === row) {
+                closeCiTooltip();
+            } else {
+                showCiTooltip(row);
+            }
+        });
+    });
+
+    // Klik di luar tooltip.
+    document.addEventListener("click", event => {
+        if (!event.target.closest("[data-ci-tooltip]")) {
+            closeCiTooltip();
+        }
+    });
+
+    // Tekan Escape.
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            closeCiTooltip();
+        }
+    });
+
+    // Jika halaman digeser/di-resize, tooltip ditutup.
+    window.addEventListener("scroll", closeCiTooltip, true);
+    window.addEventListener("resize", closeCiTooltip);
+
+    // Ketika filter dikirim.
+    const dashboardFilterForm = document.getElementById(
+        "dashboardFilterForm"
+    );
+
+    if (dashboardFilterForm) {
+        dashboardFilterForm.addEventListener(
+            "submit",
+            closeCiTooltip
+        );
+    }
 </script>
 
 </body>
