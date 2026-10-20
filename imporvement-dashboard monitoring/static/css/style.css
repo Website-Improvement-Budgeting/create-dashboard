@@ -1,419 +1,223 @@
+
+/* konfigurasi warna dan font */
+:root {
+    --silog-red: #ed1c24;
+    --silog-red-hover: #cf171e;
+    --silog-background: #f3f4f6;
+    --silog-text: #252525;
+    --silog-text-secondary: #777777;
+    --silog-border: #d6d6d6;
+    --silog-font:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+/* pengaturan dasar */
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    background: #f3f4f6;
-
-    color: #252525;
+    font-family: var(--silog-font);
+    background: var(--silog-background);
+    color: var(--silog-text);
 }
 
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
 
-/* ================================= */
-/* LOGIN PAGE */
-/* ================================= */
-
+/* halaman login */
 .login-page {
     min-height: 100vh;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     padding: 40px;
 }
 
-
-/* ================================= */
-/* LOGIN CARD */
-/* ================================= */
-
+/* kartu utama login */
 .login-card {
     width: 1100px;
-
     max-width: 95vw;
-
     min-height: 555px;
-
     display: grid;
-
     grid-template-columns: 46% 54%;
-
     background: #ffffff;
-
     border-radius: 20px;
-
     overflow: hidden;
-
-    box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
 }
 
-
-/* ================================= */
-/* LEFT SIDE */
-/* ================================= */
-
+/* bagian kiri login */
 .login-left {
     position: relative;
-
-    background:
-        linear-gradient(
-            180deg,
-            #f7f7f7 0%,
-            #eeeeee 100%
-        );
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     overflow: hidden;
+    background: linear-gradient(
+        180deg,
+        #f7f7f7 0%,
+        #eeeeee 100%
+    );
 }
 
-
-/* dekorasi merah */
-
+/* dekorasi latar bagian kiri */
 .login-left::before {
     content: "";
-
     position: absolute;
-
     width: 280px;
-
     height: 280px;
-
-    background: #ed1c24;
-
+    background: var(--silog-red);
     border-radius: 50%;
-
     top: -150px;
-
     left: -120px;
-
     opacity: 0.08;
 }
 
-
 .login-left::after {
     content: "";
-
     position: absolute;
-
     width: 250px;
-
     height: 250px;
-
-    background: #ed1c24;
-
+    background: var(--silog-red);
     border-radius: 50%;
-
     bottom: -160px;
-
     right: -110px;
-
     opacity: 0.07;
 }
 
-
-/* ================================= */
-/* SILOG IMAGE */
-/* ================================= */
-
+/* gambar silog */
 .silog-image {
     position: relative;
-
     z-index: 2;
-
     width: 92%;
-
     max-width: 460px;
-
     height: auto;
-
     object-fit: contain;
 }
 
-
-/* ================================= */
-/* RIGHT SIDE */
-/* ================================= */
-
+/* bagian kanan login */
 .login-right {
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     background: #ffffff;
-
     padding: 60px 50px;
 }
 
-
+/* pembungkus formulir login */
 .login-form-wrapper {
     width: 100%;
-
     max-width: 520px;
 }
 
-
-/* ================================= */
-/* TITLE */
-/* ================================= */
-
+/* judul login */
 .login-heading {
-    width: 100%;
-
     display: block;
+    width: 100%;
 }
-
 
 .login-heading h3 {
     margin: 0;
-
     font-size: 26px;
-
     line-height: 1.2;
-
     font-weight: 700;
-
-    color: #252525;
-
+    color: var(--silog-text);
     white-space: nowrap;
 }
 
-
+/* subtitle login */
 .login-subtitle {
     margin-top: 10px;
-
     margin-bottom: 35px;
-
     font-size: 15px;
-
-    color: #777777;
+    color: var(--silog-text-secondary);
 }
 
-
-/* ================================= */
-/* FORM */
-/* ================================= */
-
+/* kelompok input formulir */
 .form-group {
     margin-bottom: 22px;
 }
 
-
+/* label formulir */
 .form-label {
     display: block;
-
     margin-bottom: 8px;
-
     font-size: 14px;
-
     font-weight: 600;
-
     color: #404040;
 }
 
-
-.form-control {
+/* input formulir login dan registrasi */
+.login-page .form-control,
+.register-page .form-control {
     width: 100%;
-
     height: 50px;
-
     padding: 0 15px;
-
-    border: 1px solid #d6d6d6;
-
+    border: 1px solid var(--silog-border);
     border-radius: 9px;
-
     font-size: 14px;
-
+    background: #ffffff;
+    color: var(--silog-text);
     transition: 0.2s ease;
 }
 
-
-.form-control::placeholder {
+/* placeholder input */
+.login-page .form-control::placeholder,
+.register-page .form-control::placeholder {
     color: #a0a0a0;
+    opacity: 1;
 }
 
-
-.form-control:focus {
-    border-color: #ed1c24;
-
-    box-shadow:
-        0 0 0 3px rgba(237, 28, 36, 0.10);
+/* kondisi input aktif */
+.login-page .form-control:focus,
+.register-page .form-control:focus {
+    border-color: var(--silog-red);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(237, 28, 36, 0.10);
 }
 
-
-/* ================================= */
-/* LOGIN BUTTON */
-/* ================================= */
-
+/* tombol login */
 .btn-login {
     width: 100%;
-
     height: 50px;
-
     border: none;
-
     border-radius: 9px;
-
-    background: #ed1c24;
-
+    background: var(--silog-red);
     color: #ffffff;
-
     font-size: 15px;
-
     font-weight: 600;
-
     cursor: pointer;
-
     transition: 0.2s ease;
 }
 
-
 .btn-login:hover {
-    background: #cf171e;
-
+    background: var(--silog-red-hover);
+    color: #ffffff;
     transform: translateY(-1px);
-
-    box-shadow:
-        0 8px 18px rgba(237, 28, 36, 0.20);
+    box-shadow: 0 8px 18px rgba(237, 28, 36, 0.20);
 }
-
 
 .btn-login:active {
     transform: translateY(0);
 }
 
-
-/* ================================= */
-/* ALERT */
-/* ================================= */
-
-.alert {
-    font-size: 14px;
-
-    border-radius: 8px;
+.btn-login:focus-visible {
+    outline: 3px solid rgba(237, 28, 36, 0.30);
+    outline-offset: 3px;
 }
 
-
-/* ================================= */
-/* RESPONSIVE */
-/* ================================= */
-
-@media (max-width: 850px) {
-
-    .login-page {
-        padding: 25px;
-    }
-
-
-    .login-card {
-        width: 100%;
-
-        max-width: 520px;
-
-        grid-template-columns: 1fr;
-    }
-
-
-    .login-left {
-        min-height: 300px;
-    }
-
-
-    .silog-image {
-        width: 75%;
-
-        max-width: 380px;
-    }
-
-
-    .login-right {
-        padding: 45px 35px;
-    }
-
-
-    .login-form-wrapper {
-        max-width: 100%;
-    }
-
-
-    .login-heading h3 {
-        white-space: normal;
-
-        font-size: 24px;
-    }
-
-}
-
-
-@media (max-width: 500px) {
-
-    .login-page {
-        padding: 20px;
-    }
-
-
-    .login-left {
-        min-height: 230px;
-    }
-
-
-    .silog-image {
-        width: 85%;
-
-        max-width: 320px;
-    }
-
-
-    .login-right {
-        padding: 35px 25px;
-    }
-
-
-    .login-heading h3 {
-        font-size: 22px;
-
-        line-height: 1.3;
-    }
-
-
-    .login-subtitle {
-        font-size: 14px;
-
-        margin-bottom: 28px;
-    }
-
-
-    .form-control,
-    .btn-login {
-        height: 48px;
-    }
-
-}
-
-
-
-/* Link Daftar Akun Approval */
+/* link daftar akun approval */
 .register-approval-link {
-    color: #ED1C24;
+    color: var(--silog-red);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 4px;
@@ -421,18 +225,14 @@ body {
 }
 
 .register-approval-link:hover {
-    color: #B5121B;
+    color: #b5121b;
 }
 
 .register-approval-link:visited {
-    color: #ED1C24;
+    color: var(--silog-red);
 }
 
-
-/* ========================================
-   SHOW / HIDE PASSWORD
-======================================== */
-
+/* pembungkus input password */
 .password-wrapper {
     position: relative;
     width: 100%;
@@ -443,20 +243,18 @@ body {
     padding-right: 48px;
 }
 
+/* tombol lihat atau sembunyikan password */
 .toggle-password {
     position: absolute;
     top: 50%;
     right: 14px;
     transform: translateY(-50%);
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     padding: 4px;
     border: none;
     background: transparent;
-
     color: #777777;
     font-size: 18px;
     cursor: pointer;
@@ -464,40 +262,134 @@ body {
 }
 
 .toggle-password:hover {
-    color: #ED1C24;
+    color: var(--silog-red);
 }
 
 .toggle-password:focus-visible {
-    outline: 2px solid #ED1C24;
+    outline: 2px solid var(--silog-red);
     border-radius: 4px;
 }
 
-/* ========================================
-   LINK REGISTRASI APPROVAL
-======================================== */
-
-.register-approval-link {
-    color: #ED1C24;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    transition: color 0.2s ease;
+/* tampilan dasar notifikasi */
+.alert {
+    font-family: var(--silog-font);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    border-radius: 9px;
+    padding: 13px 16px;
+    margin-bottom: 18px;
 }
 
-.register-approval-link:hover {
-    color: #B5121B;
+/* notifikasi berhasil dan informasi */
+.alert-success,
+.alert-info {
+    background-color: #e8eef7 !important;
+    color: #17365d !important;
+    border: 1px solid #b8c9e0 !important;
 }
 
-.register-approval-link:visited {
-    color: #ED1C24;
+/* notifikasi gagal */
+.alert-danger,
+.alert-error {
+    background-color: #fff0f0 !important;
+    color: #b4232c !important;
+    border: 1px solid #f2b8bd !important;
 }
 
+/* notifikasi peringatan */
+.alert-warning {
+    background-color: #fff4e5 !important;
+    color: #945b13 !important;
+    border: 1px solid #f0d2a4 !important;
+}
 
-/* warna notifikasi berhasil */
+/* tombol tutup notifikasi */
+.alert .btn-close {
+    opacity: 0.55;
+    box-shadow: none;
+}
 
-.alert-success {
-    background-color: #e8f1ff;
-    color: #2563a6;
-    border: 1px solid #bcd7ff;
-    border-radius: 8px;
+.alert .btn-close:hover {
+    opacity: 0.9;
+}
+
+/* memastikan kontras warna notifikasi */
+.alert-success .btn-close,
+.alert-info .btn-close,
+.alert-danger .btn-close,
+.alert-error .btn-close,
+.alert-warning .btn-close {
+    filter: none;
+}
+
+/* tampilan responsif tablet */
+@media (max-width: 850px) {
+    .login-page {
+        padding: 25px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 520px;
+        grid-template-columns: 1fr;
+    }
+
+    .login-left {
+        min-height: 300px;
+    }
+
+    .silog-image {
+        width: 75%;
+        max-width: 380px;
+    }
+
+    .login-right {
+        padding: 45px 35px;
+    }
+
+    .login-form-wrapper {
+        max-width: 100%;
+    }
+
+    .login-heading h3 {
+        white-space: normal;
+        font-size: 24px;
+    }
+}
+
+/* tampilan responsif ponsel */
+@media (max-width: 500px) {
+    .login-page {
+        padding: 20px;
+    }
+
+    .login-left {
+        min-height: 230px;
+    }
+
+    .silog-image {
+        width: 85%;
+        max-width: 320px;
+    }
+
+    .login-right {
+        padding: 35px 25px;
+    }
+
+    .login-heading h3 {
+        font-size: 22px;
+        line-height: 1.3;
+    }
+
+    .login-subtitle {
+        font-size: 14px;
+        margin-bottom: 28px;
+    }
+
+    .login-page .form-control,
+    .register-page .form-control,
+    .btn-login {
+        height: 48px;
+    }
 }
