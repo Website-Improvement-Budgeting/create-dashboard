@@ -1319,7 +1319,7 @@
                                         <!-- AVAILABLE -->
                                         <td class="text-right">
                                             <span
-                                                class="amount-value available-value {% if item.available_amount < 0 %}negative{% endif %}"
+                                                class="amount-value available-value {% if item.available_amount <= 0 %}negative{% endif %}"
                                             >
                                                 Rp{{ "{:,.0f}".format(item.available_amount).replace(",", ".") }}
                                             </span>
