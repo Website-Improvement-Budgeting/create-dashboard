@@ -1,13 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Dashboard Pengusul | SILOG</title>
 
-    <!-- Libraries -->
+    <!-- Bootstrap -->
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
@@ -17,9 +17,15 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     >
 
-    <!-- SILOG Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <!-- CSS SILOG -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/dashboard.css') }}"
+    >
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -377,6 +383,7 @@
             width: 205px;
             height: 205px;
             max-width: 100%;
+            flex-shrink: 0;
         }
 
         .donut-wrapper canvas {
@@ -441,7 +448,64 @@
         }
 
         /* ==========================================
-           7. TOP 5 COMMITMENT ITEM
+           7. DONUT TOOLTIP - PERBAIKAN
+
+           Tooltip ditempatkan di bawah legenda,
+           bukan di atas donut chart.
+        ========================================== */
+
+        .budget-donut-tooltip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            min-height: 56px;
+            margin-top: 14px;
+            padding: 8px 12px;
+            border-radius: 9px;
+            background: #f8f9fb;
+            border: 1px solid #eceef2;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s ease;
+        }
+
+        .budget-donut-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .budget-donut-tooltip-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            color: #40434b;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .budget-donut-tooltip-dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .budget-donut-tooltip-value {
+            color: #292b32;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        /* ==========================================
+           8. TOP 5 COMMITMENT ITEM
         ========================================== */
 
         .top5-list {
@@ -514,6 +578,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-transform: uppercase;
         }
 
         .top5-progress {
@@ -554,7 +619,7 @@
         }
 
         /* ==========================================
-           8. DARK TOOLTIP — HOVER LIKE CHART.JS
+           9. TOP 5 DARK TOOLTIP
         ========================================== */
 
         .silog-chart-tooltip {
@@ -592,6 +657,7 @@
             color: #eee;
             font-size: 12px;
             overflow-wrap: anywhere;
+            text-transform: uppercase;
         }
 
         .silog-tooltip-amount {
@@ -613,7 +679,7 @@
         }
 
         /* ==========================================
-           9. RESPONSIVE
+           10. RESPONSIVE
         ========================================== */
 
         @media (max-width: 1100px) {
@@ -713,6 +779,14 @@
                 height: 190px;
             }
 
+            .donut-legend {
+                gap: 12px;
+            }
+
+            .legend-item {
+                font-size: 11px;
+            }
+
             .top5-row {
                 grid-template-columns:
                     minmax(88px, 110px)
@@ -740,790 +814,1017 @@
 
 <body class="pengusul-dashboard-page">
 
-<div class="dashboard-layout">
+    <div class="dashboard-layout">
 
-    <!-- ==========================================
-         SIDEBAR
-    ========================================== -->
+        <!-- ==========================================
+             SIDEBAR
+        ========================================== -->
+        <aside class="sidebar">
 
-    <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">S</div>
 
-        <div class="sidebar-brand">
-            <div class="brand-icon">S</div>
-
-            <div>
-                <strong>SILOG</strong>
-                <small>Budget Monitoring & Approval</small>
-            </div>
-        </div>
-
-        <p class="sidebar-label">MENU UTAMA</p>
-
-        <nav class="sidebar-nav">
-
-            <a href="{{ url_for('profil') }}" class="nav-item">
-                <i class="bi bi-person-circle"></i>
-                Profil
-            </a>
-
-            <a
-                href="{{ url_for('dashboard') }}"
-                class="nav-item active"
-                aria-current="page"
-            >
-                <i class="bi bi-grid-1x2"></i>
-                Dashboard
-            </a>
-
-            <a
-                href="{{ url_for('budget_detail_pengusul') }}"
-                class="nav-item"
-            >
-                <i class="bi bi-wallet2"></i>
-                Budget Detail
-            </a>
-
-            <span class="nav-item disabled">
-                <i class="bi bi-file-earmark-plus"></i>
-                Pengajuan Budget
-            </span>
-
-            <span class="nav-item disabled">
-                <i class="bi bi-clock-history"></i>
-                Riwayat Pengajuan
-            </span>
-
-        </nav>
-
-        <div class="sidebar-bottom">
-            <form action="{{ url_for('logout') }}" method="POST">
-                <button type="submit" class="logout-button">
-                    <i class="bi bi-box-arrow-right"></i>
-                    Logout
-                </button>
-            </form>
-        </div>
-
-    </aside>
-
-    <!-- ==========================================
-         MAIN CONTENT
-    ========================================== -->
-
-    <main class="main-content">
-
-        <!-- TOPBAR -->
-        <header class="topbar">
-
-            <div class="dropdown">
-
-                <button
-                    type="button"
-                    class="user-profile user-dropdown-toggle"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="Buka menu akun pengguna"
-                >
-                    <div class="user-avatar">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-
-                    <div class="user-info">
-                        <strong>{{ username | title }}</strong>
-                        <small>Pengusul Budget</small>
-                    </div>
-
-                    <i class="bi bi-chevron-down dropdown-chevron"></i>
-                </button>
-
-                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
-
-                    <div class="dropdown-header">Akun Pengusul</div>
-
-                    <a href="{{ url_for('profil') }}" class="dropdown-item">
-                        <i class="bi bi-person-circle"></i>
-                        Profil
-                    </a>
-
-                    <div class="dropdown-divider"></div>
-
-                    <form action="{{ url_for('logout') }}" method="POST">
-                        <button
-                            type="submit"
-                            class="dropdown-item user-logout-item"
-                        >
-                            <i class="bi bi-box-arrow-right"></i>
-                            Logout
-                        </button>
-                    </form>
-
+                <div>
+                    <strong>SILOG</strong>
+                    <small>Budget Monitoring & Approval</small>
                 </div>
             </div>
-        </header>
 
-        <section class="dashboard-content">
+            <p class="sidebar-label">MENU UTAMA</p>
 
-            <!-- FLASH MESSAGES -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    <div
-                        class="alert alert-{{ category }} alert-dismissible fade show"
-                        role="alert"
+            <nav class="sidebar-nav">
+
+                <a href="{{ url_for('profil') }}" class="nav-item">
+                    <i class="bi bi-person-circle"></i>
+                    Profil
+                </a>
+
+                <a
+                    href="{{ url_for('dashboard') }}"
+                    class="nav-item active"
+                    aria-current="page"
+                >
+                    <i class="bi bi-grid-1x2"></i>
+                    Dashboard
+                </a>
+
+                <a
+                    href="{{ url_for('budget_detail_pengusul') }}"
+                    class="nav-item"
+                >
+                    <i class="bi bi-wallet2"></i>
+                    Budget Detail
+                </a>
+
+                <span class="nav-item disabled">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    Pengajuan Budget
+                </span>
+
+                <span class="nav-item disabled">
+                    <i class="bi bi-clock-history"></i>
+                    Riwayat Pengajuan
+                </span>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+                <form action="{{ url_for('logout') }}" method="POST">
+                    <button type="submit" class="logout-button">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Logout
+                    </button>
+                </form>
+            </div>
+
+        </aside>
+
+        <!-- ==========================================
+             MAIN CONTENT
+        ========================================== -->
+        <main class="main-content">
+
+            <!-- TOPBAR -->
+            <header class="topbar">
+
+                <div class="dropdown">
+
+                    <button
+                        type="button"
+                        class="user-profile user-dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-label="Buka menu akun pengguna"
                     >
-                        {{ message }}
+                        <div class="user-avatar">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
 
-                        <button
-                            type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Tutup"
-                        ></button>
+                        <div class="user-info">
+                            <strong>{{ username | title }}</strong>
+                            <small>Pengusul Budget</small>
+                        </div>
+
+                        <i class="bi bi-chevron-down dropdown-chevron"></i>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+
+                        <div class="dropdown-header">
+                            Akun Pengusul
+                        </div>
+
+                        <a href="{{ url_for('profil') }}" class="dropdown-item">
+                            <i class="bi bi-person-circle"></i>
+                            Profil
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+
+                        <form action="{{ url_for('logout') }}" method="POST">
+                            <button
+                                type="submit"
+                                class="dropdown-item user-logout-item"
+                            >
+                                <i class="bi bi-box-arrow-right"></i>
+                                Logout
+                            </button>
+                        </form>
+
                     </div>
-                {% endfor %}
-            {% endwith %}
 
-            <!-- ======================================
-                 A. RINGKASAN BUDGET
-            ====================================== -->
-
-            <div class="summary-header">
-
-                <div class="summary-heading">
-                    <h1 class="section-title">
-                        <i class="bi bi-wallet2 section-title-icon"></i>
-                        Ringkasan Budget
-                    </h1>
-
-                    <p class="section-caption">
-                        Overview anggaran biro
-                    </p>
                 </div>
 
-                <!-- FILTER -->
-                <form
-                    method="GET"
-                    action="{{ url_for('dashboard') }}"
-                    class="summary-filters"
-                    id="dashboardFilterForm"
-                >
+            </header>
 
-                    <div class="summary-filter-group year-group">
-                        <label for="year">Tahun</label>
+            <section class="dashboard-content">
 
-                        <select
-                            id="year"
-                            name="year"
-                            onchange="this.form.submit()"
+                <!-- FLASH MESSAGES -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                        <div
+                            class="alert alert-{{ category }} alert-dismissible fade show"
+                            role="alert"
                         >
-                            {% for year in budget_years %}
-                                <option
-                                    value="{{ year }}"
-                                    {% if year == selected_year %}selected{% endif %}
-                                >
-                                    {{ year }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                            {{ message }}
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Tutup"
+                            ></button>
+                        </div>
+                    {% endfor %}
+                {% endwith %}
+
+                <!-- ======================================
+                     A. RINGKASAN BUDGET
+                ====================================== -->
+                <div class="summary-header">
+
+                    <div class="summary-heading">
+
+                        <h1 class="section-title">
+                            <i class="bi bi-wallet2 section-title-icon"></i>
+                            Ringkasan Budget
+                        </h1>
+
+                        <p class="section-caption">
+                            Overview anggaran biro
+                        </p>
+
                     </div>
 
-                    <div class="summary-filter-group entity-group">
-                        <label for="entity_id">Unit Entity</label>
+                    <!-- FILTER -->
+                    <form
+                        method="GET"
+                        action="{{ url_for('dashboard') }}"
+                        class="summary-filters"
+                        id="dashboardFilterForm"
+                    >
 
-                        <select
-                            id="entity_id"
-                            name="entity_id"
-                            onchange="this.form.submit()"
-                        >
-                            <option
-                                value="all"
-                                {% if selected_entity_id | default('all') | string == 'all' %}
-                                    selected
-                                {% endif %}
+                        <div class="summary-filter-group year-group">
+
+                            <label for="year">
+                                Tahun
+                            </label>
+
+                            <select
+                                id="year"
+                                name="year"
+                                onchange="this.form.submit()"
                             >
-                                Semua Entity
-                            </option>
+                                {% for year in budget_years %}
+                                    <option
+                                        value="{{ year }}"
+                                        {% if year == selected_year %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ year }}
+                                    </option>
+                                {% endfor %}
+                            </select>
 
-                            {% for entity in entity_options | default([]) %}
+                        </div>
+
+                        <div class="summary-filter-group entity-group">
+
+                            <label for="entity_id">
+                                Unit Entity
+                            </label>
+
+                            <select
+                                id="entity_id"
+                                name="entity_id"
+                                onchange="this.form.submit()"
+                            >
+
                                 <option
-                                    value="{{ entity.entity_id }}"
-                                    {% if selected_entity_id | default('all') | string == entity.entity_id | string %}
+                                    value="all"
+                                    {% if selected_entity_id | default('all') | string == 'all' %}
                                         selected
                                     {% endif %}
                                 >
-                                    {{ entity.unit_entity }}
+                                    Semua Entity
                                 </option>
-                            {% endfor %}
-                        </select>
-                    </div>
 
-                </form>
-
-            </div>
-
-            <!-- ======================================
-                 B. TIGA KPI CARD
-            ====================================== -->
-
-            <div class="budget-kpi-grid">
-
-                <!-- CONSUMABLE -->
-                <div class="budget-kpi-card">
-                    <div class="kpi-icon">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-
-                    <div class="kpi-info">
-                        <span class="kpi-label">
-                            Consumable Budget
-                        </span>
-
-                        <h2
-                            class="kpi-value"
-                            id="consumableValue"
-                            title="Rp {{ '{:,.0f}'.format(budget_summary.consumable_budget).replace(',', '.') }}"
-                        >
-                            Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
-                        </h2>
-                    </div>
-                </div>
-
-                <!-- CONSUMED -->
-                <div class="budget-kpi-card">
-                    <div class="kpi-icon">
-                        <i class="bi bi-graph-up-arrow"></i>
-                    </div>
-
-                    <div class="kpi-info">
-                        <span class="kpi-label">
-                            Consumed Budget
-                        </span>
-
-                        <h2
-                            class="kpi-value"
-                            id="consumedValue"
-                            title="Rp {{ '{:,.0f}'.format(budget_summary.consumed_budget).replace(',', '.') }}"
-                        >
-                            Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
-                        </h2>
-                    </div>
-                </div>
-
-                <!-- AVAILABLE -->
-                <div class="budget-kpi-card">
-                    <div class="kpi-icon">
-                        <i class="bi bi-cash-stack"></i>
-                    </div>
-
-                    <div class="kpi-info">
-                        <span class="kpi-label">
-                            Available Amount
-                        </span>
-
-                        <h2
-                            class="kpi-value"
-                            id="availableValue"
-                            title="Rp {{ '{:,.0f}'.format(budget_summary.available_amount).replace(',', '.') }}"
-                        >
-                            Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
-                        </h2>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- ======================================
-                 C. VISUALISASI BUDGET
-            ====================================== -->
-
-            <div class="visual-header">
-                <h2 class="section-title">
-                    <i class="bi bi-bar-chart-line section-title-icon"></i>
-                    Visualisasi Budget
-                </h2>
-
-                <p class="section-caption">
-                    Distribusi penggunaan anggaran
-                </p>
-            </div>
-
-            <div class="budget-charts-grid">
-
-                <!-- KOMPOSISI BUDGET -->
-                <div class="budget-chart-card">
-
-                    <div class="budget-chart-heading">
-                        <h3>Komposisi Budget</h3>
-                        <p>Perbandingan budget terpakai dan tersedia</p>
-                    </div>
-
-                    <div class="donut-content" id="donutChartContainer">
-
-                        <div class="donut-wrapper">
-                            <canvas id="budgetDonutChart"></canvas>
-
-                            <div class="donut-center">
-                                <strong id="usedPercentage">—</strong>
-                                <span>Terpakai</span>
-                            </div>
-                        </div>
-
-                        <div class="donut-legend">
-                            <div class="legend-item">
-                                <span class="legend-dot legend-consumed"></span>
-                                Consumed Budget
-                            </div>
-
-                            <div class="legend-item">
-                                <span class="legend-dot legend-available"></span>
-                                Available Budget
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- TOP 5 COMMITMENT ITEM -->
-                <div class="budget-chart-card">
-
-                    <div class="budget-chart-heading">
-                        <h3>Top 5 Commitment Item</h3>
-                        <p>Berdasarkan nominal penggunaan terbesar</p>
-                    </div>
-
-                    {% set top_items = top5_details | default([]) %}
-
-                    {% if top_items %}
-
-                        {% set max_consumed = top_items[0].consumed_budget | float %}
-
-                        <div class="top5-list">
-
-                            {% for item in top_items %}
-
-                                {% set amount = item.consumed_budget | float %}
-
-                                {% set bar_percent = (
-                                    amount / max_consumed * 100
-                                    if max_consumed > 0
-                                    else 0
-                                ) %}
-
-                                <button
-                                    type="button"
-                                    class="top5-row top5-clickable"
-                                    data-ci-tooltip
-                                    data-ci-code="{{ item.commitment_item_code }}"
-                                    data-ci-name="{{ item.commitment_item_name or 'Nama belum tersedia' | upper}}"
-                                    data-ci-amount="{{ amount }}"
-                                    aria-label="Detail Commitment Item {{ item.commitment_item_code }}: {{ item.commitment_item_name or 'Nama belum tersedia' }}"
-                                    aria-expanded="false"
-                                >
-
-                                    <span class="top5-item-label">
-                                        <span class="top5-code">
-                                            {{ item.commitment_item_code }}
-                                        </span>
-
-                                        <span class="top5-name">
-                                            {{ item.commitment_item_name or "Nama belum tersedia" }}
-                                        </span>
-                                    </span>
-
-                                    <span class="top5-progress">
-                                        <span
-                                            class="top5-progress-fill"
-                                            style="width: {{ [0, [100, bar_percent] | min] | max }}%"
-                                        ></span>
-                                    </span>
-
-                                    <span
-                                        class="top5-amount"
-                                        data-amount="{{ amount }}"
+                                {% for entity in entity_options | default([]) %}
+                                    <option
+                                        value="{{ entity.entity_id }}"
+                                        {% if selected_entity_id | default('all') | string == entity.entity_id | string %}
+                                            selected
+                                        {% endif %}
                                     >
-                                        Rp {{ "{:,.0f}".format(amount).replace(",", ".") }}
-                                    </span>
+                                        {{ entity.unit_entity }}
+                                    </option>
+                                {% endfor %}
 
-                                </button>
-
-                            {% endfor %}
+                            </select>
 
                         </div>
 
-                    {% else %}
-
-                        <div class="chart-empty-state">
-                            Belum ada data penggunaan Commitment Item
-                            untuk filter yang dipilih.
-                        </div>
-
-                    {% endif %}
+                    </form>
 
                 </div>
 
-            </div>
+                <!-- ======================================
+                     B. KPI CARDS
+                ====================================== -->
+                <div class="budget-kpi-grid">
 
-        </section>
-    </main>
-</div>
+                    <!-- CONSUMABLE -->
+                    <div class="budget-kpi-card">
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+                        <div class="kpi-icon">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
 
-<script>
-    "use strict";
+                        <div class="kpi-info">
 
-    /* ==========================================
-       1. DATA FROM FLASK
-    ========================================== */
+                            <span class="kpi-label">
+                                Consumable Budget
+                            </span>
 
-    const consumable = {{ budget_summary.consumable_budget | float | tojson }};
-    const consumed = {{ budget_summary.consumed_budget | float | tojson }};
-    const available = {{ budget_summary.available_amount | float | tojson }};
+                            <h2
+                                class="kpi-value"
+                                id="consumableValue"
+                                title="Rp {{ '{:,.0f}'.format(budget_summary.consumable_budget).replace(',', '.') }}"
+                            >
+                                Rp {{ "{:,.0f}".format(budget_summary.consumable_budget).replace(",", ".") }}
+                            </h2>
 
-    /* ==========================================
-       2. RUPIAH FORMATTERS
-    ========================================== */
+                        </div>
 
-    const rupiahFormatter = new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 0
-    });
+                    </div>
 
-    function formatCompactRupiah(value) {
-        const abs = Math.abs(value);
+                    <!-- CONSUMED -->
+                    <div class="budget-kpi-card">
 
-        const scales = [
-            { limit: 1e12, divisor: 1e12, suffix: " T", digits: 2 },
-            { limit: 1e9, divisor: 1e9, suffix: " M", digits: 2 },
-            { limit: 1e6, divisor: 1e6, suffix: " Jt", digits: 2 },
-            { limit: 1e3, divisor: 1e3, suffix: " Rb", digits: 1 }
-        ];
+                        <div class="kpi-icon">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
 
-        const scale = scales.find(item => abs >= item.limit);
+                        <div class="kpi-info">
 
-        if (!scale) {
-            return rupiahFormatter.format(value);
-        }
+                            <span class="kpi-label">
+                                Consumed Budget
+                            </span>
 
-        const number = (value / scale.divisor).toLocaleString("id-ID", {
-            maximumFractionDigits: scale.digits
+                            <h2
+                                class="kpi-value"
+                                id="consumedValue"
+                                title="Rp {{ '{:,.0f}'.format(budget_summary.consumed_budget).replace(',', '.') }}"
+                            >
+                                Rp {{ "{:,.0f}".format(budget_summary.consumed_budget).replace(",", ".") }}
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                    <!-- AVAILABLE -->
+                    <div class="budget-kpi-card">
+
+                        <div class="kpi-icon">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+
+                        <div class="kpi-info">
+
+                            <span class="kpi-label">
+                                Available Amount
+                            </span>
+
+                            <h2
+                                class="kpi-value"
+                                id="availableValue"
+                                title="Rp {{ '{:,.0f}'.format(budget_summary.available_amount).replace(',', '.') }}"
+                            >
+                                Rp {{ "{:,.0f}".format(budget_summary.available_amount).replace(",", ".") }}
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ======================================
+                     C. VISUALISASI BUDGET
+                ====================================== -->
+                <div class="visual-header">
+
+                    <h2 class="section-title">
+                        <i class="bi bi-bar-chart-line section-title-icon"></i>
+                        Visualisasi Budget
+                    </h2>
+
+                    <p class="section-caption">
+                        Distribusi penggunaan anggaran
+                    </p>
+
+                </div>
+
+                <div class="budget-charts-grid">
+
+                    <!-- ==================================
+                         KOMPOSISI BUDGET
+                    ================================== -->
+                    <div class="budget-chart-card">
+
+                        <div class="budget-chart-heading">
+                            <h3>Komposisi Budget</h3>
+
+                            <p>
+                                Perbandingan budget terpakai dan tersedia
+                            </p>
+                        </div>
+
+                        <div
+                            class="donut-content"
+                            id="donutChartContainer"
+                        >
+
+                            <div class="donut-wrapper">
+
+                                <canvas id="budgetDonutChart"></canvas>
+
+                                <div class="donut-center">
+                                    <strong id="usedPercentage">—</strong>
+                                    <span>Terpakai</span>
+                                </div>
+
+                            </div>
+
+                            <div class="donut-legend">
+
+                                <div class="legend-item">
+                                    <span class="legend-dot legend-consumed"></span>
+                                    Consumed Budget
+                                </div>
+
+                                <div class="legend-item">
+                                    <span class="legend-dot legend-available"></span>
+                                    Available Budget
+                                </div>
+
+                            </div>
+
+                            <!-- TOOLTIP DI LUAR DONUT -->
+                            <div
+                                class="budget-donut-tooltip"
+                                id="budgetDonutTooltip"
+                                role="status"
+                                aria-live="off"
+                            >
+                                <div class="budget-donut-tooltip-title">
+                                    <span
+                                        class="budget-donut-tooltip-dot"
+                                        id="donutTooltipDot"
+                                    ></span>
+
+                                    <span id="donutTooltipTitle"></span>
+                                </div>
+
+                                <div
+                                    class="budget-donut-tooltip-value"
+                                    id="donutTooltipValue"
+                                ></div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================
+                         TOP 5 COMMITMENT ITEM
+                    ================================== -->
+                    <div class="budget-chart-card">
+
+                        <div class="budget-chart-heading">
+                            <h3>Top 5 Commitment Item</h3>
+
+                            <p>
+                                Berdasarkan nominal penggunaan terbesar
+                            </p>
+                        </div>
+
+                        {% set top_items = top5_details | default([]) %}
+
+                        {% if top_items %}
+
+                            {% set max_consumed = top_items[0].consumed_budget | float %}
+
+                            <div class="top5-list">
+
+                                {% for item in top_items %}
+
+                                    {% set amount = item.consumed_budget | float %}
+
+                                    {% set bar_percent = (
+                                        amount / max_consumed * 100
+                                        if max_consumed > 0
+                                        else 0
+                                    ) %}
+
+                                    <button
+                                        type="button"
+                                        class="top5-row top5-clickable"
+                                        data-ci-tooltip
+                                        data-ci-code="{{ item.commitment_item_code }}"
+                                        data-ci-name="{{ (item.commitment_item_name or 'Nama belum tersedia') | upper }}"
+                                        data-ci-amount="{{ amount }}"
+                                        aria-label="Detail Commitment Item {{ item.commitment_item_code }}: {{ (item.commitment_item_name or 'Nama belum tersedia') | upper }}"
+                                        aria-expanded="false"
+                                    >
+
+                                        <!-- CODE & NAME -->
+                                        <span class="top5-item-label">
+
+                                            <span class="top5-code">
+                                                {{ item.commitment_item_code }}
+                                            </span>
+
+                                            <span class="top5-name">
+                                                {{ (item.commitment_item_name or "Nama belum tersedia") | upper }}
+                                            </span>
+
+                                        </span>
+
+                                        <!-- PROGRESS BAR -->
+                                        <span class="top5-progress">
+
+                                            <span
+                                                class="top5-progress-fill"
+                                                style="width: {{ [0, [100, bar_percent] | min] | max }}%"
+                                            ></span>
+
+                                        </span>
+
+                                        <!-- AMOUNT -->
+                                        <span
+                                            class="top5-amount"
+                                            data-amount="{{ amount }}"
+                                        >
+                                            Rp {{ "{:,.0f}".format(amount).replace(",", ".") }}
+                                        </span>
+
+                                    </button>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% else %}
+
+                            <div class="chart-empty-state">
+                                Belum ada data penggunaan Commitment Item
+                                untuk filter yang dipilih.
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        "use strict";
+
+        /* ==========================================
+           1. DATA FROM FLASK
+        ========================================== */
+
+        const consumable = {{ budget_summary.consumable_budget | float | tojson }};
+        const consumed = {{ budget_summary.consumed_budget | float | tojson }};
+        const available = {{ budget_summary.available_amount | float | tojson }};
+
+        /* ==========================================
+           2. RUPIAH FORMATTERS
+        ========================================== */
+
+        const rupiahFormatter = new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
         });
 
-        return "Rp" + number + scale.suffix;
-    }
+        function formatCompactRupiah(value) {
+            const abs = Math.abs(value);
 
-    function formatPercentage(value) {
-        return value.toLocaleString("id-ID", {
-            maximumFractionDigits: 1
-        }) + "%";
-    }
+            const scales = [
+                { limit: 1e12, divisor: 1e12, suffix: " T", digits: 2 },
+                { limit: 1e9, divisor: 1e9, suffix: " M", digits: 2 },
+                { limit: 1e6, divisor: 1e6, suffix: " Jt", digits: 2 },
+                { limit: 1e3, divisor: 1e3, suffix: " Rb", digits: 1 }
+            ];
 
-    /* ==========================================
-       3. KPI VALUES
-    ========================================== */
+            const scale = scales.find(item => abs >= item.limit);
 
-    const kpiValues = [
-        ["consumableValue", consumable],
-        ["consumedValue", consumed],
-        ["availableValue", available]
-    ];
+            if (!scale) {
+                return rupiahFormatter.format(value);
+            }
 
-    kpiValues.forEach(([id, value]) => {
-        const element = document.getElementById(id);
+            const number = (value / scale.divisor).toLocaleString("id-ID", {
+                maximumFractionDigits: scale.digits
+            });
 
-        if (element) {
-            element.textContent = formatCompactRupiah(value);
+            return "Rp" + number + scale.suffix;
         }
-    });
 
-    /* ==========================================
-       4. UTILIZATION
-    ========================================== */
-
-    const utilization = consumable > 0
-        ? (consumed / consumable) * 100
-        : null;
-
-    const usedPercentage = document.getElementById("usedPercentage");
-
-    if (usedPercentage) {
-        usedPercentage.textContent = utilization !== null
-            ? formatPercentage(utilization)
-            : "—";
-    }
-
-    /* ==========================================
-       5. TOP 5 AMOUNT LABELS
-    ========================================== */
-
-    document.querySelectorAll("[data-amount]").forEach(element => {
-        const value = Number(element.dataset.amount);
-
-        if (Number.isFinite(value)) {
-            element.textContent = formatCompactRupiah(value);
+        function formatPercentage(value) {
+            return value.toLocaleString("id-ID", {
+                maximumFractionDigits: 1
+            }) + "%";
         }
-    });
 
-    /* ==========================================
-       6. DONUT CHART
-    ========================================== */
+        /* ==========================================
+           3. KPI VALUES
+        ========================================== */
 
-    const donutContainer = document.getElementById("donutChartContainer");
-    const donutCanvas = document.getElementById("budgetDonutChart");
+        const kpiValues = [
+            ["consumableValue", consumable],
+            ["consumedValue", consumed],
+            ["availableValue", available]
+        ];
 
-    if (typeof Chart === "undefined") {
-        donutContainer.innerHTML = `
-            <div class="chart-empty-state">
-                Grafik tidak dapat dimuat.
-            </div>
-        `;
-    } else if (
-        !Number.isFinite(consumed) ||
-        !Number.isFinite(available) ||
-        consumed < 0 ||
-        available < 0 ||
-        consumed + available <= 0
-    ) {
-        donutContainer.innerHTML = `
-            <div class="chart-empty-state">
-                Komposisi budget tidak dapat ditampilkan
-                karena data kosong atau memiliki nilai negatif.
-            </div>
-        `;
-    } else {
-        Chart.defaults.font.family =
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        kpiValues.forEach(([id, value]) => {
+            const element = document.getElementById(id);
 
-        Chart.defaults.color = "#777777";
+            if (element) {
+                element.textContent = formatCompactRupiah(value);
+            }
+        });
 
-        new Chart(donutCanvas, {
-            type: "doughnut",
+        /* ==========================================
+           4. UTILIZATION
+        ========================================== */
 
-            data: {
-                labels: [
-                    "Consumed Budget",
-                    "Available Amount"
-                ],
+        const utilization = consumable > 0
+            ? (consumed / consumable) * 100
+            : null;
 
-                datasets: [{
-                    data: [consumed, available],
-                    backgroundColor: ["#ed1c24", "#e5e7eb"],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
+        const usedPercentage = document.getElementById("usedPercentage");
 
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "77%",
+        if (usedPercentage) {
+            usedPercentage.textContent = utilization !== null
+                ? formatPercentage(utilization)
+                : "—";
+        }
 
-                plugins: {
-                    legend: {
-                        display: false
-                    },
+        /* ==========================================
+           5. TOP 5 AMOUNT LABELS
+        ========================================== */
 
-                    tooltip: {
-                        callbacks: {
-                            label(context) {
-                                return context.label + ": " +
-                                    rupiahFormatter.format(context.raw);
-                            }
+        document.querySelectorAll("[data-amount]").forEach(element => {
+            const value = Number(element.dataset.amount);
+
+            if (Number.isFinite(value)) {
+                element.textContent = formatCompactRupiah(value);
+            }
+        });
+
+        /* ==========================================
+           6. DONUT TOOLTIP
+
+           Menggunakan external tooltip Chart.js.
+           Tooltip muncul di bawah legenda sehingga
+           tidak menutupi persentase pada donut.
+        ========================================== */
+
+        const donutTooltip = document.getElementById("budgetDonutTooltip");
+        const donutTooltipTitle = document.getElementById("donutTooltipTitle");
+        const donutTooltipValue = document.getElementById("donutTooltipValue");
+        const donutTooltipDot = document.getElementById("donutTooltipDot");
+
+        function externalDonutTooltip(context) {
+            const { tooltip } = context;
+
+            if (!donutTooltip) {
+                return;
+            }
+
+            if (!tooltip || tooltip.opacity === 0) {
+                donutTooltip.classList.remove("show");
+                return;
+            }
+
+            const dataPoint = tooltip.dataPoints?.[0];
+
+            if (!dataPoint) {
+                donutTooltip.classList.remove("show");
+                return;
+            }
+
+            const label = dataPoint.label;
+            const amount = Number(dataPoint.raw);
+
+            const colors = [
+                "#ed1c24",
+                "#e5e7eb"
+            ];
+
+            donutTooltipTitle.textContent = label;
+
+            donutTooltipValue.textContent = Number.isFinite(amount)
+                ? rupiahFormatter.format(amount)
+                : "—";
+
+            donutTooltipDot.style.backgroundColor =
+                colors[dataPoint.dataIndex] || "#ed1c24";
+
+            donutTooltip.classList.add("show");
+        }
+
+        function closeDonutTooltip() {
+            if (donutTooltip) {
+                donutTooltip.classList.remove("show");
+            }
+        }
+
+        /* ==========================================
+           7. DONUT CHART
+        ========================================== */
+
+        const donutContainer = document.getElementById("donutChartContainer");
+        const donutCanvas = document.getElementById("budgetDonutChart");
+
+        if (typeof Chart === "undefined") {
+
+            donutContainer.innerHTML = `
+                <div class="chart-empty-state">
+                    Grafik tidak dapat dimuat.
+                </div>
+            `;
+
+        } else if (
+            !Number.isFinite(consumed) ||
+            !Number.isFinite(available) ||
+            consumed < 0 ||
+            available < 0 ||
+            consumed + available <= 0
+        ) {
+
+            donutContainer.innerHTML = `
+                <div class="chart-empty-state">
+                    Komposisi budget tidak dapat ditampilkan
+                    karena data kosong atau memiliki nilai negatif.
+                </div>
+            `;
+
+        } else {
+
+            Chart.defaults.font.family =
+                '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+            Chart.defaults.color = "#777777";
+
+            new Chart(donutCanvas, {
+
+                type: "doughnut",
+
+                data: {
+                    labels: [
+                        "Consumed Budget",
+                        "Available Amount"
+                    ],
+
+                    datasets: [{
+                        data: [consumed, available],
+                        backgroundColor: ["#ed1c24", "#e5e7eb"],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "77%",
+
+                    plugins: {
+
+                        legend: {
+                            display: false
+                        },
+
+                        tooltip: {
+                            enabled: false,
+                            external: externalDonutTooltip
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    /* ==========================================
-       7. TOP 5 TOOLTIP — HOVER LIKE CHART.JS
-    ========================================== */
+        /* ==========================================
+           8. TOP 5 TOOLTIP
+        ========================================== */
 
-    const ciRows = document.querySelectorAll("[data-ci-tooltip]");
+        const ciRows = document.querySelectorAll("[data-ci-tooltip]");
 
-    // Buat tooltip satu kali, bukan satu tooltip per baris.
-    const ciTooltip = document.createElement("div");
-    ciTooltip.id = "silogCiTooltip";
-    ciTooltip.className = "silog-chart-tooltip";
-    ciTooltip.setAttribute("role", "tooltip");
-    ciTooltip.setAttribute("aria-hidden", "true");
+        // Tooltip dibuat satu kali.
+        const ciTooltip = document.createElement("div");
 
-    const tooltipCode = document.createElement("div");
-    tooltipCode.className = "silog-tooltip-code";
+        ciTooltip.id = "silogCiTooltip";
+        ciTooltip.className = "silog-chart-tooltip";
 
-    const tooltipName = document.createElement("div");
-    tooltipName.className = "silog-tooltip-name";
-
-    const tooltipAmount = document.createElement("div");
-    tooltipAmount.className = "silog-tooltip-amount";
-
-    const tooltipDot = document.createElement("span");
-    tooltipDot.className = "silog-tooltip-dot";
-
-    const tooltipAmountText = document.createElement("span");
-
-    tooltipAmount.append(tooltipDot, tooltipAmountText);
-    ciTooltip.append(tooltipCode, tooltipName, tooltipAmount);
-    document.body.appendChild(ciTooltip);
-
-    let activeCiRow = null;
-
-    function closeCiTooltip() {
-        ciTooltip.classList.remove("show");
+        ciTooltip.setAttribute("role", "tooltip");
         ciTooltip.setAttribute("aria-hidden", "true");
 
-        if (activeCiRow) {
-            activeCiRow.setAttribute("aria-expanded", "false");
-            activeCiRow.removeAttribute("aria-describedby");
-        }
+        const tooltipCode = document.createElement("div");
+        tooltipCode.className = "silog-tooltip-code";
 
-        activeCiRow = null;
-    }
+        const tooltipName = document.createElement("div");
+        tooltipName.className = "silog-tooltip-name";
 
-    function positionCiTooltip(row) {
-        const rect = row.getBoundingClientRect();
-        const width = ciTooltip.offsetWidth;
-        const height = ciTooltip.offsetHeight;
-        const margin = 12;
+        const tooltipAmount = document.createElement("div");
+        tooltipAmount.className = "silog-tooltip-amount";
 
-        // Posisi horizontal di dekat progress bar.
-        let left = rect.left + rect.width * 0.60 - width / 2;
+        const tooltipDot = document.createElement("span");
+        tooltipDot.className = "silog-tooltip-dot";
 
-        left = Math.max(
-            margin,
-            Math.min(left, window.innerWidth - width - margin)
+        const tooltipAmountText = document.createElement("span");
+
+        tooltipAmount.append(
+            tooltipDot,
+            tooltipAmountText
         );
 
-        // Prioritaskan posisi di atas baris.
-        let top = rect.top - height - margin;
+        ciTooltip.append(
+            tooltipCode,
+            tooltipName,
+            tooltipAmount
+        );
 
-        // Jika tidak muat, coba di bawah.
-        if (top < margin) {
-            top = rect.bottom + margin;
+        document.body.appendChild(ciTooltip);
+
+        let activeCiRow = null;
+
+        /* ==========================================
+           9. CLOSE TOP 5 TOOLTIP
+        ========================================== */
+
+        function closeCiTooltip() {
+            ciTooltip.classList.remove("show");
+
+            ciTooltip.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+            if (activeCiRow) {
+                activeCiRow.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+                activeCiRow.removeAttribute(
+                    "aria-describedby"
+                );
+            }
+
+            activeCiRow = null;
         }
 
-        // Pastikan tooltip tidak melewati viewport.
-        if (top + height > window.innerHeight - margin) {
-            top = Math.max(
+        /* ==========================================
+           10. POSITION TOP 5 TOOLTIP
+        ========================================== */
+
+        function positionCiTooltip(row) {
+            const rect = row.getBoundingClientRect();
+
+            const width = ciTooltip.offsetWidth;
+            const height = ciTooltip.offsetHeight;
+            const margin = 12;
+
+            // Posisi di dekat progress bar.
+            let left = rect.left + rect.width * 0.60 - width / 2;
+
+            left = Math.max(
                 margin,
-                window.innerHeight - height - margin
+                Math.min(
+                    left,
+                    window.innerWidth - width - margin
+                )
+            );
+
+            // Prioritaskan di atas baris.
+            let top = rect.top - height - margin;
+
+            // Jika tidak cukup ruang, pindahkan ke bawah.
+            if (top < margin) {
+                top = rect.bottom + margin;
+            }
+
+            // Pastikan tooltip tetap di viewport.
+            if (top + height > window.innerHeight - margin) {
+                top = Math.max(
+                    margin,
+                    window.innerHeight - height - margin
+                );
+            }
+
+            ciTooltip.style.left = `${left}px`;
+            ciTooltip.style.top = `${top}px`;
+        }
+
+        /* ==========================================
+           11. SHOW TOP 5 TOOLTIP
+        ========================================== */
+
+        function showCiTooltip(row) {
+
+            if (activeCiRow && activeCiRow !== row) {
+                closeCiTooltip();
+            }
+
+            const code = row.dataset.ciCode || "—";
+
+            const name = row.dataset.ciName ||
+                "NAMA BELUM TERSEDIA";
+
+            const amount = Number(row.dataset.ciAmount);
+
+            // Kode Commitment Item tetap seperti aslinya.
+            tooltipCode.textContent = code;
+
+            // Nama Commitment Item selalu uppercase.
+            tooltipName.textContent =
+                String(name).toLocaleUpperCase("id-ID");
+
+            tooltipAmountText.textContent =
+                "Consumed Budget: " +
+                (
+                    Number.isFinite(amount)
+                        ? rupiahFormatter.format(amount)
+                        : "—"
+                );
+
+            activeCiRow = row;
+
+            row.setAttribute(
+                "aria-expanded",
+                "true"
+            );
+
+            row.setAttribute(
+                "aria-describedby",
+                "silogCiTooltip"
+            );
+
+            ciTooltip.classList.add("show");
+
+            ciTooltip.setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+            positionCiTooltip(row);
+        }
+
+        /* ==========================================
+           12. DESKTOP & MOBILE INTERACTION
+        ========================================== */
+
+        const hasHover = window.matchMedia(
+            "(hover: hover) and (pointer: fine)"
+        );
+
+        ciRows.forEach(row => {
+
+            // Desktop: tooltip muncul saat hover.
+            row.addEventListener("mouseenter", () => {
+                if (hasHover.matches) {
+                    showCiTooltip(row);
+                }
+            });
+
+            row.addEventListener("mouseleave", () => {
+                if (hasHover.matches) {
+                    closeCiTooltip();
+                }
+            });
+
+            // Keyboard: tooltip muncul saat fokus.
+            row.addEventListener("focus", () => {
+                if (!activeCiRow) {
+                    showCiTooltip(row);
+                }
+            });
+
+            row.addEventListener("blur", () => {
+                if (
+                    hasHover.matches &&
+                    row.matches(":hover")
+                ) {
+                    return;
+                }
+
+                closeCiTooltip();
+            });
+
+            // Touchscreen: klik untuk toggle.
+            row.addEventListener("click", event => {
+
+                if (hasHover.matches) {
+                    return;
+                }
+
+                event.stopPropagation();
+
+                if (activeCiRow === row) {
+                    closeCiTooltip();
+                } else {
+                    showCiTooltip(row);
+                }
+            });
+        });
+
+        /* ==========================================
+           13. GLOBAL TOOLTIP HANDLERS
+        ========================================== */
+
+        // Klik di luar grafik.
+        document.addEventListener("click", event => {
+            if (!event.target.closest("[data-ci-tooltip]")) {
+                closeCiTooltip();
+            }
+        });
+
+        // Escape menutup tooltip.
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                closeCiTooltip();
+                closeDonutTooltip();
+            }
+        });
+
+        // Tutup ketika scroll atau resize.
+        window.addEventListener(
+            "scroll",
+            () => {
+                closeCiTooltip();
+                closeDonutTooltip();
+            },
+            true
+        );
+
+        window.addEventListener(
+            "resize",
+            () => {
+                closeCiTooltip();
+                closeDonutTooltip();
+            }
+        );
+
+        // Tutup sebelum filter dikirim.
+        const dashboardFilterForm = document.getElementById(
+            "dashboardFilterForm"
+        );
+
+        if (dashboardFilterForm) {
+            dashboardFilterForm.addEventListener(
+                "submit",
+                () => {
+                    closeCiTooltip();
+                    closeDonutTooltip();
+                }
             );
         }
 
-        ciTooltip.style.left = `${left}px`;
-        ciTooltip.style.top = `${top}px`;
-    }
-
-    function showCiTooltip(row) {
-        if (activeCiRow && activeCiRow !== row) {
-            closeCiTooltip();
-        }
-
-        const code = row.dataset.ciCode || "—";
-        const name = row.dataset.ciName || "Nama belum tersedia";
-        const amount = Number(row.dataset.ciAmount);
-
-        // TextContent mencegah nama CI diproses sebagai HTML.
-        tooltipCode.textContent = code;
-        tooltipName.textContent = name;
-
-        tooltipAmountText.textContent = "Consumed Budget: " +
-            (Number.isFinite(amount)
-                ? rupiahFormatter.format(amount)
-                : "—");
-
-        activeCiRow = row;
-
-        row.setAttribute("aria-expanded", "true");
-        row.setAttribute("aria-describedby", "silogCiTooltip");
-
-        ciTooltip.classList.add("show");
-        ciTooltip.setAttribute("aria-hidden", "false");
-
-        positionCiTooltip(row);
-    }
-
-    const hasHover = window.matchMedia(
-        "(hover: hover) and (pointer: fine)"
-    );
-
-    ciRows.forEach(row => {
-        // Desktop: langsung muncul ketika mouse diarahkan.
-        row.addEventListener("mouseenter", () => {
-            if (hasHover.matches) {
-                showCiTooltip(row);
-            }
-        });
-
-        row.addEventListener("mouseleave", () => {
-            if (hasHover.matches) {
-                closeCiTooltip();
-            }
-        });
-
-        // Keyboard: Tab membuka tooltip.
-        row.addEventListener("focus", () => {
-            if (!activeCiRow) {
-                showCiTooltip(row);
-            }
-        });
-
-        row.addEventListener("blur", () => {
-            if (hasHover.matches && row.matches(":hover")) {
-                return;
-            }
-
-            closeCiTooltip();
-        });
-
-        // HP/tablet: tap untuk membuka/menutup.
-        row.addEventListener("click", event => {
-            if (hasHover.matches) {
-                return;
-            }
-
-            event.stopPropagation();
-
-            if (activeCiRow === row) {
-                closeCiTooltip();
-            } else {
-                showCiTooltip(row);
-            }
-        });
-    });
-
-    // Klik di luar tooltip.
-    document.addEventListener("click", event => {
-        if (!event.target.closest("[data-ci-tooltip]")) {
-            closeCiTooltip();
-        }
-    });
-
-    // Tekan Escape.
-    document.addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-            closeCiTooltip();
-        }
-    });
-
-    // Jika halaman digeser/di-resize, tooltip ditutup.
-    window.addEventListener("scroll", closeCiTooltip, true);
-    window.addEventListener("resize", closeCiTooltip);
-
-    // Ketika filter dikirim.
-    const dashboardFilterForm = document.getElementById(
-        "dashboardFilterForm"
-    );
-
-    if (dashboardFilterForm) {
-        dashboardFilterForm.addEventListener(
-            "submit",
-            closeCiTooltip
-        );
-    }
-</script>
+    </script>
 
 </body>
 </html>

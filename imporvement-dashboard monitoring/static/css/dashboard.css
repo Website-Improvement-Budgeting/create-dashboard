@@ -428,3 +428,69 @@ body {
         display: none;
     }
 }
+
+
+/* ==========================================
+   SILOG SIDEBAR - DOUBLE RED BORDER
+========================================== */
+
+/* Sidebar utama */
+.sidebar {
+    background: #ffffff;
+    border-left: 4px solid #ed1c24;
+    border-right: 4px solid #ed1c24;
+    box-sizing: border-box;
+}
+
+/* ==========================================
+   MENU AKTIF
+========================================== */
+
+.sidebar-nav .nav-item.active {
+    background: #fff0f1;
+    color: #ed1c24;
+    font-weight: 700;
+
+    /* Garis merah pada kanan dan kiri menu */
+    border-left: 4px solid #ed1c24;
+    border-right: 4px solid #ed1c24;
+
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+/* Ikon menu aktif */
+.sidebar-nav .nav-item.active i {
+    color: #ed1c24;
+}
+
+/* ==========================================
+   HOVER MENU
+========================================== */
+
+.sidebar-nav a.nav-item:hover:not(.active) {
+    background: #fff5f5;
+    color: #ed1c24;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav a.nav-item:hover:not(.active) i {
+    color: #ed1c24;
+}
+
+/* ==========================================
+   BRAND SILOG
+========================================== */
+
+.sidebar-brand .brand-icon {
+    background: #ed1c24;
+    color: #ffffff;
+}
+
+/* ==========================================
+   LOGOUT
+========================================== */
+
+.sidebar-bottom {
+    border-top: 1px solid #f1d6d8;
+}

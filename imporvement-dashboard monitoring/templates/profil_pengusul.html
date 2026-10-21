@@ -614,7 +614,7 @@
             <!-- banner selamat datang -->
             <div class="profile-welcome">
                 <h2>
-                    Selamat Datang, {{ user.biro_name | title }}!
+                    Selamat Datang, {{ user.biro_name | upper }}!
                 </h2>
             </div>
 
@@ -633,7 +633,7 @@
 
                         <div class="profile-info-item">
                             <span>Username</span>
-                            <strong>{{ user.username | title }}</strong>
+                            <strong>{{ user.username | upper }}</strong>
                         </div>
 
                         <div class="profile-info-item">
@@ -643,12 +643,12 @@
 
                         <div class="profile-info-item">
                             <span>Role</span>
-                            <strong>{{ user.role }}</strong>
+                            <strong>{{ user.role | upper}}</strong>
                         </div>
 
                         <div class="profile-info-item">
                             <span>Nama Biro</span>
-                            <strong>{{ user.biro_name | title }}</strong>
+                            <strong>{{ user.biro_name | upper }}</strong>
                         </div>
 
                     </div>
@@ -722,7 +722,7 @@
                             </div>
 
                             <p class="password-helper">
-                                Gunakan minimal 8 karakter.
+                                Gunakan minimal 8 karakter
                             </p>
                         </div>
 
