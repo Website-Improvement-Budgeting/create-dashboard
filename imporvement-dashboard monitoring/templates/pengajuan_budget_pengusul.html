@@ -1,0 +1,1838 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Pengajuan Budget | SILOG</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Tom Select -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
+
+    <!-- SILOG Global CSS -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <style>
+        :root {
+            --silog-red: #ed1c24;
+            --silog-red-dark: #cb1721;
+            --silog-red-light: #fff0f1;
+
+            --background: #f4f5f7;
+            --surface: #ffffff;
+
+            --text-primary: #292e38;
+            --text-secondary: #667181;
+            --text-muted: #959fac;
+
+            --border: #e4e8ee;
+            --success: #16825d;
+            --danger: #d72736;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text-primary);
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        /* ==========================================
+           TOPBAR
+        ========================================== */
+
+        .topbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .user-profile-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .user-profile-link:hover {
+            color: inherit;
+        }
+
+        /* ==========================================
+           PAGE HEADER
+        ========================================== */
+
+        .page-content {
+            padding: 30px 35px 50px;
+        }
+
+        .page-header {
+            margin-bottom: 25px;
+        }
+
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            margin: 0;
+
+            font-size: 25px;
+            font-weight: 750;
+            letter-spacing: -.5px;
+        }
+
+        .page-title i {
+            color: var(--silog-red);
+            font-size: 24px;
+        }
+
+        .page-subtitle {
+            margin: 7px 0 0;
+
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* ==========================================
+           FORM GRID
+        ========================================== */
+
+        .form-grid {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1.45fr)
+                minmax(320px, 1fr);
+
+            gap: 20px;
+            align-items: start;
+        }
+
+        .form-column {
+            min-width: 0;
+        }
+
+        .form-card {
+            padding: 25px;
+            margin-bottom: 18px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+
+            box-shadow:
+                0 5px 20px rgba(24, 34, 51, .025);
+        }
+
+        .card-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            margin-bottom: 23px;
+        }
+
+        .card-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            width: 40px;
+            height: 40px;
+
+            background: var(--silog-red-light);
+            color: var(--silog-red);
+
+            border-radius: 10px;
+            font-size: 18px;
+        }
+
+        .card-heading h2 {
+            margin: 0;
+
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .card-heading p {
+            margin: 5px 0 0;
+
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* ==========================================
+           FORM INPUTS
+        ========================================== */
+
+        .field-group {
+            margin-bottom: 18px;
+        }
+
+        .field-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 8px;
+
+            color: #5f6877;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .required {
+            color: var(--silog-red);
+        }
+
+        .form-control,
+        .form-select {
+            min-height: 43px;
+
+            padding: 10px 13px;
+
+            border: 1px solid #e1e5ec;
+            border-radius: 9px;
+
+            background: #fff;
+            color: #343b47;
+
+            font-size: 12px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--silog-red);
+
+            box-shadow:
+                0 0 0 3px rgba(237, 28, 36, .08);
+        }
+
+        textarea.form-control {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .field-hint {
+            margin: 6px 0 0;
+
+            color: #9aa3af;
+            font-size: 10px;
+            line-height: 1.6;
+        }
+
+        .input-group-text {
+            padding: 10px 15px;
+
+            color: #667181;
+            background: #f7f8fa;
+
+            border: 1px solid #e1e5ec;
+            border-radius: 9px 0 0 9px;
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ==========================================
+           TOM SELECT
+        ========================================== */
+
+        .ts-wrapper {
+            width: 100%;
+        }
+
+        .ts-wrapper.single .ts-control {
+            display: flex;
+            align-items: center;
+
+            min-height: 43px;
+            padding: 8px 12px;
+
+            border: 1px solid #e1e5ec;
+            border-radius: 9px;
+
+            background: #fff;
+            box-shadow: none;
+
+            font-size: 12px;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--silog-red);
+
+            box-shadow:
+                0 0 0 3px rgba(237, 28, 36, .08);
+        }
+
+        .ts-control input {
+            font-size: 12px !important;
+            min-width: 80px;
+        }
+
+        .ts-dropdown {
+            margin-top: 5px;
+
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            box-shadow:
+                0 12px 25px rgba(20, 30, 45, .10);
+
+            overflow: hidden;
+        }
+
+        .ts-dropdown .option {
+            padding: 11px 13px;
+            font-size: 12px;
+        }
+
+        .ts-dropdown .active {
+            background: var(--silog-red-light);
+            color: var(--silog-red);
+        }
+
+        .ts-dropdown .no-results,
+        .ts-dropdown .loading {
+            padding: 12px;
+
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* ==========================================
+           BUDGET EXAMINATION
+        ========================================== */
+
+        .budget-placeholder {
+            padding: 27px 17px;
+
+            background: #f8f9fb;
+            border: 1px dashed #dce1e9;
+            border-radius: 11px;
+
+            text-align: center;
+        }
+
+        .budget-placeholder i {
+            display: block;
+
+            margin-bottom: 11px;
+
+            color: #a3acb9;
+            font-size: 28px;
+        }
+
+        .budget-placeholder strong {
+            display: block;
+
+            margin-bottom: 7px;
+
+            font-size: 13px;
+        }
+
+        .budget-placeholder p {
+            max-width: 310px;
+            margin: 0 auto;
+
+            color: #929ba8;
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        .result-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            margin: 23px 0 9px;
+
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .result-heading i {
+            color: var(--silog-red);
+        }
+
+        .budget-info-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+
+            gap: 15px;
+            padding: 12px 0;
+
+            border-bottom: 1px solid #edf0f4;
+
+            font-size: 12px;
+        }
+
+        .budget-info-row span {
+            color: #8a95a4;
+        }
+
+        .budget-info-row strong {
+            max-width: 58%;
+
+            color: var(--text-primary);
+            font-weight: 700;
+            text-align: right;
+
+            overflow-wrap: anywhere;
+        }
+
+        .budget-info-row strong.negative {
+            color: var(--danger);
+        }
+
+        .budget-info-row strong.positive {
+            color: var(--success);
+        }
+
+        .section-divider {
+            margin: 21px 0;
+            border-color: var(--border);
+        }
+
+        /* ==========================================
+           STATUS MESSAGES
+        ========================================== */
+
+        .status-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+
+            margin-top: 20px;
+            padding: 13px;
+
+            border: 1px solid #e5e9ef;
+            border-radius: 9px;
+
+            background: #f5f7fa;
+            color: #737f8e;
+
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        .status-info i {
+            margin-top: 2px;
+            font-size: 15px;
+        }
+
+        .status-info.success {
+            color: #246c52;
+            background: #edf8f2;
+            border-color: #d4eddf;
+        }
+
+        .status-info.error {
+            color: #bb2633;
+            background: #fff2f3;
+            border-color: #ffd6da;
+        }
+
+        .status-info.loading {
+            color: #687586;
+            background: #f0f2f5;
+        }
+
+        /* ==========================================
+           ACTION BUTTONS
+        ========================================== */
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+
+            margin-top: 7px;
+        }
+
+        .btn-cancel,
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            min-height: 43px;
+            padding: 11px 20px;
+
+            border-radius: 9px;
+
+            font-size: 12px;
+            font-weight: 700;
+
+            text-decoration: none;
+            transition: .15s ease;
+        }
+
+        .btn-cancel {
+            background: white;
+            color: #667181;
+            border: 1px solid var(--border);
+        }
+
+        .btn-cancel:hover {
+            background: #f8f9fa;
+            color: #343b47;
+        }
+
+        .btn-action {
+            background: var(--silog-red);
+            color: #fff;
+            border: 1px solid var(--silog-red);
+            cursor: pointer;
+        }
+
+        .btn-action:hover:not(:disabled) {
+            background: var(--silog-red-dark);
+            color: #fff;
+        }
+
+        .btn-action:disabled {
+            background: #e9afb3;
+            border-color: #e9afb3;
+            color: #fff;
+
+            opacity: .75;
+            cursor: not-allowed;
+        }
+
+        /* ==========================================
+           RESPONSIVE
+        ========================================== */
+
+        @media (max-width: 1100px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .page-content {
+                padding: 22px 16px 40px;
+            }
+
+            .form-card {
+                padding: 20px;
+            }
+
+            .page-title {
+                font-size: 21px;
+            }
+
+            .action-bar {
+                flex-direction: column;
+            }
+
+            .action-bar > * {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard-layout">
+
+    <!-- ==========================================
+         SIDEBAR
+    ========================================== -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+
+            <div class="brand-icon">S</div>
+
+            <div>
+                <strong>SILOG</strong>
+                <small>Budget Monitoring & Approval</small>
+            </div>
+
+        </div>
+
+        <p class="sidebar-label">MENU UTAMA</p>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('profil') }}"
+               class="nav-item">
+
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </a>
+
+            <a href="{{ url_for('dashboard') }}"
+               class="nav-item">
+
+                <i class="bi bi-grid-1x2"></i>
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('budget_detail_pengusul') }}"
+               class="nav-item">
+
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </a>
+
+            <a href="{{ url_for('pengajuan_budget') }}"
+               class="nav-item active"
+               aria-current="page">
+
+                <i class="bi bi-file-earmark-plus"></i>
+                Pengajuan Budget
+            </a>
+
+            <span class="nav-item disabled">
+
+                <i class="bi bi-clock-history"></i>
+                Riwayat Pengajuan
+            </span>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <form method="POST"
+                  action="{{ url_for('logout') }}">
+
+                <button type="submit"
+                        class="logout-button">
+
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+    <!-- ==========================================
+         MAIN CONTENT
+    ========================================== -->
+
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <a href="{{ url_for('profil') }}"
+               class="user-profile-link">
+
+                <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+
+                <div class="user-info">
+                    <strong>{{ username | upper }}</strong>
+                    <small>Pengusul Budget</small>
+                </div>
+
+            </a>
+
+        </header>
+
+        <!-- PAGE -->
+
+        <section class="page-content">
+
+            <div class="page-header">
+
+                <h1 class="page-title">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    Pengajuan Budget
+                </h1>
+
+                <p class="page-subtitle">
+                    Lengkapi informasi kebutuhan dan lakukan
+                    pemeriksaan sebelum mengajukan anggaran.
+                </p>
+
+            </div>
+
+            <!-- FLASH MESSAGES -->
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+
+                {% for category, message in messages %}
+
+                    <div class="alert alert-{{ category }} alert-dismissible fade show"
+                         role="alert">
+
+                        {{ message }}
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Tutup"></button>
+
+                    </div>
+
+                {% endfor %}
+
+            {% endwith %}
+
+            <!-- FORM -->
+
+            <form id="budgetRequestForm"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  novalidate>
+
+                <div class="form-grid">
+
+                    <!-- =====================================
+                         LEFT COLUMN
+                    ===================================== -->
+
+                    <div class="form-column">
+
+                        <!-- IDENTITAS -->
+
+                        <section class="form-card">
+
+                            <div class="card-heading">
+
+                                <div class="card-icon">
+                                    <i class="bi bi-person-vcard"></i>
+                                </div>
+
+                                <div>
+                                    <h2>Informasi Pengajuan</h2>
+                                    <p>Identitas dan sumber transaksi</p>
+                                </div>
+
+                            </div>
+
+                            <div class="row g-3">
+
+                                <!-- TANGGAL -->
+
+                                <div class="col-md-6">
+
+                                    <label for="tanggal"
+                                           class="field-label">
+
+                                        Tanggal Transaksi
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <input type="date"
+                                           id="tanggal"
+                                           name="tanggal"
+                                           class="form-control"
+                                           required>
+
+                                </div>
+
+                                <!-- PIC -->
+
+                                <div class="col-md-6">
+
+                                    <label for="pic"
+                                           class="field-label">
+
+                                        PIC
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <input type="text"
+                                           id="pic"
+                                           name="pic"
+                                           class="form-control"
+                                           placeholder="Nama penanggung jawab"
+                                           maxlength="150"
+                                           required>
+
+                                </div>
+
+                                <!-- UNIT ENTITY -->
+
+                                <div class="col-12">
+
+                                    <label for="entity_id"
+                                           class="field-label">
+
+                                        Unit Entity
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <select id="entity_id"
+                                            name="entity_id"
+                                            class="form-select"
+                                            required>
+
+                                        <option value="">
+                                            Pilih Unit Entity
+                                        </option>
+
+                                        {% for entity in entity_options %}
+
+                                            <option value="{{ entity.entity_id }}">
+                                                {{ entity.unit_entity }}
+                                            </option>
+
+                                        {% endfor %}
+
+                                    </select>
+
+                                    <p class="field-hint">
+                                        Pilihan Unit Entity mengikuti
+                                        hak akses biro yang sedang login.
+                                    </p>
+
+                                </div>
+
+                                <!-- PROFIT CENTER -->
+
+                                <div class="col-md-6">
+
+                                    <label for="profit_center"
+                                           class="field-label">
+
+                                        Profit Center
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <select id="profit_center"
+                                            name="profit_center"
+                                            required>
+
+                                        <option value="">
+                                            Cari Profit Center...
+                                        </option>
+
+                                    </select>
+
+                                    <p class="field-hint">
+                                        Pencarian menggunakan
+                                        kode asal Master Fund.
+                                    </p>
+
+                                </div>
+
+                                <!-- COST CENTER -->
+
+                                <div class="col-md-6">
+
+                                    <label for="cost_center"
+                                           class="field-label">
+
+                                        Cost Center
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <select id="cost_center"
+                                            name="cost_center"
+                                            required>
+
+                                        <option value="">
+                                            Cari Cost Center...
+                                        </option>
+
+                                    </select>
+
+                                    <p class="field-hint">
+                                        Pencarian menggunakan
+                                        kode asal Master FC.
+                                    </p>
+
+                                </div>
+
+                                <!-- GL ACCOUNT -->
+
+                                <div class="col-12">
+
+                                    <label for="gl_account"
+                                           class="field-label">
+
+                                        CoA / GL Account
+                                        <span class="required">*</span>
+
+                                    </label>
+
+                                    <select id="gl_account"
+                                            name="gl_account"
+                                            required>
+
+                                        <option value="">
+                                            Cari GL Account...
+                                        </option>
+
+                                    </select>
+
+                                    <p class="field-hint">
+                                        GL Account akan diterjemahkan
+                                        menjadi Target Commitment Item
+                                        berdasarkan Master CI.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                        <!-- DETAIL KEBUTUHAN -->
+
+                        <section class="form-card">
+
+                            <div class="card-heading">
+
+                                <div class="card-icon">
+                                    <i class="bi bi-cash-coin"></i>
+                                </div>
+
+                                <div>
+                                    <h2>Detail Kebutuhan</h2>
+                                    <p>Nominal dan dokumen pendukung</p>
+                                </div>
+
+                            </div>
+
+                            <!-- NOMINAL -->
+
+                            <div class="field-group">
+
+                                <label for="requestAmount"
+                                       class="field-label">
+
+                                    Nominal Pengajuan
+                                    <span class="required">*</span>
+
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        Rp
+                                    </span>
+
+                                    <input type="number"
+                                           id="requestAmount"
+                                           name="request_amount"
+                                           class="form-control"
+                                           min="1"
+                                           step="1"
+                                           placeholder="Masukkan nominal"
+                                           required>
+
+                                </div>
+
+                                <p class="field-hint">
+                                    Pengajuan yang melebihi
+                                    Available Amount tetap dapat
+                                    diteruskan untuk review Approval.
+                                </p>
+
+                            </div>
+
+                            <!-- KETERANGAN -->
+
+                            <div class="field-group">
+
+                                <label for="keterangan"
+                                       class="field-label">
+
+                                    Keterangan
+                                    <span class="required">*</span>
+
+                                </label>
+
+                                <textarea id="keterangan"
+                                          name="keterangan"
+                                          class="form-control"
+                                          maxlength="2000"
+                                          placeholder="Jelaskan tujuan dan kebutuhan pengajuan budget..."
+                                          required></textarea>
+
+                            </div>
+
+                            <!-- LAMPIRAN -->
+
+                            <div class="field-group">
+
+                                <label for="lampiran"
+                                       class="field-label">
+
+                                    Lampiran Pendukung
+
+                                </label>
+
+                                <input type="file"
+                                       id="lampiran"
+                                       name="lampiran"
+                                       class="form-control"
+                                       accept=".pdf,.png,.jpg,.jpeg,.xlsx">
+
+                                <p class="field-hint">
+                                    Lampiran belum diunggah
+                                    selama tahap pemeriksaan mapping.
+                                    Penyimpanan file akan diaktifkan
+                                    saat endpoint pengajuan dibuat.
+                                </p>
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+                    <!-- =====================================
+                         RIGHT COLUMN
+                    ===================================== -->
+
+                    <div class="form-column">
+
+                        <section class="form-card">
+
+                            <div class="card-heading">
+
+                                <div class="card-icon">
+                                    <i class="bi bi-search"></i>
+                                </div>
+
+                                <div>
+                                    <h2>Pemeriksaan Budget</h2>
+                                    <p>Mapping dan validasi sumber budget</p>
+                                </div>
+
+                            </div>
+
+                            <!-- EMPTY STATE -->
+
+                            <div class="budget-placeholder"
+                                 id="budgetPlaceholder">
+
+                                <i class="bi bi-clipboard-check"></i>
+
+                                <strong>Belum Ada Pemeriksaan</strong>
+
+                                <p>
+                                    Lengkapi informasi pengajuan,
+                                    lalu klik Periksa Mapping untuk
+                                    melihat hasil penerjemahan
+                                    kode master.
+                                </p>
+
+                            </div>
+
+                            <!-- MAPPING -->
+
+                            <div class="result-heading">
+                                <i class="bi bi-diagram-3"></i>
+                                Hasil Mapping
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Mapped Fund</span>
+
+                                <strong id="mappedFund">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Mapped Funds Center</span>
+
+                                <strong id="mappedFC">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Mapped Commitment Item</span>
+
+                                <strong id="mappedCI">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Nama Commitment Item</span>
+
+                                <strong id="mappedCIName">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Status Mapping</span>
+
+                                <strong id="mappingStatus">—</strong>
+
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <!-- BUDGET -->
+
+                            <div class="result-heading">
+                                <i class="bi bi-wallet2"></i>
+                                Informasi Budget
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Budget Scope</span>
+
+                                <strong id="budgetScope">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Consumable Budget</span>
+
+                                <strong id="consumable">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Consumed Budget</span>
+
+                                <strong id="consumed">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Available Amount</span>
+
+                                <strong id="available">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Nominal Pengajuan</span>
+
+                                <strong id="requested">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Shortage Amount</span>
+
+                                <strong id="shortage">—</strong>
+
+                            </div>
+
+                            <div class="budget-info-row">
+
+                                <span>Status Budget</span>
+
+                                <strong id="budgetStatusText">—</strong>
+
+                            </div>
+
+                            <!-- STATUS -->
+
+                            <div class="status-info"
+                                 id="budgetStatus"
+                                 role="status"
+                                 aria-live="polite">
+
+                                <i class="bi bi-info-circle"></i>
+
+                                <span id="statusMessage">
+                                    Status: Belum Diperiksa.
+                                    Lengkapi data pengajuan untuk
+                                    memulai pemeriksaan.
+                                </span>
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+                </div>
+
+                <!-- =====================================
+                     ACTION BAR
+                ===================================== -->
+
+                <div class="action-bar">
+
+                    <a href="{{ url_for('dashboard') }}"
+                       class="btn-cancel">
+
+                        <i class="bi bi-x-circle"></i>
+                        Batal
+
+                    </a>
+
+                    <button type="button"
+                            id="checkMappingBtn"
+                            class="btn-action">
+
+                        <i class="bi bi-search"></i>
+                        Periksa Mapping
+
+                    </button>
+
+                    <button type="button"
+                            id="submitBudgetBtn"
+                            class="btn-action"
+                            disabled
+                            title="Aktif setelah validasi dan penyimpanan pengajuan terintegrasi">
+
+                        <i class="bi bi-send"></i>
+                        Ajukan Budget
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- ==========================================
+     JAVASCRIPT DEPENDENCIES
+========================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+"use strict";
+
+/* ==========================================
+   1. ELEMENT REFERENCES
+========================================== */
+
+const form = document.getElementById("budgetRequestForm");
+
+const checkMappingBtn =
+    document.getElementById("checkMappingBtn");
+
+const submitBudgetBtn =
+    document.getElementById("submitBudgetBtn");
+
+const budgetStatus =
+    document.getElementById("budgetStatus");
+
+const statusMessage =
+    document.getElementById("statusMessage");
+
+const budgetPlaceholder =
+    document.getElementById("budgetPlaceholder");
+
+const amountInput =
+    document.getElementById("requestAmount");
+
+/* ==========================================
+   2. API CONFIGURATION
+========================================== */
+
+const API_MASTER_OPTIONS =
+    {{ url_for('pengajuan_master_options') | tojson }};
+
+const API_MAPPING =
+    {{ url_for('pengajuan_mapping') | tojson }};
+
+/* Jika aplikasi memakai CSRF protection,
+   token dapat ditambahkan pada request POST.
+   Endpoint backend juga wajib memvalidasinya. */
+
+const csrfElement =
+    document.querySelector('meta[name="csrf-token"]');
+
+const csrfToken = csrfElement
+    ? csrfElement.getAttribute("content")
+    : null;
+
+/* ==========================================
+   3. UTILITY FUNCTIONS
+========================================== */
+
+function rupiah(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "—";
+    }
+
+    return "Rp" + number.toLocaleString("id-ID", {
+        maximumFractionDigits: 0
+    });
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    element.textContent =
+        value === null ||
+        value === undefined ||
+        value === ""
+            ? "—"
+            : String(value);
+}
+
+function setStatus(type, message) {
+    budgetStatus.className = "status-info";
+
+    if (type) {
+        budgetStatus.classList.add(type);
+    }
+
+    const icon = budgetStatus.querySelector("i");
+
+    if (icon) {
+        if (type === "success") {
+            icon.className = "bi bi-check-circle";
+        } else if (type === "error") {
+            icon.className = "bi bi-exclamation-circle";
+        } else if (type === "loading") {
+            icon.className = "bi bi-arrow-repeat";
+        } else {
+            icon.className = "bi bi-info-circle";
+        }
+    }
+
+    statusMessage.textContent = message;
+}
+
+/* ==========================================
+   4. INITIAL DATE
+========================================== */
+
+function localDateString() {
+    const now = new Date();
+
+    const yyyy = now.getFullYear();
+
+    const mm = String(
+        now.getMonth() + 1
+    ).padStart(2, "0");
+
+    const dd = String(
+        now.getDate()
+    ).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+document.getElementById("tanggal").value =
+    localDateString();
+
+/* ==========================================
+   5. RESET MAPPING RESULTS
+========================================== */
+
+function resetMappingResults() {
+    [
+        "mappedFund",
+        "mappedFC",
+        "mappedCI",
+        "mappedCIName",
+        "mappingStatus"
+    ].forEach(id => setText(id, "—"));
+}
+
+/* ==========================================
+   6. RESET BUDGET RESULTS
+========================================== */
+
+function resetBudgetResults() {
+    [
+        "budgetScope",
+        "consumable",
+        "consumed",
+        "available",
+        "shortage",
+        "budgetStatusText"
+    ].forEach(id => setText(id, "—"));
+}
+
+function updateRequestedAmount() {
+    const amount = Number(amountInput.value);
+
+    setText(
+        "requested",
+        amount > 0 && Number.isFinite(amount)
+            ? rupiah(amount)
+            : "—"
+    );
+}
+
+/* ==========================================
+   7. INVALIDATE PREVIOUS CHECK
+========================================== */
+
+let mappingValidated = false;
+let formVersion = 0;
+let checking = false;
+
+function invalidateCheck() {
+    formVersion += 1;
+    mappingValidated = false;
+
+    resetMappingResults();
+    resetBudgetResults();
+    updateRequestedAmount();
+
+    budgetPlaceholder.hidden = false;
+
+    submitBudgetBtn.disabled = true;
+
+    setStatus(
+        "",
+        "Data pengajuan belum diperiksa atau telah berubah. " +
+        "Lakukan pemeriksaan mapping kembali."
+    );
+}
+
+/* ==========================================
+   8. SEARCHABLE MASTER DROPDOWN
+========================================== */
+
+function initializeMasterSelect(id, type) {
+    return new TomSelect("#" + id, {
+        valueField: "id",
+        labelField: "text",
+        searchField: [],
+
+        maxItems: 1,
+        create: false,
+
+        preload: false,
+        loadThrottle: 300,
+
+        placeholder: "Ketik minimal 2 karakter...",
+
+        shouldLoad(query) {
+            return query.trim().length >= 2;
+        },
+
+        render: {
+            no_results(data, escape) {
+                return '<div class="no-results">' +
+                    'Kode tidak ditemukan: ' +
+                    escape(data.input) +
+                    '</div>';
+            },
+
+            loading() {
+                return '<div class="loading">' +
+                    'Mencari data master...' +
+                    '</div>';
+            }
+        },
+
+        load(query, callback) {
+            const url = new URL(
+                API_MASTER_OPTIONS,
+                window.location.origin
+            );
+
+            url.searchParams.set("type", type);
+            url.searchParams.set("q", query.trim());
+
+            fetch(url.toString(), {
+                method: "GET",
+                credentials: "same-origin"
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error(
+                        "Gagal mengambil pilihan master."
+                    );
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                callback(data.results || []);
+            })
+            .catch(error => {
+                console.error(error);
+
+                callback();
+
+                setStatus(
+                    "error",
+                    "Pilihan kode master gagal dimuat. " +
+                    "Silakan coba pencarian kembali."
+                );
+            });
+        },
+
+        onChange() {
+            invalidateCheck();
+        }
+    });
+}
+
+/* ==========================================
+   9. INITIALIZE ALL DROPDOWNS
+========================================== */
+
+let profitSelect;
+let costSelect;
+let glSelect;
+
+if (typeof TomSelect !== "undefined") {
+
+    profitSelect = initializeMasterSelect(
+        "profit_center",
+        "fund"
+    );
+
+    costSelect = initializeMasterSelect(
+        "cost_center",
+        "fc"
+    );
+
+    glSelect = initializeMasterSelect(
+        "gl_account",
+        "ci"
+    );
+
+} else {
+
+    setStatus(
+        "error",
+        "Komponen pencarian kode gagal dimuat. " +
+        "Periksa koneksi internet dan muat ulang halaman."
+    );
+
+    checkMappingBtn.disabled = true;
+}
+
+/* ==========================================
+   10. VALIDATION
+========================================== */
+
+function validateForm() {
+    const tanggal =
+        document.getElementById("tanggal").value;
+
+    const pic =
+        document.getElementById("pic").value.trim();
+
+    const entity =
+        document.getElementById("entity_id").value;
+
+    const profit =
+        profitSelect ? profitSelect.getValue() : "";
+
+    const cost =
+        costSelect ? costSelect.getValue() : "";
+
+    const gl =
+        glSelect ? glSelect.getValue() : "";
+
+    const amount = Number(amountInput.value);
+
+    const description =
+        document.getElementById("keterangan").value.trim();
+
+    if (!tanggal) {
+        return "Tanggal transaksi wajib diisi.";
+    }
+
+    if (!pic) {
+        return "PIC wajib diisi.";
+    }
+
+    if (!entity) {
+        return "Pilih Unit Entity terlebih dahulu.";
+    }
+
+    if (!profit) {
+        return "Pilih Profit Center dari data master.";
+    }
+
+    if (!cost) {
+        return "Pilih Cost Center dari data master.";
+    }
+
+    if (!gl) {
+        return "Pilih GL Account dari data master.";
+    }
+
+    if (
+        !Number.isSafeInteger(amount) ||
+        amount <= 0
+    ) {
+        return "Nominal pengajuan harus berupa bilangan bulat positif.";
+    }
+
+    if (!description) {
+        return "Keterangan pengajuan wajib diisi.";
+    }
+
+    return null;
+}
+
+/* ==========================================
+   11. MAPPING REQUEST
+========================================== */
+
+async function performMapping() {
+    const error = validateForm();
+
+    if (error) {
+        setStatus("error", error);
+        return;
+    }
+
+    if (checking) {
+        return;
+    }
+
+    const versionAtStart = formVersion;
+
+    const payload = {
+        profit_center: profitSelect.getValue(),
+        cost_center: costSelect.getValue(),
+        gl_account: glSelect.getValue()
+    };
+
+    checking = true;
+    checkMappingBtn.disabled = true;
+
+    resetMappingResults();
+    resetBudgetResults();
+
+    setStatus(
+        "loading",
+        "Sedang memeriksa data master dan hasil mapping..."
+    );
+
+    try {
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        if (csrfToken) {
+            headers["X-CSRFToken"] = csrfToken;
+        }
+
+        const response = await fetch(
+            API_MAPPING,
+            {
+                method: "POST",
+                credentials: "same-origin",
+                headers: headers,
+                body: JSON.stringify(payload)
+            }
+        );
+
+        const result = await response.json();
+
+        /* Abaikan hasil request lama apabila
+           pengguna mengubah form selama request. */
+
+        if (versionAtStart !== formVersion) {
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                result.message ||
+                result.error ||
+                "Pemeriksaan mapping gagal."
+            );
+        }
+
+        if (result.mapping_status !== "Mapped") {
+            throw new Error(
+                "Hasil mapping belum lengkap."
+            );
+        }
+
+        const fund = result.mapped_fund;
+        const fc = result.mapped_funds_center;
+        const ci = result.mapped_commitment_item;
+
+        if (
+            !fund || !fund.code ||
+            !fc || !fc.code ||
+            !ci || !ci.code
+        ) {
+            throw new Error(
+                "Respons mapping tidak lengkap."
+            );
+        }
+
+        setText("mappedFund", fund.code);
+        setText("mappedFC", fc.code);
+        setText("mappedCI", ci.code);
+        setText("mappedCIName", ci.name || "—");
+        setText("mappingStatus", "Mapped");
+
+        mappingValidated = true;
+
+        budgetPlaceholder.hidden = true;
+
+        setStatus(
+            "success",
+            "Mapping berhasil ditemukan. " +
+            "Fund, Funds Center, dan Commitment Item " +
+            "sudah sesuai dengan data master. " +
+            "Pemeriksaan sumber budget dan Available Amount " +
+            "akan dilakukan pada tahap integrasi berikutnya."
+        );
+
+        /*
+          Selanjutnya:
+          POST /api/pengajuan-budget/periksa
+
+          Menggunakan:
+          - Entity yang diizinkan
+          - Tahun transaksi
+          - Hasil mapping
+          - Budget Scope FC_CI / CI_ONLY
+          - Nominal pengajuan
+
+          Perhitungan dilakukan di backend.
+        */
+
+    } catch (error) {
+
+        if (versionAtStart !== formVersion) {
+            return;
+        }
+
+        console.error(error);
+
+        mappingValidated = false;
+        resetMappingResults();
+
+        setText("mappingStatus", "Not Found");
+
+        setStatus(
+            "error",
+            error.message ||
+            "Terjadi kesalahan saat pemeriksaan mapping."
+        );
+
+    } finally {
+
+        checking = false;
+        checkMappingBtn.disabled = false;
+
+    }
+}
+
+/* ==========================================
+   12. BUTTON EVENTS
+========================================== */
+
+checkMappingBtn.addEventListener(
+    "click",
+    performMapping
+);
+
+/* Form belum disimpan sebelum endpoint
+   budget validation dan penyimpanan
+   Pending selesai diimplementasikan. */
+
+form.addEventListener("submit", event => {
+    event.preventDefault();
+});
+
+submitBudgetBtn.addEventListener("click", () => {
+    setStatus(
+        "",
+        "Pengajuan belum dapat dikirim. " +
+        "Validasi sumber budget dan penyimpanan " +
+        "transaksi Pending masih perlu diintegrasikan."
+    );
+});
+
+/* ==========================================
+   13. RESET WHEN INPUTS CHANGE
+========================================== */
+
+[
+    "tanggal",
+    "pic",
+    "entity_id",
+    "requestAmount",
+    "keterangan",
+    "lampiran"
+].forEach(id => {
+
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    element.addEventListener("input", invalidateCheck);
+
+    element.addEventListener("change", invalidateCheck);
+});
+
+/* ==========================================
+   14. INITIAL STATE
+========================================== */
+
+resetMappingResults();
+resetBudgetResults();
+updateRequestedAmount();
+
+submitBudgetBtn.disabled = true;
+
+</script>
+
+</body>
+</html>

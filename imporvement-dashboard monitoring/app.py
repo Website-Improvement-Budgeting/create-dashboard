@@ -10,6 +10,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from database import get_db_connection
 
+from flask import request, jsonify, session
+from psycopg2.extras import RealDictCursor
 
 # konfigurasi aplikasi
 load_dotenv()
@@ -1104,6 +1106,252 @@ def budget_detail_pengusul():
         )
 
         return redirect(url_for("dashboard"))
+
+
+# halaman pengajuan budget
+
+@app.route("/pengajuan-budget", methods=["GET"])
+def pengajuan_budget():
+
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "Pengusul":
+        flash("Halaman hanya untuk Pengusul.", "danger")
+        return redirect(url_for("dashboard"))
+
+    user_id = session["user_id"]
+
+    try:
+        entity_options = get_pengusul_entity_options(user_id)
+
+        return render_template(
+            "pengajuan_budget_pengusul.html",
+            username=session.get("username", ""),
+            entity_options=entity_options
+        )
+
+    except Exception:
+        app.logger.exception(
+            "Gagal memuat halaman Pengajuan Budget"
+        )
+
+        flash(
+            "Halaman Pengajuan Budget belum dapat dimuat.",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+
+# pengajuan master options
+@app.route("/api/pengajuan/master-options", methods=["GET"])
+def pengajuan_master_options():
+
+    if not session.get("user_id"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if session.get("role") != "Pengusul":
+        return jsonify({"error": "Forbidden"}), 403
+
+    master_type = request.args.get("type", "").strip()
+    keyword = request.args.get("q", "").strip()
+
+    config = {
+        "fund": {
+            "table": "master_fund",
+            "column": "from_profit_center"
+        },
+        "fc": {
+            "table": "master_fc",
+            "column": "from_cost_center"
+        },
+        "ci": {
+            "table": "master_ci",
+            "column": "from_gl_account"
+        }
+    }
+
+    if master_type not in config:
+        return jsonify({
+            "error": "Tipe master tidak valid"
+        }), 400
+
+    setting = config[master_type]
+
+    sql = f"""
+        SELECT DISTINCT
+            {setting['column']} AS code
+        FROM public.{setting['table']}
+        WHERE {setting['column']} ILIKE %s
+        ORDER BY code
+        LIMIT 30
+    """
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+
+        with conn.cursor(
+            cursor_factory=RealDictCursor
+        ) as cursor:
+
+            cursor.execute(
+                sql,
+                (f"%{keyword}%",)
+            )
+
+            rows = cursor.fetchall()
+
+        return jsonify({
+            "results": [
+                {
+                    "id": row["code"],
+                    "text": row["code"]
+                }
+                for row in rows
+            ]
+        })
+
+    except Exception:
+        app.logger.exception(
+            "Gagal mengambil pilihan master"
+        )
+
+        return jsonify({
+            "error": "Data master belum dapat dimuat"
+        }), 500
+
+    finally:
+        if conn:
+            conn.close()
+
+
+# pengajuan mapping
+
+@app.route("/api/pengajuan/mapping", methods=["POST"])
+def pengajuan_mapping():
+
+    if not session.get("user_id"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if session.get("role") != "Pengusul":
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
+
+    profit_center = str(
+        data.get("profit_center") or ""
+    ).strip()
+
+    cost_center = str(
+        data.get("cost_center") or ""
+    ).strip()
+
+    gl_account = str(
+        data.get("gl_account") or ""
+    ).strip()
+
+    if not all([
+        profit_center,
+        cost_center,
+        gl_account
+    ]):
+        return jsonify({
+            "error": "Semua kode harus diisi"
+        }), 400
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+
+        with conn.cursor(
+            cursor_factory=RealDictCursor
+        ) as cursor:
+
+            cursor.execute("""
+                SELECT
+                    mf.target_fund_id AS id,
+                    f.fund_code AS code
+                FROM public.master_fund mf
+                JOIN public.fund f
+                  ON f.fund_id = mf.target_fund_id
+                WHERE mf.from_profit_center = %s
+            """, (profit_center,))
+
+            mapped_fund = cursor.fetchone()
+
+            cursor.execute("""
+                SELECT
+                    mf.target_funds_center_id AS id,
+                    fc.funds_center_code AS code
+                FROM public.master_fc mf
+                JOIN public.funds_center fc
+                  ON fc.funds_center_id =
+                     mf.target_funds_center_id
+                WHERE mf.from_cost_center = %s
+            """, (cost_center,))
+
+            mapped_fc = cursor.fetchone()
+
+            cursor.execute("""
+                SELECT
+                    mc.target_commitment_item_id AS id,
+                    ci.commitment_item_code AS code,
+                    ci.commitment_item_name AS name
+                FROM public.master_ci mc
+                JOIN public.commitment_item ci
+                  ON ci.commitment_item_id =
+                     mc.target_commitment_item_id
+                WHERE mc.from_gl_account = %s
+            """, (gl_account,))
+
+            mapped_ci = cursor.fetchone()
+
+        missing = []
+
+        if not mapped_fund:
+            missing.append("Profit Center")
+
+        if not mapped_fc:
+            missing.append("Cost Center")
+
+        if not mapped_ci:
+            missing.append("GL Account")
+
+        if missing:
+            return jsonify({
+                "mapping_status": "Not Found",
+                "missing": missing,
+                "message": (
+                    "Mapping tidak ditemukan: " +
+                    ", ".join(missing)
+                )
+            }), 422
+
+        return jsonify({
+            "mapping_status": "Mapped",
+            "mapped_fund": mapped_fund,
+            "mapped_funds_center": mapped_fc,
+            "mapped_commitment_item": mapped_ci
+        })
+
+    except Exception:
+        app.logger.exception(
+            "Gagal melakukan mapping pengajuan"
+        )
+
+        return jsonify({
+            "error": "Pemeriksaan mapping gagal"
+        }), 500
+
+    finally:
+        if conn:
+            conn.close()
+
 
 # logout pengguna
 @app.route("/logout", methods=["POST"])
