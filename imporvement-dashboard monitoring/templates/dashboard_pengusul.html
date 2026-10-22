@@ -29,10 +29,11 @@
             --silog-red: #ed1c24;
             --silog-red-dark: #c91620;
             --silog-red-soft: #fff1f2;
-            --silog-text: #252525;
+            --silog-text: #292e38;
             --silog-muted: #8b94a1;
             --silog-border: #e5e9ef;
-            --silog-background: #f3f4f6;
+            --silog-background: #f5f6f8;
+            --silog-surface: #ffffff;
         }
 
         * {
@@ -47,9 +48,9 @@
                          "Segoe UI", sans-serif;
         }
 
-        /* =================================================
-           MAIN LAYOUT - SAMA DENGAN PROFIL PENGUSUL
-        ================================================= */
+        /* ==========================================
+           MAIN LAYOUT
+        ========================================== */
 
         .pengusul-dashboard-page .topbar {
             display: flex;
@@ -58,34 +59,32 @@
         }
 
         .pengusul-dashboard-page .dashboard-content {
+            padding-top: 28px;
+            padding-bottom: 45px;
+        }
+
+        .dashboard-inner {
             width: 100%;
-            max-width: 1500px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 38px 42px 45px;
         }
 
-        .pengusul-dashboard-page .dashboard-inner {
-            width: 100%;
-            max-width: none;
-            margin: 0;
-        }
-
-        /* =================================================
+        /* ==========================================
            USER DROPDOWN
-        ================================================= */
+        ========================================== */
 
         .user-dropdown-toggle {
             display: flex;
             align-items: center;
             gap: 11px;
             padding: 8px 12px;
-            border: none;
-            border-radius: 10px;
             background: transparent;
-            color: #252525;
+            border: 0;
+            border-radius: 10px;
+            color: var(--silog-text);
             text-align: left;
             cursor: pointer;
-            transition: background .2s ease;
+            transition: background 0.2s ease;
         }
 
         .user-dropdown-toggle:hover,
@@ -98,67 +97,68 @@
             outline-offset: 2px;
         }
 
+        .user-dropdown-toggle .user-info {
+            text-align: left;
+        }
+
         .user-dropdown-toggle .user-info strong {
             display: block;
             font-size: 13px;
-            font-weight: 600;
-            color: #252525;
+            font-weight: 650;
         }
 
         .user-dropdown-toggle .user-info small {
             display: block;
             font-size: 11px;
-            color: #777;
+            color: var(--silog-muted);
         }
 
         .dropdown-chevron {
             margin-left: 5px;
+            color: var(--silog-muted);
             font-size: 12px;
-            color: #777;
-            transition: transform .2s ease;
+            transition: transform 0.2s ease;
         }
 
-        .user-dropdown-toggle[aria-expanded="true"]
-        .dropdown-chevron {
+        .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron {
             transform: rotate(180deg);
         }
 
         .user-dropdown-menu {
-            min-width: 220px;
+            min-width: 215px;
             padding: 8px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--silog-border);
             border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 12px 30px rgba(0,0,0,.1);
+            background: white;
+            box-shadow: 0 12px 30px rgba(0,0,0,.09);
         }
 
         .user-dropdown-menu .dropdown-header {
             padding: 9px 12px;
-            color: #777;
-            font-size: 12px;
+            color: var(--silog-muted);
+            font-size: 11px;
         }
 
         .user-dropdown-menu .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 11px;
-            width: 100%;
-            padding: 11px 12px;
+            gap: 10px;
+            padding: 10px 12px;
             border: none;
             border-radius: 8px;
             background: transparent;
-            color: #404040;
-            font-size: 13px;
+            color: #40434b;
+            font-size: 12px;
             text-decoration: none;
         }
 
         .user-dropdown-menu .dropdown-item:hover {
-            background: #f5f5f5;
+            background: #f5f6f8;
         }
 
         .user-dropdown-menu .user-logout-item {
             color: var(--silog-red);
-            font-weight: 600;
+            font-weight: 650;
         }
 
         .user-dropdown-menu .user-logout-item:hover {
@@ -166,35 +166,33 @@
             color: var(--silog-red-dark);
         }
 
-        /* =================================================
-           HEADER - UKURAN JUDUL SAMA DENGAN PROFIL
-        ================================================= */
+        /* ==========================================
+           HEADER
+        ========================================== */
 
         .summary-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 21px;
         }
 
-        .pengusul-dashboard-page .summary-header
         .section-title {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             margin: 0;
-            color: #252525;
-            font-size: 26px;
-            font-weight: 700;
-            line-height: 1.2;
-            letter-spacing: normal;
+            color: var(--silog-text);
+            font-size: 23px;
+            font-weight: 750;
+            letter-spacing: -.4px;
+            line-height: 1.3;
         }
 
-        .pengusul-dashboard-page .summary-header
         .section-title-icon {
             color: var(--silog-red);
-            font-size: 27px;
+            font-size: 21px;
         }
 
         .section-caption {
@@ -204,19 +202,19 @@
             line-height: 1.5;
         }
 
-        /* =================================================
+        /* ==========================================
            FILTER
-        ================================================= */
+        ========================================== */
 
         .summary-filters {
             display: flex;
             align-items: flex-end;
-            flex-wrap: wrap;
             gap: 11px;
+            flex-wrap: wrap;
             padding: 12px 14px;
+            background: white;
             border: 1px solid var(--silog-border);
             border-radius: 12px;
-            background: #fff;
             box-shadow: 0 3px 12px rgba(0,0,0,.02);
         }
 
@@ -240,7 +238,7 @@
             border: 1px solid #dfe5ec;
             border-radius: 8px;
             outline: none;
-            background: #fff;
+            background-color: #fff;
             color: #394250;
             font-size: 11px;
             font-weight: 600;
@@ -270,7 +268,7 @@
             border: 1px solid var(--silog-red);
             border-radius: 8px;
             background: var(--silog-red);
-            color: #fff;
+            color: white;
             font-size: 11px;
             font-weight: 700;
             white-space: nowrap;
@@ -281,9 +279,9 @@
             background: var(--silog-red-dark);
         }
 
-        /* =================================================
+        /* ==========================================
            KPI CARDS
-        ================================================= */
+        ========================================== */
 
         .budget-kpi-grid {
             display: grid;
@@ -301,10 +299,9 @@
             padding: 18px 20px;
             border: 1px solid var(--silog-border);
             border-radius: 14px;
-            background: #fff;
+            background: white;
             box-shadow: 0 5px 18px rgba(0,0,0,.025);
-            transition: transform .2s ease,
-                        box-shadow .2s ease;
+            transition: transform .2s ease, box-shadow .2s ease;
         }
 
         .budget-kpi-card:hover {
@@ -334,12 +331,14 @@
         }
 
         .kpi-label {
+            display: block;
             color: #828b98;
             font-size: 11px;
             font-weight: 650;
         }
 
         .kpi-value {
+            display: block;
             margin: 0;
             color: var(--silog-text);
             font-size: clamp(18px,2vw,27px);
@@ -349,31 +348,12 @@
             overflow-wrap: anywhere;
         }
 
-        /* =================================================
-           VISUALISASI - JUDUL SECTION LEBIH KECIL
-        ================================================= */
+        /* ==========================================
+           VISUALIZATION
+        ========================================== */
 
         .visual-header {
             margin-bottom: 18px;
-        }
-
-        .pengusul-dashboard-page .visual-header
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0;
-            color: #252525;
-            font-size: 21px;
-            font-weight: 700;
-            line-height: 1.3;
-            letter-spacing: normal;
-        }
-
-        .pengusul-dashboard-page .visual-header
-        .section-title-icon {
-            color: var(--silog-red);
-            font-size: 21px;
         }
 
         .budget-charts-grid {
@@ -391,7 +371,7 @@
             padding: 22px;
             border: 1px solid var(--silog-border);
             border-radius: 15px;
-            background: #fff;
+            background: white;
             box-shadow: 0 5px 20px rgba(0,0,0,.025);
         }
 
@@ -409,9 +389,9 @@
             line-height: 1.5;
         }
 
-        /* =================================================
-           DONUT CHART
-        ================================================= */
+        /* ==========================================
+           DONUT
+        ========================================== */
 
         .donut-content {
             display: flex;
@@ -440,8 +420,8 @@
             inset: 0;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             pointer-events: none;
             text-align: center;
         }
@@ -494,7 +474,7 @@
         .donut-empty-wrapper {
             border: 13px solid #e5e7eb;
             border-radius: 50%;
-            background: #fff;
+            background: white;
         }
 
         .donut-empty-wrapper canvas {
@@ -547,6 +527,7 @@
         .budget-donut-tooltip-dot {
             width: 9px;
             height: 9px;
+            display: inline-block;
             border-radius: 50%;
         }
 
@@ -557,9 +538,9 @@
             overflow-wrap: anywhere;
         }
 
-        /* =================================================
-           TOP 5 COMMITMENT ITEM
-        ================================================= */
+        /* ==========================================
+           TOP 5
+        ========================================== */
 
         .top5-list {
             display: flex;
@@ -582,9 +563,9 @@
             min-width: 0;
             padding: 6px;
             margin: 0;
+            background: transparent;
             border: 1px solid transparent;
             border-radius: 8px;
-            background: transparent;
             color: inherit;
             text-align: left;
             font: inherit;
@@ -628,16 +609,16 @@
             display: block;
             width: 100%;
             height: 9px;
-            border-radius: 10px;
             background: #eff1f4;
+            border-radius: 10px;
             overflow: hidden;
         }
 
         .top5-progress-fill {
             display: block;
             height: 100%;
-            border-radius: inherit;
             background: var(--silog-red);
+            border-radius: inherit;
             transition: background .15s ease;
         }
 
@@ -653,16 +634,16 @@
             white-space: nowrap;
         }
 
-        /* =================================================
+        /* ==========================================
            EMPTY STATE
-        ================================================= */
+        ========================================== */
 
         .chart-empty-state {
             display: flex;
             flex: 1;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             min-height: 200px;
             padding: 20px;
             text-align: center;
@@ -682,9 +663,9 @@
             line-height: 1.6;
         }
 
-        /* =================================================
-           FLOATING TOOLTIP
-        ================================================= */
+        /* ==========================================
+           FLOATING TOP 5 TOOLTIP
+        ========================================== */
 
         .silog-chart-tooltip {
             position: fixed;
@@ -716,7 +697,7 @@
 
         .silog-tooltip-name {
             margin-bottom: 10px;
-            color: #eee;
+            color: #eeeeee;
             overflow-wrap: anywhere;
             text-transform: uppercase;
         }
@@ -737,9 +718,9 @@
             border: 1px solid white;
         }
 
-        /* =================================================
+        /* ==========================================
            RESPONSIVE
-        ================================================= */
+        ========================================== */
 
         @media (max-width: 1100px) {
             .summary-header {
@@ -754,13 +735,6 @@
 
             .budget-kpi-grid {
                 grid-template-columns: repeat(2,minmax(0,1fr));
-            }
-        }
-
-        @media (max-width: 1000px) {
-            .pengusul-dashboard-page .dashboard-content {
-                padding-left: 28px;
-                padding-right: 28px;
             }
         }
 
@@ -780,27 +754,19 @@
             }
         }
 
-        @media (max-width: 650px) {
+        @media (max-width: 550px) {
             .pengusul-dashboard-page .dashboard-content {
-                padding: 24px 18px 35px;
+                padding-top: 22px;
             }
 
-            .pengusul-dashboard-page .summary-header
             .section-title {
-                font-size: 22px;
-            }
-
-            .pengusul-dashboard-page .summary-header
-            .section-title-icon {
-                font-size: 23px;
+                font-size: 20px;
             }
 
             .summary-filters {
                 width: 100%;
                 display: grid;
-                grid-template-columns:
-                    minmax(0,1fr)
-                    minmax(0,2fr);
+                grid-template-columns: minmax(0,1fr) minmax(0,2fr);
                 gap: 10px;
             }
 
@@ -874,45 +840,57 @@
     <aside class="sidebar">
 
         <div class="sidebar-brand">
+
             <div class="brand-icon">S</div>
 
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
             </div>
+
         </div>
 
         <p class="sidebar-label">MENU UTAMA</p>
 
         <nav class="sidebar-nav">
 
+            <!-- PROFIL -->
             <a href="{{ url_for('profil') }}"
                class="nav-item">
+
                 <i class="bi bi-person-circle"></i>
                 Profil
             </a>
 
+            <!-- DASHBOARD -->
             <a href="{{ url_for('dashboard') }}"
                class="nav-item active"
                aria-current="page">
+
                 <i class="bi bi-grid-1x2"></i>
                 Dashboard
             </a>
 
+            <!-- BUDGET DETAIL -->
             <a href="{{ url_for('budget_detail_pengusul') }}"
                class="nav-item">
+
                 <i class="bi bi-wallet2"></i>
                 Budget Detail
             </a>
 
+            <!-- PENGAJUAN BUDGET -->
             <a href="{{ url_for('pengajuan_budget') }}"
                class="nav-item">
+
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
             </a>
 
+            <!-- RIWAYAT PENGAJUAN -->
             <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
                class="nav-item">
+
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
             </a>
@@ -920,26 +898,31 @@
         </nav>
 
         <div class="sidebar-bottom">
+
             <form action="{{ url_for('logout') }}"
                   method="POST">
 
-                <button type="submit" class="logout-button">
+                <button type="submit"
+                        class="logout-button">
+
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
                 </button>
 
             </form>
+
         </div>
 
     </aside>
 
     <!-- ==========================================
-         MAIN
+         MAIN CONTENT
     ========================================== -->
 
     <main class="main-content">
 
         <!-- TOPBAR -->
+
         <header class="topbar">
 
             <div class="dropdown">
@@ -971,6 +954,7 @@
 
                     <a href="{{ url_for('profil') }}"
                        class="dropdown-item">
+
                         <i class="bi bi-person-circle"></i>
                         Profil
                     </a>
@@ -982,6 +966,7 @@
 
                         <button type="submit"
                                 class="dropdown-item user-logout-item">
+
                             <i class="bi bi-box-arrow-right"></i>
                             Logout
                         </button>
@@ -989,20 +974,21 @@
                     </form>
 
                 </div>
+
             </div>
 
         </header>
 
-        <!-- ==========================================
-             DASHBOARD CONTENT
-        ========================================== -->
+        <!-- DASHBOARD CONTENT -->
 
         <section class="dashboard-content">
 
             <div class="dashboard-inner">
 
                 <!-- FLASH MESSAGES -->
+
                 {% with messages = get_flashed_messages(with_categories=true) %}
+
                     {% for category, message in messages %}
 
                         <div class="alert alert-{{ category }} alert-dismissible fade show"
@@ -1018,10 +1004,11 @@
                         </div>
 
                     {% endfor %}
+
                 {% endwith %}
 
                 <!-- ======================================
-                     RINGKASAN BUDGET
+                     A. RINGKASAN BUDGET
                 ====================================== -->
 
                 <div class="summary-header">
@@ -1029,8 +1016,11 @@
                     <div class="summary-heading">
 
                         <h1 class="section-title">
+
                             <i class="bi bi-wallet2 section-title-icon"></i>
+
                             Ringkasan Budget
+
                         </h1>
 
                         <p class="section-caption">
@@ -1040,28 +1030,46 @@
                     </div>
 
                     <!-- FILTER -->
+
                     <form method="GET"
                           action="{{ url_for('dashboard') }}"
                           class="summary-filters"
                           id="dashboardFilterForm">
 
+                        <!-- TAHUN -->
+
                         <div class="summary-filter-group year-group">
-                            <label for="year">Tahun</label>
+
+                            <label for="year">
+                                Tahun
+                            </label>
 
                             <select id="year" name="year">
+
                                 {% for year in budget_years %}
+
                                     <option value="{{ year }}"
                                         {% if year == selected_year %}
                                             selected
                                         {% endif %}>
+
                                         {{ year }}
+
                                     </option>
+
                                 {% endfor %}
+
                             </select>
+
                         </div>
 
+                        <!-- UNIT ENTITY -->
+
                         <div class="summary-filter-group entity-group">
-                            <label for="entity_id">Unit Entity</label>
+
+                            <label for="entity_id">
+                                Unit Entity
+                            </label>
 
                             <select id="entity_id" name="entity_id">
 
@@ -1069,24 +1077,36 @@
                                     {% if selected_entity_id | string == 'all' %}
                                         selected
                                     {% endif %}>
+
                                     Semua Entity
+
                                 </option>
 
                                 {% for entity in entity_options %}
+
                                     <option value="{{ entity.entity_id }}"
                                         {% if selected_entity_id | string == entity.entity_id | string %}
                                             selected
                                         {% endif %}>
+
                                         {{ entity.unit_entity }}
+
                                     </option>
+
                                 {% endfor %}
 
                             </select>
+
                         </div>
 
-                        <button type="submit" class="btn-apply-filter">
+                        <!-- BUTTON TERAPKAN -->
+
+                        <button type="submit"
+                                class="btn-apply-filter">
+
                             <i class="bi bi-funnel"></i>
                             Terapkan
+
                         </button>
 
                     </form>
@@ -1094,12 +1114,13 @@
                 </div>
 
                 <!-- ======================================
-                     KPI
+                     B. KPI CARDS
                 ====================================== -->
 
                 <div class="budget-kpi-grid">
 
                     <!-- CONSUMABLE -->
+
                     <div class="budget-kpi-card">
 
                         <div class="kpi-icon">
@@ -1107,18 +1128,25 @@
                         </div>
 
                         <div class="kpi-info">
+
                             <span class="kpi-label">
                                 Consumable Budget
                             </span>
 
                             <h2 class="kpi-value"
                                 id="consumableValue"
-                                title="Rp0">Rp0</h2>
+                                title="Rp0">
+
+                                Rp0
+
+                            </h2>
+
                         </div>
 
                     </div>
 
                     <!-- CONSUMED -->
+
                     <div class="budget-kpi-card">
 
                         <div class="kpi-icon">
@@ -1126,18 +1154,25 @@
                         </div>
 
                         <div class="kpi-info">
+
                             <span class="kpi-label">
                                 Consumed Budget
                             </span>
 
                             <h2 class="kpi-value"
                                 id="consumedValue"
-                                title="Rp0">Rp0</h2>
+                                title="Rp0">
+
+                                Rp0
+
+                            </h2>
+
                         </div>
 
                     </div>
 
                     <!-- AVAILABLE -->
+
                     <div class="budget-kpi-card">
 
                         <div class="kpi-icon">
@@ -1145,13 +1180,19 @@
                         </div>
 
                         <div class="kpi-info">
+
                             <span class="kpi-label">
                                 Available Amount
                             </span>
 
                             <h2 class="kpi-value"
                                 id="availableValue"
-                                title="Rp0">Rp0</h2>
+                                title="Rp0">
+
+                                Rp0
+
+                            </h2>
+
                         </div>
 
                     </div>
@@ -1159,14 +1200,17 @@
                 </div>
 
                 <!-- ======================================
-                     VISUALISASI BUDGET
+                     C. VISUALISASI BUDGET
                 ====================================== -->
 
                 <div class="visual-header">
 
                     <h2 class="section-title">
+
                         <i class="bi bi-bar-chart-line section-title-icon"></i>
+
                         Visualisasi Budget
+
                     </h2>
 
                     <p class="section-caption">
@@ -1177,15 +1221,22 @@
 
                 <div class="budget-charts-grid">
 
-                    <!-- DONUT -->
+                    <!-- ==================================
+                         KOMPOSISI BUDGET
+                    ================================== -->
+
                     <div class="budget-chart-card">
 
                         <div class="budget-chart-heading">
-                            <h3>Komposisi Penggunaan Anggaran</h3>
+
+                            <h3>
+                                Komposisi Penggunaan Anggaran
+                            </h3>
 
                             <p>
                                 Persentase penggunaan anggaran
                             </p>
+
                         </div>
 
                         <div class="donut-content"
@@ -1197,33 +1248,54 @@
                                 <canvas id="budgetDonutChart"></canvas>
 
                                 <div class="donut-center">
-                                    <strong id="usedPercentage">—</strong>
-                                    <span>Terpakai</span>
+
+                                    <strong id="usedPercentage">
+                                        —
+                                    </strong>
+
+                                    <span>
+                                        Terpakai
+                                    </span>
+
                                 </div>
 
                             </div>
+
+                            <!-- LEGEND -->
 
                             <div class="donut-legend"
                                  id="donutLegend">
 
                                 <div class="legend-item">
+
                                     <span class="legend-dot legend-consumed"></span>
+
                                     Consumed Budget
+
                                 </div>
 
                                 <div class="legend-item">
+
                                     <span class="legend-dot legend-available"></span>
+
                                     Available Amount
+
                                 </div>
 
                             </div>
 
+                            <!-- EMPTY STATE -->
+
                             <p class="donut-empty-message"
                                id="donutEmptyMessage"
                                hidden>
+
                                 Belum ada penggunaan anggaran
                                 untuk filter yang dipilih
+
                             </p>
+
+                            <!-- DONUT TOOLTIP -->
 
                             <div class="budget-donut-tooltip"
                                  id="budgetDonutTooltip"
@@ -1231,9 +1303,12 @@
                                  aria-live="off">
 
                                 <div class="budget-donut-tooltip-title">
+
                                     <span class="budget-donut-tooltip-dot"
                                           id="donutTooltipDot"></span>
+
                                     <span id="donutTooltipTitle"></span>
+
                                 </div>
 
                                 <div class="budget-donut-tooltip-value"
@@ -1245,10 +1320,14 @@
 
                     </div>
 
-                    <!-- TOP 5 COMMITMENT ITEM -->
+                    <!-- ==================================
+                         TOP 5 COMMITMENT ITEM
+                    ================================== -->
+
                     <div class="budget-chart-card">
 
                         <div class="budget-chart-heading">
+
                             <h3>
                                 Top Commitment Item Berdasarkan Penggunaan
                             </h3>
@@ -1256,17 +1335,23 @@
                             <p>
                                 Berdasarkan nominal penggunaan terbesar
                             </p>
+
                         </div>
 
                         {% set top_items = top5_details | default([], true) %}
+
                         {% set top_state = namespace(max_consumed=0) %}
 
                         {% for item in top_items %}
+
                             {% set amount = item.consumed_budget | default(0, true) | float %}
 
                             {% if amount > top_state.max_consumed %}
+
                                 {% set top_state.max_consumed = amount %}
+
                             {% endif %}
+
                         {% endfor %}
 
                         {% if top_state.max_consumed > 0 %}
@@ -1279,40 +1364,56 @@
 
                                     {% if amount > 0 %}
 
-                                        {% set bar_percent = amount / top_state.max_consumed * 100 %}
+                                        {% set bar_percent =
+                                            amount / top_state.max_consumed * 100 %}
 
                                         <button type="button"
                                                 class="top5-row"
                                                 data-ci-tooltip
+
                                                 data-ci-code="{{ item.commitment_item_code }}"
                                                 data-ci-name="{{ (item.commitment_item_name or 'Nama belum tersedia') | upper }}"
                                                 data-ci-amount="{{ amount }}"
+
                                                 aria-label="Detail Commitment Item {{ item.commitment_item_code }}"
                                                 aria-expanded="false">
+
+                                            <!-- CODE & NAME -->
 
                                             <span class="top5-item-label">
 
                                                 <span class="top5-code">
+
                                                     {{ item.commitment_item_code }}
+
                                                 </span>
 
                                                 <span class="top5-name">
+
                                                     {{ (item.commitment_item_name or 'Nama belum tersedia') | upper }}
+
                                                 </span>
 
                                             </span>
+
+                                            <!-- PROGRESS BAR -->
 
                                             <span class="top5-progress">
 
                                                 <span class="top5-progress-fill"
                                                       style="width: {{ [0, [100, bar_percent] | min] | max }}%">
+
                                                 </span>
 
                                             </span>
 
+                                            <!-- AMOUNT -->
+
                                             <span class="top5-amount"
                                                   data-amount="{{ amount }}">
+
                                                 Rp0
+
                                             </span>
 
                                         </button>
@@ -1326,12 +1427,18 @@
                         {% else %}
 
                             <div class="chart-empty-state">
-                                <span class="chart-empty-symbol">—</span>
+
+                                <span class="chart-empty-symbol">
+                                    —
+                                </span>
 
                                 <span class="chart-empty-message">
+
                                     Belum ada penggunaan anggaran
                                     untuk filter yang dipilih
+
                                 </span>
+
                             </div>
 
                         {% endif %}
@@ -1349,7 +1456,7 @@
 </div>
 
 <!-- ==========================================
-     SCRIPTS
+     JAVASCRIPT
 ========================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1358,7 +1465,7 @@
 "use strict";
 
 /* ==========================================
-   DATA FROM FLASK
+   1. DATA FROM FLASK
 ========================================== */
 
 const budgetData = {{ budget_summary | tojson }};
@@ -1390,7 +1497,7 @@ const available = safeBudgetNumber(
 );
 
 /* ==========================================
-   RUPIAH FORMATTER
+   2. RUPIAH FORMATTERS
 ========================================== */
 
 const rupiahFormatter = new Intl.NumberFormat(
@@ -1418,10 +1525,30 @@ function formatCompactRupiah(value) {
     const abs = Math.abs(value);
 
     const scales = [
-        {limit: 1e12, divisor: 1e12, suffix: " T", digits: 2},
-        {limit: 1e9, divisor: 1e9, suffix: " M", digits: 2},
-        {limit: 1e6, divisor: 1e6, suffix: " Jt", digits: 2},
-        {limit: 1e3, divisor: 1e3, suffix: " Rb", digits: 1}
+        {
+            limit: 1e12,
+            divisor: 1e12,
+            suffix: " T",
+            digits: 2
+        },
+        {
+            limit: 1e9,
+            divisor: 1e9,
+            suffix: " M",
+            digits: 2
+        },
+        {
+            limit: 1e6,
+            divisor: 1e6,
+            suffix: " Jt",
+            digits: 2
+        },
+        {
+            limit: 1e3,
+            divisor: 1e3,
+            suffix: " Rb",
+            digits: 1
+        }
     ];
 
     const scale = scales.find(
@@ -1434,9 +1561,12 @@ function formatCompactRupiah(value) {
 
     const number = (
         value / scale.divisor
-    ).toLocaleString("id-ID", {
-        maximumFractionDigits: scale.digits
-    });
+    ).toLocaleString(
+        "id-ID",
+        {
+            maximumFractionDigits: scale.digits
+        }
+    );
 
     return "Rp" + number + scale.suffix;
 }
@@ -1446,13 +1576,16 @@ function formatPercentage(value) {
         return "—";
     }
 
-    return value.toLocaleString("id-ID", {
-        maximumFractionDigits: 1
-    }) + "%";
+    return value.toLocaleString(
+        "id-ID",
+        {
+            maximumFractionDigits: 1
+        }
+    ) + "%";
 }
 
 /* ==========================================
-   KPI VALUES
+   3. KPI VALUES
 ========================================== */
 
 const kpiValues = [
@@ -1464,17 +1597,23 @@ const kpiValues = [
 kpiValues.forEach(([id, value]) => {
     const element = document.getElementById(id);
 
-    if (!element) return;
+    if (!element) {
+        return;
+    }
 
     element.textContent = formatCompactRupiah(value);
+
     element.title = formatFullRupiah(value);
 });
 
 /* ==========================================
-   TOP 5 AMOUNT LABELS
+   4. TOP 5 AMOUNT LABELS
 ========================================== */
 
-document.querySelectorAll("[data-amount]").forEach(element => {
+document.querySelectorAll(
+    "[data-amount]"
+).forEach(element => {
+
     const value = safeBudgetNumber(
         element.dataset.amount
     );
@@ -1483,7 +1622,7 @@ document.querySelectorAll("[data-amount]").forEach(element => {
 });
 
 /* ==========================================
-   DONUT ELEMENTS
+   5. DONUT ELEMENTS
 ========================================== */
 
 const donutCanvas =
@@ -1514,7 +1653,7 @@ const donutTooltipDot =
     document.getElementById("donutTooltipDot");
 
 /* ==========================================
-   DONUT CALCULATION
+   6. DONUT CALCULATION
 ========================================== */
 
 const donutTotal = consumed + available;
@@ -1536,7 +1675,7 @@ usedPercentage.textContent = utilization !== null
     : "—";
 
 /* ==========================================
-   DONUT TOOLTIP
+   7. DONUT TOOLTIP
 ========================================== */
 
 function externalDonutTooltip(context) {
@@ -1575,14 +1714,18 @@ function closeDonutTooltip() {
 }
 
 /* ==========================================
-   DONUT EMPTY STATE
+   8. DONUT EMPTY STATE
 ========================================== */
 
 function showEmptyDonut(message) {
-    donutWrapper.classList.add("donut-empty-wrapper");
+    donutWrapper.classList.add(
+        "donut-empty-wrapper"
+    );
+
     donutCanvas.style.display = "none";
 
     usedPercentage.textContent = "—";
+
     donutLegend.hidden = true;
 
     donutEmptyMessage.textContent = message;
@@ -1592,20 +1735,23 @@ function showEmptyDonut(message) {
 }
 
 /* ==========================================
-   RENDER DONUT
+   9. RENDER DONUT
 ========================================== */
 
 if (!hasDonutData) {
+
     showEmptyDonut(
         "Belum ada penggunaan anggaran untuk filter yang dipilih"
     );
 
 } else if (typeof Chart === "undefined") {
+
     showEmptyDonut(
         "Grafik tidak dapat dimuat."
     );
 
 } else {
+
     donutEmptyMessage.hidden = true;
 
     new Chart(donutCanvas, {
@@ -1653,7 +1799,7 @@ if (!hasDonutData) {
 }
 
 /* ==========================================
-   TOP 5 FLOATING TOOLTIP
+   10. TOP 5 TOOLTIP
 ========================================== */
 
 const ciRows = document.querySelectorAll(
@@ -1697,23 +1843,33 @@ document.body.appendChild(ciTooltip);
 let activeCiRow = null;
 
 /* ==========================================
-   CLOSE CI TOOLTIP
+   11. CLOSE TOOLTIP
 ========================================== */
 
 function closeCiTooltip() {
     ciTooltip.classList.remove("show");
-    ciTooltip.setAttribute("aria-hidden", "true");
+
+    ciTooltip.setAttribute(
+        "aria-hidden",
+        "true"
+    );
 
     if (activeCiRow) {
-        activeCiRow.setAttribute("aria-expanded", "false");
-        activeCiRow.removeAttribute("aria-describedby");
+        activeCiRow.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        activeCiRow.removeAttribute(
+            "aria-describedby"
+        );
     }
 
     activeCiRow = null;
 }
 
 /* ==========================================
-   POSITION CI TOOLTIP
+   12. POSITION TOOLTIP
 ========================================== */
 
 function positionCiTooltip(row) {
@@ -1721,10 +1877,11 @@ function positionCiTooltip(row) {
 
     const width = ciTooltip.offsetWidth;
     const height = ciTooltip.offsetHeight;
+
     const margin = 12;
 
     let left =
-        rect.left + rect.width * .60 - width / 2;
+        rect.left + rect.width * 0.60 - width / 2;
 
     left = Math.max(
         margin,
@@ -1755,11 +1912,14 @@ function positionCiTooltip(row) {
 }
 
 /* ==========================================
-   SHOW CI TOOLTIP
+   13. SHOW TOOLTIP
 ========================================== */
 
 function showCiTooltip(row) {
-    if (activeCiRow && activeCiRow !== row) {
+    if (
+        activeCiRow &&
+        activeCiRow !== row
+    ) {
         closeCiTooltip();
     }
 
@@ -1783,17 +1943,28 @@ function showCiTooltip(row) {
 
     activeCiRow = row;
 
-    row.setAttribute("aria-expanded", "true");
-    row.setAttribute("aria-describedby", "silogCiTooltip");
+    row.setAttribute(
+        "aria-expanded",
+        "true"
+    );
+
+    row.setAttribute(
+        "aria-describedby",
+        "silogCiTooltip"
+    );
 
     ciTooltip.classList.add("show");
-    ciTooltip.setAttribute("aria-hidden", "false");
+
+    ciTooltip.setAttribute(
+        "aria-hidden",
+        "false"
+    );
 
     positionCiTooltip(row);
 }
 
 /* ==========================================
-   CI TOOLTIP INTERACTIONS
+   14. INTERACTION
 ========================================== */
 
 const hasHover = window.matchMedia(
@@ -1802,70 +1973,105 @@ const hasHover = window.matchMedia(
 
 ciRows.forEach(row => {
 
-    row.addEventListener("mouseenter", () => {
-        if (hasHover.matches) {
+    row.addEventListener(
+        "mouseenter",
+        () => {
+            if (hasHover.matches) {
+                showCiTooltip(row);
+            }
+        }
+    );
+
+    row.addEventListener(
+        "mouseleave",
+        () => {
+            if (hasHover.matches) {
+                closeCiTooltip();
+            }
+        }
+    );
+
+    row.addEventListener(
+        "focus",
+        () => {
             showCiTooltip(row);
         }
-    });
+    );
 
-    row.addEventListener("mouseleave", () => {
-        if (hasHover.matches) {
+    row.addEventListener(
+        "blur",
+        () => {
             closeCiTooltip();
         }
-    });
+    );
 
-    row.addEventListener("focus", () => {
-        showCiTooltip(row);
-    });
+    row.addEventListener(
+        "click",
+        event => {
 
-    row.addEventListener("blur", () => {
-        closeCiTooltip();
-    });
+            if (hasHover.matches) {
+                return;
+            }
 
-    row.addEventListener("click", event => {
-        if (hasHover.matches) {
-            return;
+            event.stopPropagation();
+
+            if (activeCiRow === row) {
+                closeCiTooltip();
+            } else {
+                showCiTooltip(row);
+            }
         }
-
-        event.stopPropagation();
-
-        if (activeCiRow === row) {
-            closeCiTooltip();
-        } else {
-            showCiTooltip(row);
-        }
-    });
+    );
 });
 
 /* ==========================================
-   GLOBAL TOOLTIP EVENTS
+   15. GLOBAL TOOLTIP EVENTS
 ========================================== */
 
-document.addEventListener("click", event => {
-    if (!event.target.closest("[data-ci-tooltip]")) {
-        closeCiTooltip();
-    }
-});
+document.addEventListener(
+    "click",
+    event => {
 
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
+        if (
+            !event.target.closest(
+                "[data-ci-tooltip]"
+            )
+        ) {
+            closeCiTooltip();
+        }
+    }
+);
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.key === "Escape") {
+            closeCiTooltip();
+            closeDonutTooltip();
+        }
+    }
+);
+
+window.addEventListener(
+    "scroll",
+    () => {
+        closeCiTooltip();
+        closeDonutTooltip();
+    },
+    true
+);
+
+window.addEventListener(
+    "resize",
+    () => {
         closeCiTooltip();
         closeDonutTooltip();
     }
-});
-
-window.addEventListener("scroll", () => {
-    closeCiTooltip();
-    closeDonutTooltip();
-}, true);
-
-window.addEventListener("resize", () => {
-    closeCiTooltip();
-    closeDonutTooltip();
-});
+);
 
 /* ==========================================
-   FILTER SUBMIT
+   16. FILTER SUBMIT
 ========================================== */
 
 const filterForm = document.getElementById(
@@ -1873,10 +2079,13 @@ const filterForm = document.getElementById(
 );
 
 if (filterForm) {
-    filterForm.addEventListener("submit", () => {
-        closeCiTooltip();
-        closeDonutTooltip();
-    });
+    filterForm.addEventListener(
+        "submit",
+        () => {
+            closeCiTooltip();
+            closeDonutTooltip();
+        }
+    );
 }
 </script>
 
