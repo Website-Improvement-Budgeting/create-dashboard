@@ -1560,6 +1560,275 @@ def pengajuan_submit():
         if conn is not None:
             conn.close()
 
+# halaman riwayat pengajuan
+def format_rupiah_riwayat(value):
+    if value is None:
+        return "—"
+
+    return "Rp" + f"{value:,.0f}".replace(",", ".")
+
+
+@app.route("/riwayat-pengajuan", methods=["GET"])
+def riwayat_pengajuan_pengusul():
+
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "Pengusul":
+        flash("Halaman hanya untuk Pengusul.", "danger")
+        return redirect(url_for("dashboard"))
+
+    user_id = session["user_id"]
+
+    keyword = request.args.get(
+        "q", ""
+    ).strip()[:100]
+
+    selected_status = request.args.get(
+        "status", ""
+    ).strip()[:50]
+
+    page = request.args.get(
+        "page", 1, type=int
+    )
+
+    page = max(1, page)
+
+    per_page = 10
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+
+        with conn.cursor(
+            cursor_factory=RealDictCursor
+        ) as cursor:
+
+            # --------------------------------------------
+            # RINGKASAN SELURUH PENGAJUAN PENGGUNA
+            # --------------------------------------------
+
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*) AS total,
+
+                    COUNT(*) FILTER (
+                        WHERE LOWER(request_status) = 'pending'
+                    ) AS pending,
+
+                    COUNT(*) FILTER (
+                        WHERE LOWER(request_status) = 'approved'
+                    ) AS approved,
+
+                    COUNT(*) FILTER (
+                        WHERE LOWER(request_status) = 'rejected'
+                    ) AS rejected
+
+                FROM public.budget_request
+
+                WHERE user_id = %s
+                """,
+                (user_id,)
+            )
+
+            summary = cursor.fetchone()
+
+            # --------------------------------------------
+            # PILIHAN STATUS BERDASARKAN DATA AKTUAL
+            # --------------------------------------------
+
+            cursor.execute(
+                """
+                SELECT DISTINCT request_status
+                FROM public.budget_request
+                WHERE user_id = %s
+                  AND request_status IS NOT NULL
+                ORDER BY request_status
+                """,
+                (user_id,)
+            )
+
+            status_options = [
+                row["request_status"]
+                for row in cursor.fetchall()
+            ]
+
+            if (
+                selected_status
+                and selected_status not in status_options
+            ):
+                selected_status = ""
+
+            # --------------------------------------------
+            # FILTER DATA
+            # --------------------------------------------
+
+            conditions = [
+                "br.user_id = %s"
+            ]
+
+            params = [user_id]
+
+            if selected_status:
+                conditions.append(
+                    "br.request_status = %s"
+                )
+                params.append(selected_status)
+
+            if keyword:
+                conditions.append(
+                    """
+                    (
+                        br.request_id::text ILIKE %s
+                        OR br.pic ILIKE %s
+                        OR br.request_description ILIKE %s
+                    )
+                    """
+                )
+
+                search = f"%{keyword}%"
+
+                params.extend([
+                    search,
+                    search,
+                    search
+                ])
+
+            where_sql = " AND ".join(conditions)
+
+            # --------------------------------------------
+            # HITUNG DATA UNTUK PAGINATION
+            # --------------------------------------------
+
+            cursor.execute(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM public.budget_request br
+                WHERE {where_sql}
+                """,
+                params
+            )
+
+            total_rows = cursor.fetchone()["total"]
+
+            total_pages = max(
+                1,
+                (total_rows + per_page - 1) // per_page
+            )
+
+            page = min(page, total_pages)
+
+            offset = (page - 1) * per_page
+
+            # --------------------------------------------
+            # DATA RIWAYAT
+            # --------------------------------------------
+
+            cursor.execute(
+                f"""
+                SELECT
+                    br.request_id,
+                    br.entity_id,
+
+                    br.request_date
+                        AT TIME ZONE 'Asia/Jakarta'
+                        AS request_date_local,
+
+                    br.pic,
+                    br.input_profit_center,
+                    br.input_cost_center,
+                    br.input_gl_account,
+
+                    br.request_amount,
+                    br.request_description,
+
+                    br.mapping_status,
+                    br.budget_status,
+                    br.request_status,
+
+                    br.budget_scope,
+                    br.shortage_amount,
+
+                    ue.unit_entity,
+
+                    f.fund_code AS mapped_fund_code,
+
+                    fc.funds_center_code
+                        AS mapped_fc_code,
+
+                    ci.commitment_item_code
+                        AS mapped_ci_code,
+
+                    ci.commitment_item_name
+                        AS mapped_ci_name
+
+                FROM public.budget_request br
+
+                LEFT JOIN public.unit_entity ue
+                  ON br.entity_id = ue.entity_id
+
+                LEFT JOIN public.fund f
+                  ON br.mapped_fund_id = f.fund_id
+
+                LEFT JOIN public.funds_center fc
+                  ON br.mapped_funds_center_id =
+                     fc.funds_center_id
+
+                LEFT JOIN public.commitment_item ci
+                  ON br.mapped_commitment_item_id =
+                     ci.commitment_item_id
+
+                WHERE {where_sql}
+
+                ORDER BY
+                    br.request_date DESC,
+                    br.request_id DESC
+
+                LIMIT %s OFFSET %s
+                """,
+                params + [per_page, offset]
+            )
+
+            history_rows = cursor.fetchall()
+
+        return render_template(
+            "riwayat_pengajuan_pengusul.html",
+
+            username=session.get("username", ""),
+
+            history_rows=history_rows,
+            summary=summary,
+
+            keyword=keyword,
+            selected_status=selected_status,
+            status_options=status_options,
+
+            page=page,
+            total_pages=total_pages,
+            total_rows=total_rows,
+
+            format_rupiah=format_rupiah_riwayat
+        )
+
+    except psycopg2.Error:
+        app.logger.exception(
+            "Gagal memuat Riwayat Pengajuan"
+        )
+
+        flash(
+            "Riwayat Pengajuan belum dapat dimuat.",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+    finally:
+        if conn is not None:
+            conn.close()
+
 
 # logout pengguna
 @app.route("/logout", methods=["POST"])

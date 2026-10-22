@@ -1,0 +1,1086 @@
+
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Riwayat Pengajuan | SILOG</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <style>
+        :root {
+            --red: #ed1c24;
+            --red-soft: #fff1f2;
+            --bg: #f6f7fb;
+            --text: #29313d;
+            --muted: #8993a2;
+            --line: #e8ebf0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .user-profile-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .user-profile-link:hover {
+            color: inherit;
+        }
+
+        .history-content {
+            padding: 26px 30px 48px;
+        }
+
+        .history-shell {
+            max-width: 1260px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 22px;
+        }
+
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 750;
+        }
+
+        .page-title i {
+            color: var(--red);
+        }
+
+        .page-subtitle {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* SUMMARY */
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 13px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+
+            padding: 18px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+        }
+
+        .summary-label {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .summary-value {
+            display: block;
+            margin-top: 7px;
+            font-size: 25px;
+            font-weight: 750;
+            line-height: 1;
+        }
+
+        .summary-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #f5f6f8;
+            color: #798392;
+            font-size: 17px;
+        }
+
+        .summary-icon.red {
+            background: #fff0f1;
+            color: var(--red);
+        }
+
+        .summary-icon.amber {
+            background: #fff7e7;
+            color: #c38a24;
+        }
+
+        .summary-icon.green {
+            background: #edf8f2;
+            color: #20815e;
+        }
+
+        /* MAIN CARD */
+
+        .history-card {
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(20,30,45,.025);
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 20px 22px;
+        }
+
+        .history-card-header h2 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 750;
+        }
+
+        .history-card-header p {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input,
+        .filter-select {
+            min-height: 38px;
+            padding: 8px 11px;
+            border: 1px solid #dfe5ec;
+            border-radius: 9px;
+            font-size: 11px;
+            color: #404956;
+            background: white;
+        }
+
+        .filter-input {
+            width: 205px;
+        }
+
+        .filter-select {
+            min-width: 130px;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.06);
+        }
+
+        .btn-filter {
+            min-height: 38px;
+            padding: 8px 13px;
+            border: 1px solid var(--red);
+            border-radius: 9px;
+            background: var(--red);
+            color: white;
+            font-size: 11px;
+            font-weight: 650;
+        }
+
+        .btn-filter:hover {
+            background: #d21820;
+        }
+
+        .btn-reset {
+            display: inline-flex;
+            align-items: center;
+            min-height: 38px;
+            padding: 8px 11px;
+            border: 1px solid #e3e7ed;
+            border-radius: 9px;
+            color: #697483;
+            font-size: 11px;
+            text-decoration: none;
+        }
+
+        .btn-reset:hover {
+            background: #f5f6f8;
+            color: #343b46;
+        }
+
+        /* TABLE */
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .history-table {
+            width: 100%;
+            min-width: 850px;
+            border-collapse: collapse;
+        }
+
+        .history-table thead {
+            background: #fafbfc;
+        }
+
+        .history-table th {
+            padding: 14px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #788392;
+            white-space: nowrap;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .history-table td {
+            padding: 15px 16px;
+            font-size: 11px;
+            color: #46505e;
+            vertical-align: middle;
+            border-bottom: 1px solid #eef1f5;
+        }
+
+        .history-table tbody tr:hover {
+            background: #fcfcfd;
+        }
+
+        .request-id {
+            color: #303845;
+            font-weight: 750;
+        }
+
+        .request-entity {
+            max-width: 210px;
+            color: #384251;
+            font-weight: 600;
+        }
+
+        .request-date {
+            white-space: nowrap;
+            color: #75808f;
+        }
+
+        .money-value {
+            font-weight: 700;
+            white-space: nowrap;
+            color: #29313d;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+            background: #f1f3f6;
+            color: #697485;
+        }
+
+        .status-pill.pending {
+            background: #fff5e7;
+            color: #ad771e;
+        }
+
+        .status-pill.approved {
+            background: #eaf7f0;
+            color: #197451;
+        }
+
+        .status-pill.rejected {
+            background: #fff0f1;
+            color: #c32937;
+        }
+
+        .btn-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 11px;
+            border: 1px solid #ead7d9;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--red);
+            font-size: 11px;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .btn-detail:hover {
+            background: var(--red-soft);
+        }
+
+        /* EMPTY STATE */
+
+        .empty-state {
+            padding: 58px 20px;
+            text-align: center;
+        }
+
+        .empty-state i {
+            display: block;
+            font-size: 35px;
+            color: #bac2cd;
+            margin-bottom: 13px;
+        }
+
+        .empty-state strong {
+            display: block;
+            font-size: 13px;
+        }
+
+        .empty-state p {
+            color: var(--muted);
+            font-size: 11px;
+            margin: 8px 0 0;
+        }
+
+        /* FOOTER & PAGINATION */
+
+        .history-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 15px 22px;
+        }
+
+        .history-count {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .page-link-custom {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 9px;
+            border: 1px solid #e3e8ee;
+            border-radius: 8px;
+            color: #556171;
+            text-decoration: none;
+            font-size: 11px;
+        }
+
+        .page-link-custom:hover {
+            color: var(--red);
+            border-color: #efbec2;
+        }
+
+        .page-link-custom.disabled {
+            pointer-events: none;
+            opacity: .4;
+        }
+
+        /* MODAL */
+
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 19px 23px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .modal-body {
+            padding: 20px 23px;
+        }
+
+        .detail-section-title {
+            margin: 0 0 10px;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0,1fr));
+            gap: 15px;
+        }
+
+        .detail-label {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            display: block;
+            color: #333d4b;
+            font-size: 12px;
+            font-weight: 650;
+            overflow-wrap: anywhere;
+        }
+
+        .detail-divider {
+            border-top: 1px solid var(--line);
+            margin: 20px 0;
+        }
+
+        .detail-description {
+            padding: 12px;
+            background: #f7f8fa;
+            border-radius: 9px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1050px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0,1fr));
+            }
+        }
+
+        @media (max-width: 650px) {
+            .history-content {
+                padding: 20px 16px 35px;
+            }
+
+            .summary-grid {
+                gap: 9px;
+            }
+
+            .summary-card {
+                padding: 14px;
+            }
+
+            .summary-value {
+                font-size: 21px;
+            }
+
+            .history-card-header,
+            .history-footer {
+                padding: 15px;
+            }
+
+            .filter-bar {
+                width: 100%;
+            }
+
+            .filter-input,
+            .filter-select {
+                width: 100%;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon">S</div>
+            <div>
+                <strong>SILOG</strong>
+                <small>Budget Monitoring & Approval</small>
+            </div>
+        </div>
+
+        <p class="sidebar-label">MENU UTAMA</p>
+
+        <nav class="sidebar-nav">
+
+            <a href="{{ url_for('profil') }}"
+               class="nav-item">
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </a>
+
+            <a href="{{ url_for('dashboard') }}"
+               class="nav-item">
+                <i class="bi bi-grid-1x2"></i>
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('budget_detail_pengusul') }}"
+               class="nav-item">
+                <i class="bi bi-wallet2"></i>
+                Budget Detail
+            </a>
+
+            <a href="{{ url_for('pengajuan_budget') }}"
+               class="nav-item">
+                <i class="bi bi-file-earmark-plus"></i>
+                Pengajuan Budget
+            </a>
+
+            <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
+               class="nav-item active"
+               aria-current="page">
+                <i class="bi bi-clock-history"></i>
+                Riwayat Pengajuan
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <form method="POST"
+                  action="{{ url_for('logout') }}">
+                <button type="submit" class="logout-button">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+        <header class="topbar">
+            <a href="{{ url_for('profil') }}"
+               class="user-profile-link">
+
+                <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+
+                <div class="user-info">
+                    <strong>{{ username | upper }}</strong>
+                    <small>Pengusul Budget</small>
+                </div>
+            </a>
+        </header>
+
+        <section class="history-content">
+            <div class="history-shell">
+
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="bi bi-clock-history"></i>
+                        Riwayat Pengajuan
+                    </h1>
+
+                    <p class="page-subtitle">
+                        Pantau status dan detail pengajuan budget
+                    </p>
+                </div>
+
+                <!-- SUMMARY CARDS -->
+                <div class="summary-grid">
+
+                    <div class="summary-card">
+                        <div>
+                            <span class="summary-label">
+                                Total Pengajuan
+                            </span>
+                            <strong class="summary-value">
+                                {{ summary.total or 0 }}
+                            </strong>
+                        </div>
+                        <div class="summary-icon red">
+                            <i class="bi bi-files"></i>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div>
+                            <span class="summary-label">
+                                Menunggu Approval
+                            </span>
+                            <strong class="summary-value">
+                                {{ summary.pending or 0 }}
+                            </strong>
+                        </div>
+                        <div class="summary-icon amber">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div>
+                            <span class="summary-label">
+                                Disetujui
+                            </span>
+                            <strong class="summary-value">
+                                {{ summary.approved or 0 }}
+                            </strong>
+                        </div>
+                        <div class="summary-icon green">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div>
+                            <span class="summary-label">
+                                Ditolak
+                            </span>
+                            <strong class="summary-value">
+                                {{ summary.rejected or 0 }}
+                            </strong>
+                        </div>
+                        <div class="summary-icon">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- HISTORY TABLE -->
+                <div class="history-card">
+
+                    <div class="history-card-header">
+                        <div>
+                            <h2>Daftar Pengajuan Budget</h2>
+                            <p>
+                                Seluruh pengajuan budget
+                            </p>
+                        </div>
+
+                        <form method="GET"
+                              action="{{ url_for('riwayat_pengajuan_pengusul') }}"
+                              class="filter-bar">
+
+                            <input type="search"
+                                   name="q"
+                                   class="filter-input"
+                                   value="{{ keyword }}"
+                                   placeholder="Cari ID, PIC, keterangan...">
+
+                            <select name="status"
+                                    class="filter-select">
+                                <option value="">
+                                    Semua Status
+                                </option>
+
+                                {% for status in status_options %}
+                                    <option value="{{ status }}"
+                                        {% if selected_status == status %}
+                                            selected
+                                        {% endif %}>
+                                        {{ status }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                            <button type="submit"
+                                    class="btn-filter">
+                                <i class="bi bi-funnel"></i>
+                                Terapkan
+                            </button>
+
+                            <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
+                               class="btn-reset">
+                                Reset
+                            </a>
+
+                        </form>
+                    </div>
+
+                    <div class="table-container">
+
+                        {% if history_rows %}
+
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Pengajuan</th>
+                                    <th>Tanggal</th>
+                                    <th>Unit Entity</th>
+                                    <th>PIC</th>
+                                    <th>Nominal</th>
+                                    <th>Shortage</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for item in history_rows %}
+
+                                <tr>
+                                    <td>
+                                        <span class="request-id">
+                                            #{{ item.request_id }}
+                                        </span>
+                                    </td>
+
+                                    <td class="request-date">
+                                        {% if item.request_date_local %}
+                                            {{ item.request_date_local.strftime('%d/%m/%Y') }}
+                                            <div style="font-size:10px;color:#9ca5b1;margin-top:3px">
+                                                {{ item.request_date_local.strftime('%H:%M') }} WIB
+                                            </div>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="request-entity">
+                                        {{ item.unit_entity or "—" }}
+                                    </td>
+
+                                    <td>
+                                        {{ item.pic or "—" }}
+                                    </td>
+
+                                    <td>
+                                        <span class="money-value">
+                                            {{ format_rupiah(item.request_amount) }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <span class="money-value"
+                                              {% if item.shortage_amount and item.shortage_amount > 0 %}
+                                                  style="color:#d72736"
+                                              {% endif %}>
+                                            {{ format_rupiah(item.shortage_amount) }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% set status_name = (item.request_status or '') | lower %}
+
+                                        <span class="status-pill
+                                            {% if status_name == 'pending' %}pending
+                                            {% elif status_name == 'approved' %}approved
+                                            {% elif status_name == 'rejected' %}rejected
+                                            {% endif %}">
+                                            {{ item.request_status or "—" }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <button type="button"
+                                                class="btn-detail"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#detailModal{{ item.request_id }}">
+
+                                            <i class="bi bi-eye"></i>
+                                            Lihat Detail
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+
+                        {% else %}
+
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <strong>Belum Ada Pengajuan</strong>
+                            <p>
+                                Belum ditemukan pengajuan sesuai
+                                pencarian atau filter yang dipilih
+                            </p>
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="history-footer">
+
+                        <span class="history-count">
+                            {{ total_rows }} pengajuan ditemukan
+                        </span>
+
+                        <div class="pagination-controls">
+
+                            {% if page > 1 %}
+                                <a class="page-link-custom"
+                                   href="{{ url_for('riwayat_pengajuan_pengusul',
+                                                    page=page-1,
+                                                    q=keyword,
+                                                    status=selected_status) }}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            {% else %}
+                                <span class="page-link-custom disabled">
+                                    <i class="bi bi-chevron-left"></i>
+                                </span>
+                            {% endif %}
+
+                            <span class="page-link-custom">
+                                {{ page }} / {{ total_pages }}
+                            </span>
+
+                            {% if page < total_pages %}
+                                <a class="page-link-custom"
+                                   href="{{ url_for('riwayat_pengajuan_pengusul',
+                                                    page=page+1,
+                                                    q=keyword,
+                                                    status=selected_status) }}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            {% else %}
+                                <span class="page-link-custom disabled">
+                                    <i class="bi bi-chevron-right"></i>
+                                </span>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- DETAIL MODALS -->
+{% for item in history_rows %}
+
+<div class="modal fade"
+     id="detailModal{{ item.request_id }}"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg
+                modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    Detail Pengajuan #{{ item.request_id }}
+                </h2>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Tutup"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <h3 class="detail-section-title">
+                    Informasi Pengajuan
+                </h3>
+
+                <div class="detail-grid">
+
+                    <div>
+                        <span class="detail-label">Tanggal Pengajuan</span>
+                        <strong class="detail-value">
+                            {% if item.request_date_local %}
+                                {{ item.request_date_local.strftime('%d/%m/%Y %H:%M') }} WIB
+                            {% else %}
+                                —
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Status Pengajuan</span>
+                        <strong class="detail-value">
+                            {{ item.request_status or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Unit Entity</span>
+                        <strong class="detail-value">
+                            {{ item.unit_entity or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">PIC</span>
+                        <strong class="detail-value">
+                            {{ item.pic or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Profit Center</span>
+                        <strong class="detail-value">
+                            {{ item.input_profit_center or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Cost Center</span>
+                        <strong class="detail-value">
+                            {{ item.input_cost_center or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">GL Account</span>
+                        <strong class="detail-value">
+                            {{ item.input_gl_account or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Nominal Pengajuan</span>
+                        <strong class="detail-value">
+                            {{ format_rupiah(item.request_amount) }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Shortage Amount</span>
+                        <strong class="detail-value">
+                            {{ format_rupiah(item.shortage_amount) }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Budget Scope</span>
+                        <strong class="detail-value">
+                            {{ item.budget_scope or "—" }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="detail-divider"></div>
+
+                <h3 class="detail-section-title">
+                    Hasil Mapping
+                </h3>
+
+                <div class="detail-grid">
+
+                    <div>
+                        <span class="detail-label">Mapped Fund</span>
+                        <strong class="detail-value">
+                            {{ item.mapped_fund_code or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Mapped Funds Center</span>
+                        <strong class="detail-value">
+                            {{ item.mapped_fc_code or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Mapped Commitment Item</span>
+                        <strong class="detail-value">
+                            {{ item.mapped_ci_code or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Nama Commitment Item</span>
+                        <strong class="detail-value">
+                            {{ item.mapped_ci_name or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Status Mapping</span>
+                        <strong class="detail-value">
+                            {{ item.mapping_status or "—" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="detail-label">Status Budget</span>
+                        <strong class="detail-value">
+                            {{ item.budget_status or "—" }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="detail-divider"></div>
+
+                <h3 class="detail-section-title">
+                    Keterangan
+                </h3>
+
+                <div class="detail-description">{{ item.request_description or "Tidak ada keterangan." }}</div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                    Tutup
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endfor %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
