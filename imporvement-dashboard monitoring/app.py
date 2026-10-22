@@ -1,5 +1,8 @@
 import os
 import hmac
+import secrets
+from datetime import date
+from decimal import Decimal, InvalidOperation
 
 import bcrypt
 import psycopg2
@@ -1108,248 +1111,453 @@ def budget_detail_pengusul():
         return redirect(url_for("dashboard"))
 
 
-# halaman pengajuan budget
+# ============================================================
+# PENGAJUAN BUDGET - MAPPING, LOOKUP, SHORTAGE, PENDING
+# ============================================================
+# Pengiriman request tidak mengubah budget_master.
+# Waktu request_date dicatat saat submit. Tanggal transaksi yang
+# dipilih pengguna saat ini digunakan untuk menentukan budget_year;
+# jika perlu disimpan terpisah, tambah kolom transaction_date.
+
+
+class PengajuanValidationError(Exception):
+    def __init__(self, message, status_code=400):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def pengajuan_csrf_token():
+    if "pengajuan_csrf" not in session:
+        session["pengajuan_csrf"] = secrets.token_urlsafe(32)
+    return session["pengajuan_csrf"]
+
+
+def pengajuan_api_guard():
+    if not session.get("user_id"):
+        return jsonify({"error": "Silakan login terlebih dahulu."}), 401
+    if session.get("role") != "Pengusul":
+        return jsonify({"error": "Akses ditolak."}), 403
+    if request.method == "POST":
+        expected = session.get("pengajuan_csrf", "")
+        supplied = request.headers.get("X-CSRFToken", "")
+        if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+            return jsonify({"error": "Token keamanan tidak valid. Muat ulang halaman."}), 403
+    return None
+
+
+def pengajuan_parse_amount(raw):
+    try:
+        value = Decimal(str(raw).strip())
+    except (InvalidOperation, TypeError, ValueError):
+        raise PengajuanValidationError("Nominal pengajuan tidak valid.")
+    if not value.is_finite() or value <= 0 or value != value.to_integral_value():
+        raise PengajuanValidationError("Nominal harus berupa Rupiah bulat positif.")
+    if value > Decimal("999999999999999"):
+        raise PengajuanValidationError("Nominal terlalu besar.")
+    return value
+
+
+def pengajuan_parse_input(payload, require_details=False):
+    if not isinstance(payload, dict):
+        raise PengajuanValidationError("Format data pengajuan tidak valid.")
+    try:
+        entity_id = int(payload.get("entity_id"))
+    except (TypeError, ValueError):
+        raise PengajuanValidationError("Unit Entity wajib dipilih.")
+    if entity_id <= 0:
+        raise PengajuanValidationError("Unit Entity tidak valid.")
+    inputs = {
+        "profit_center": str(payload.get("profit_center") or "").strip(),
+        "cost_center": str(payload.get("cost_center") or "").strip(),
+        "gl_account": str(payload.get("gl_account") or "").strip(),
+    }
+    if any(not value or len(value) > 100 for value in inputs.values()):
+        raise PengajuanValidationError("Pilih kode Profit Center, Cost Center, dan GL Account yang valid.")
+    try:
+        transaction_date = date.fromisoformat(str(payload.get("tanggal", "")))
+    except (TypeError, ValueError):
+        raise PengajuanValidationError("Tanggal transaksi tidak valid.")
+    if not 2000 <= transaction_date.year <= 2100:
+        raise PengajuanValidationError("Tahun transaksi tidak valid.")
+    result = {
+        "entity_id": entity_id,
+        "transaction_date": transaction_date,
+        "request_amount": pengajuan_parse_amount(payload.get("request_amount")),
+        **inputs,
+    }
+    if require_details:
+        pic = str(payload.get("pic") or "").strip()
+        description = str(payload.get("keterangan") or "").strip()
+        if not pic or len(pic) > 150:
+            raise PengajuanValidationError("PIC wajib diisi, maksimal 150 karakter.")
+        if not description or len(description) > 2000:
+            raise PengajuanValidationError("Keterangan wajib diisi, maksimal 2000 karakter.")
+        result.update(pic=pic, description=description)
+    return result
+
+
+def pengajuan_get_biro(cursor, user_id, entity_id):
+    # Id biro akun dapat merujuk satu entity saja, tetapi akses lintas
+    # entity di aplikasi ini didasarkan pada kode biro yang sama.
+    cursor.execute("""
+        SELECT b_target.biro_id, b_target.entity_id, b_target.biro_code
+        FROM public.users u
+        JOIN public.biro b_user
+          ON b_user.biro_id = u.biro_id AND b_user.entity_id = u.entity_id
+        JOIN public.biro b_target ON b_target.biro_code = b_user.biro_code
+        WHERE u.user_id = %s AND u.role = 'Pengusul'
+          AND b_target.entity_id = %s
+        ORDER BY b_target.biro_id
+        LIMIT 2
+    """, (user_id, entity_id))
+    rows = cursor.fetchall()
+    if not rows:
+        raise PengajuanValidationError("Unit Entity tidak termasuk akses biro Anda.", 403)
+    if len(rows) != 1:
+        raise PengajuanValidationError("Data biro pada Entity ambigu. Hubungi administrator.", 409)
+    return rows[0]
+
+
+def pengajuan_get_mapping(cursor, data):
+    queries = (
+        ("fund", """
+            SELECT mf.target_fund_id AS id, f.fund_code AS code
+            FROM public.master_fund mf
+            JOIN public.fund f ON f.fund_id = mf.target_fund_id
+            WHERE mf.from_profit_center = %s LIMIT 2
+        """, data["profit_center"]),
+        ("funds_center", """
+            SELECT mfc.target_funds_center_id AS id, fc.funds_center_code AS code
+            FROM public.master_fc mfc
+            JOIN public.funds_center fc
+              ON fc.funds_center_id = mfc.target_funds_center_id
+            WHERE mfc.from_cost_center = %s LIMIT 2
+        """, data["cost_center"]),
+        ("commitment_item", """
+            SELECT mci.target_commitment_item_id AS id,
+                   ci.commitment_item_code AS code,
+                   ci.commitment_item_name AS name
+            FROM public.master_ci mci
+            JOIN public.commitment_item ci
+              ON ci.commitment_item_id = mci.target_commitment_item_id
+            WHERE mci.from_gl_account = %s LIMIT 2
+        """, data["gl_account"]),
+    )
+    mapped = {}
+    missing = []
+    for key, sql, input_value in queries:
+        cursor.execute(sql, (input_value,))
+        rows = cursor.fetchall()
+        if len(rows) > 1:
+            raise PengajuanValidationError("Mapping master ambigu: " + key, 409)
+        if not rows:
+            missing.append(key)
+        else:
+            mapped[key] = rows[0]
+    if missing:
+        raise PengajuanValidationError("Mapping tidak ditemukan: " + ", ".join(missing), 422)
+    return mapped
+
+
+def pengajuan_public_mapping(mapped):
+    return {
+        "mapping_status": "Mapped",
+        "mapped_fund": {"id": mapped["fund"]["id"], "code": mapped["fund"]["code"]},
+        "mapped_funds_center": {
+            "id": mapped["funds_center"]["id"],
+            "code": mapped["funds_center"]["code"],
+        },
+        "mapped_commitment_item": {
+            "id": mapped["commitment_item"]["id"],
+            "code": mapped["commitment_item"]["code"],
+            "name": mapped["commitment_item"]["name"] or "Nama belum tersedia",
+        },
+    }
+
+
+def pengajuan_find_budget(cursor, biro_id, entity_id, budget_year, mapped):
+    common = (biro_id, entity_id, budget_year, mapped["commitment_item"]["id"])
+    base = """
+        SELECT bm.budget_id, bm.budget_scope, bm.current_budget,
+               bm.consumable_budget, bm.consumed_budget, bm.available_amount
+        FROM public.budget_master bm
+        WHERE bm.biro_id = %s AND bm.entity_id = %s
+          AND bm.budget_year = %s AND bm.commitment_item_id = %s
+    """
+    cursor.execute(base + """
+        AND bm.funds_center_id = %s AND UPPER(bm.budget_scope) = 'FC_CI'
+        LIMIT 2
+    """, common + (mapped["funds_center"]["id"],))
+    rows = cursor.fetchall()
+    if len(rows) > 1:
+        raise PengajuanValidationError("Sumber budget FC_CI ambigu.", 409)
+    if rows:
+        return rows[0]
+    cursor.execute(base + """
+        AND UPPER(bm.budget_scope) = 'CI_ONLY'
+        LIMIT 2
+    """, common)
+    rows = cursor.fetchall()
+    if len(rows) > 1:
+        raise PengajuanValidationError("Sumber budget CI_ONLY ambigu.", 409)
+    return rows[0] if rows else None
+
+
+def pengajuan_check(cursor, user_id, data):
+    biro = pengajuan_get_biro(cursor, user_id, data["entity_id"])
+    mapped = pengajuan_get_mapping(cursor, data)
+    budget = pengajuan_find_budget(
+        cursor, biro["biro_id"], data["entity_id"],
+        data["transaction_date"].year, mapped,
+    )
+    if budget is None:
+        return {
+            "mapped": mapped,
+            "budget": None,
+            "shortage": None,
+            "budget_status": "Not Found",
+            "message": "Sumber budget tidak ditemukan untuk kombinasi ini.",
+        }
+    if budget["available_amount"] is None:
+        raise PengajuanValidationError("Available Amount pada sumber budget belum tersedia.", 422)
+    available = Decimal(str(budget["available_amount"]))
+    shortage = max(Decimal("0"), data["request_amount"] - available)
+    return {
+        "mapped": mapped,
+        "budget": budget,
+        "shortage": shortage,
+        "budget_status": "Insufficient" if shortage > 0 else "Sufficient",
+        "message": (
+            "Budget kurang; pengajuan tetap dapat direview Approval."
+            if shortage > 0 else
+            "Budget mencukupi; pengajuan dapat direview Approval."
+        ),
+    }
+
 
 @app.route("/pengajuan-budget", methods=["GET"])
 def pengajuan_budget():
-
     if not session.get("user_id"):
         flash("Silakan login terlebih dahulu.", "danger")
         return redirect(url_for("login"))
-
     if session.get("role") != "Pengusul":
-        flash("Halaman hanya untuk Pengusul.", "danger")
         return redirect(url_for("dashboard"))
-
-    user_id = session["user_id"]
-
     try:
-        entity_options = get_pengusul_entity_options(user_id)
-
         return render_template(
             "pengajuan_budget_pengusul.html",
             username=session.get("username", ""),
-            entity_options=entity_options
+            entity_options=get_pengusul_entity_options(session["user_id"]),
+            csrf_token=pengajuan_csrf_token(),
         )
-
-    except Exception:
-        app.logger.exception(
-            "Gagal memuat halaman Pengajuan Budget"
-        )
-
-        flash(
-            "Halaman Pengajuan Budget belum dapat dimuat.",
-            "danger"
-        )
-
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat Pengajuan Budget")
+        flash("Halaman Pengajuan Budget gagal dimuat.", "danger")
         return redirect(url_for("dashboard"))
 
 
-# pengajuan master options
 @app.route("/api/pengajuan/master-options", methods=["GET"])
 def pengajuan_master_options():
-
-    if not session.get("user_id"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    if session.get("role") != "Pengusul":
-        return jsonify({"error": "Forbidden"}), 403
-
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
     master_type = request.args.get("type", "").strip()
     keyword = request.args.get("q", "").strip()
-
     config = {
-        "fund": {
-            "table": "master_fund",
-            "column": "from_profit_center"
-        },
-        "fc": {
-            "table": "master_fc",
-            "column": "from_cost_center"
-        },
-        "ci": {
-            "table": "master_ci",
-            "column": "from_gl_account"
-        }
+        "fund": ("master_fund", "from_profit_center"),
+        "fc": ("master_fc", "from_cost_center"),
+        "ci": ("master_ci", "from_gl_account"),
     }
-
     if master_type not in config:
-        return jsonify({
-            "error": "Tipe master tidak valid"
-        }), 400
-
-    setting = config[master_type]
-
+        return jsonify({"error": "Jenis master tidak valid."}), 400
+    if len(keyword) < 2:
+        return jsonify({"results": []})
+    if len(keyword) > 100:
+        return jsonify({"error": "Kata pencarian terlalu panjang."}), 400
+    table, column = config[master_type]  # whitelist, bukan input bebas
     sql = f"""
-        SELECT DISTINCT
-            {setting['column']} AS code
-        FROM public.{setting['table']}
-        WHERE {setting['column']} ILIKE %s
-        ORDER BY code
-        LIMIT 30
+        SELECT DISTINCT {column} AS code FROM public.{table}
+        WHERE {column} ILIKE %s ORDER BY code LIMIT 30
     """
-
     conn = None
-
     try:
         conn = get_db_connection()
-
-        with conn.cursor(
-            cursor_factory=RealDictCursor
-        ) as cursor:
-
-            cursor.execute(
-                sql,
-                (f"%{keyword}%",)
-            )
-
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(sql, (f"%{keyword}%",))
             rows = cursor.fetchall()
-
-        return jsonify({
-            "results": [
-                {
-                    "id": row["code"],
-                    "text": row["code"]
-                }
-                for row in rows
-            ]
-        })
-
-    except Exception:
-        app.logger.exception(
-            "Gagal mengambil pilihan master"
-        )
-
-        return jsonify({
-            "error": "Data master belum dapat dimuat"
-        }), 500
-
+        return jsonify({"results": [
+            {"id": row["code"], "text": row["code"]} for row in rows
+        ]})
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat Master Mapping")
+        return jsonify({"error": "Data master gagal dimuat."}), 500
     finally:
-        if conn:
+        if conn is not None:
             conn.close()
 
 
-# pengajuan mapping
-
 @app.route("/api/pengajuan/mapping", methods=["POST"])
 def pengajuan_mapping():
-
-    if not session.get("user_id"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    if session.get("role") != "Pengusul":
-        return jsonify({"error": "Forbidden"}), 403
-
-    data = request.get_json(silent=True) or {}
-
-    profit_center = str(
-        data.get("profit_center") or ""
-    ).strip()
-
-    cost_center = str(
-        data.get("cost_center") or ""
-    ).strip()
-
-    gl_account = str(
-        data.get("gl_account") or ""
-    ).strip()
-
-    if not all([
-        profit_center,
-        cost_center,
-        gl_account
-    ]):
-        return jsonify({
-            "error": "Semua kode harus diisi"
-        }), 400
-
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    data = {
+        "profit_center": str(payload.get("profit_center") or "").strip(),
+        "cost_center": str(payload.get("cost_center") or "").strip(),
+        "gl_account": str(payload.get("gl_account") or "").strip(),
+    }
+    if any(not v or len(v) > 100 for v in data.values()):
+        return jsonify({"error": "Semua kode master harus valid."}), 400
     conn = None
-
     try:
         conn = get_db_connection()
-
-        with conn.cursor(
-            cursor_factory=RealDictCursor
-        ) as cursor:
-
-            cursor.execute("""
-                SELECT
-                    mf.target_fund_id AS id,
-                    f.fund_code AS code
-                FROM public.master_fund mf
-                JOIN public.fund f
-                  ON f.fund_id = mf.target_fund_id
-                WHERE mf.from_profit_center = %s
-            """, (profit_center,))
-
-            mapped_fund = cursor.fetchone()
-
-            cursor.execute("""
-                SELECT
-                    mf.target_funds_center_id AS id,
-                    fc.funds_center_code AS code
-                FROM public.master_fc mf
-                JOIN public.funds_center fc
-                  ON fc.funds_center_id =
-                     mf.target_funds_center_id
-                WHERE mf.from_cost_center = %s
-            """, (cost_center,))
-
-            mapped_fc = cursor.fetchone()
-
-            cursor.execute("""
-                SELECT
-                    mc.target_commitment_item_id AS id,
-                    ci.commitment_item_code AS code,
-                    ci.commitment_item_name AS name
-                FROM public.master_ci mc
-                JOIN public.commitment_item ci
-                  ON ci.commitment_item_id =
-                     mc.target_commitment_item_id
-                WHERE mc.from_gl_account = %s
-            """, (gl_account,))
-
-            mapped_ci = cursor.fetchone()
-
-        missing = []
-
-        if not mapped_fund:
-            missing.append("Profit Center")
-
-        if not mapped_fc:
-            missing.append("Cost Center")
-
-        if not mapped_ci:
-            missing.append("GL Account")
-
-        if missing:
-            return jsonify({
-                "mapping_status": "Not Found",
-                "missing": missing,
-                "message": (
-                    "Mapping tidak ditemukan: " +
-                    ", ".join(missing)
-                )
-            }), 422
-
-        return jsonify({
-            "mapping_status": "Mapped",
-            "mapped_fund": mapped_fund,
-            "mapped_funds_center": mapped_fc,
-            "mapped_commitment_item": mapped_ci
-        })
-
-    except Exception:
-        app.logger.exception(
-            "Gagal melakukan mapping pengajuan"
-        )
-
-        return jsonify({
-            "error": "Pemeriksaan mapping gagal"
-        }), 500
-
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            mapped = pengajuan_get_mapping(cursor, data)
+        return jsonify(pengajuan_public_mapping(mapped))
+    except PengajuanValidationError as exc:
+        return jsonify({"error": str(exc), "mapping_status": "Not Found"}), exc.status_code
+    except psycopg2.Error:
+        app.logger.exception("Gagal mapping")
+        return jsonify({"error": "Mapping gagal diproses."}), 500
     finally:
-        if conn:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/pengajuan/shortage", methods=["POST"])
+def pengajuan_shortage():
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    conn = None
+    try:
+        data = pengajuan_parse_input(request.get_json(silent=True) or {})
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            result = pengajuan_check(cursor, session["user_id"], data)
+        return jsonify({
+            "budget_found": result["budget"] is not None,
+            "budget_status": result["budget_status"],
+            "shortage_amount": str(result["shortage"]) if result["shortage"] is not None else None,
+            "message": result["message"],
+        })
+    except PengajuanValidationError as exc:
+        return jsonify({"error": str(exc), "shortage_amount": None}), exc.status_code
+    except psycopg2.Error:
+        app.logger.exception("Gagal hitung shortage")
+        return jsonify({"error": "Shortage gagal dihitung."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/pengajuan/periksa", methods=["POST"])
+def pengajuan_periksa():
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    conn = None
+    try:
+        data = pengajuan_parse_input(
+            request.get_json(silent=True) or {}, require_details=True
+        )
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            result = pengajuan_check(cursor, session["user_id"], data)
+        return jsonify({
+            **pengajuan_public_mapping(result["mapped"]),
+            "budget_found": result["budget"] is not None,
+            "budget_scope": result["budget"]["budget_scope"] if result["budget"] else None,
+            "budget_status": result["budget_status"],
+            "shortage_amount": str(result["shortage"]) if result["shortage"] is not None else None,
+            "can_submit": result["budget"] is not None,
+            "message": result["message"],
+        })
+    except PengajuanValidationError as exc:
+        return jsonify({"error": str(exc), "can_submit": False}), exc.status_code
+    except psycopg2.Error:
+        app.logger.exception("Gagal periksa budget")
+        return jsonify({"error": "Pemeriksaan budget gagal."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/pengajuan/submit", methods=["POST"])
+def pengajuan_submit():
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    # Penyimpanan lampiran belum diimplementasikan. Tolak apabila dikirim.
+    if request.files:
+        return jsonify({"error": "Upload lampiran belum tersedia."}), 422
+    payload = request.get_json(silent=True) or {}
+    if payload.get("lampiran") or payload.get("attachment"):
+        return jsonify({"error": "Upload lampiran belum tersedia."}), 422
+    conn = None
+    try:
+        data = pengajuan_parse_input(payload, require_details=True)
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                result = pengajuan_check(cursor, session["user_id"], data)
+                budget = result["budget"]
+                if budget is None:
+                    raise PengajuanValidationError(
+                        "Sumber budget tidak ditemukan. Pengajuan belum dapat dikirim.", 422
+                    )
+                current = budget["current_budget"]
+                consumable = budget["consumable_budget"]
+                approval_hold = (
+                    Decimal(str(current)) - Decimal(str(consumable))
+                    if current is not None and consumable is not None else None
+                )
+                cursor.execute("""
+                    INSERT INTO public.budget_request (
+                        user_id, entity_id, request_date, pic,
+                        input_profit_center, input_cost_center, input_gl_account,
+                        request_amount, request_description,
+                        mapped_fund_id, mapped_funds_center_id,
+                        mapped_commitment_item_id, budget_id, budget_scope,
+                        available_amount_snapshot, shortage_amount,
+                        approval_hold_amount_snapshot,
+                        mapping_status, budget_status, request_status
+                    ) VALUES (
+                        %s, %s, NOW(), %s,
+                        %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s,
+                        %s, %s, %s, 'Mapped', %s, 'Pending'
+                    ) RETURNING request_id
+                """, (
+                    session["user_id"], data["entity_id"], data["pic"],
+                    data["profit_center"], data["cost_center"], data["gl_account"],
+                    data["request_amount"], data["description"],
+                    result["mapped"]["fund"]["id"],
+                    result["mapped"]["funds_center"]["id"],
+                    result["mapped"]["commitment_item"]["id"],
+                    budget["budget_id"], budget["budget_scope"],
+                    budget["available_amount"], result["shortage"],
+                    approval_hold, result["budget_status"],
+                ))
+                saved = cursor.fetchone()
+        return jsonify({
+            "success": True,
+            "request_id": saved["request_id"],
+            "request_status": "Pending",
+            "budget_status": result["budget_status"],
+            "message": "Pengajuan berhasil dikirim untuk review Approval.",
+        }), 201
+    except PengajuanValidationError as exc:
+        if conn is not None:
+            conn.rollback()
+        return jsonify({"success": False, "error": str(exc)}), exc.status_code
+    except psycopg2.Error:
+        if conn is not None:
+            conn.rollback()
+        app.logger.exception("Gagal menyimpan pengajuan")
+        return jsonify({"success": False, "error": "Pengajuan gagal disimpan."}), 500
+    finally:
+        if conn is not None:
             conn.close()
 
 

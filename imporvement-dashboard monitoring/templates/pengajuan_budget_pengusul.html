@@ -3,23 +3,22 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
 
     <title>Pengajuan Budget | SILOG</title>
 
-    <!-- Bootstrap -->
+    <!-- LIBRARIES -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Tom Select -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
 
-    <!-- SILOG Global CSS -->
+    <!-- SILOG CSS -->
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/style.css') }}">
 
@@ -28,20 +27,22 @@
 
     <style>
         :root {
-            --silog-red: #ed1c24;
-            --silog-red-dark: #cb1721;
-            --silog-red-light: #fff0f1;
+            --red: #ed1c24;
+            --red-dark: #c8161d;
+            --red-soft: #fff4f5;
 
-            --background: #f4f5f7;
+            --bg: #f6f7fb;
             --surface: #ffffff;
+            --text: #232a36;
+            --muted: #7b8794;
 
-            --text-primary: #292e38;
-            --text-secondary: #667181;
-            --text-muted: #959fac;
+            --line: #e7ebf1;
+            --line-soft: #eef2f6;
 
-            --border: #e4e8ee;
-            --success: #16825d;
-            --danger: #d72736;
+            --success: #18805d;
+            --danger: #d92c3a;
+
+            --shadow: 0 8px 24px rgba(18, 32, 56, .04);
         }
 
         * {
@@ -50,31 +51,26 @@
 
         body {
             margin: 0;
-            background: var(--background);
-            color: var(--text-primary);
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
         }
 
-        /* ==========================================
-           TOPBAR
-        ========================================== */
+        /* =====================================
+           MAIN LAYOUT
+        ===================================== */
 
         .topbar {
             display: flex;
-            justify-content: flex-end;
             align-items: center;
+            justify-content: flex-end;
         }
 
         .user-profile-link {
             display: flex;
             align-items: center;
             gap: 12px;
-
             color: inherit;
             text-decoration: none;
         }
@@ -83,188 +79,288 @@
             color: inherit;
         }
 
-        /* ==========================================
-           PAGE HEADER
-        ========================================== */
-
         .page-content {
-            padding: 30px 35px 50px;
+            padding: 26px 28px 44px;
+        }
+
+        .page-shell {
+            width: 100%;
+            max-width: 1220px;
+            margin: 0 auto;
         }
 
         .page-header {
-            margin-bottom: 25px;
+            margin-bottom: 18px;
         }
 
         .page-title {
             display: flex;
             align-items: center;
-            gap: 12px;
-
+            gap: 10px;
             margin: 0;
-
-            font-size: 25px;
-            font-weight: 750;
-            letter-spacing: -.5px;
+            font-size: 21px;
+            font-weight: 760;
+            letter-spacing: -.3px;
         }
 
         .page-title i {
-            color: var(--silog-red);
-            font-size: 24px;
+            color: var(--red);
+            font-size: 18px;
         }
 
         .page-subtitle {
-            margin: 7px 0 0;
-
-            color: var(--text-muted);
+            margin: 6px 0 0;
+            color: var(--muted);
             font-size: 12px;
+            line-height: 1.5;
         }
 
-        /* ==========================================
-           FORM GRID
-        ========================================== */
+        /* =====================================
+           FORM CARD
+        ===================================== */
 
-        .form-grid {
-            display: grid;
-
-            grid-template-columns:
-                minmax(0, 1.45fr)
-                minmax(320px, 1fr);
-
-            gap: 20px;
-            align-items: start;
-        }
-
-        .form-column {
-            min-width: 0;
-        }
-
-        .form-card {
-            padding: 25px;
-            margin-bottom: 18px;
-
+        .request-card {
+            padding: 22px 24px;
             background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 15px;
-
-            box-shadow:
-                0 5px 20px rgba(24, 34, 51, .025);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
         }
 
         .card-heading {
             display: flex;
             align-items: center;
             gap: 12px;
-
-            margin-bottom: 23px;
+            margin-bottom: 20px;
         }
 
         .card-icon {
             display: flex;
             align-items: center;
             justify-content: center;
+
+            width: 38px;
+            height: 38px;
             flex-shrink: 0;
 
-            width: 40px;
-            height: 40px;
-
-            background: var(--silog-red-light);
-            color: var(--silog-red);
-
-            border-radius: 10px;
-            font-size: 18px;
+            border-radius: 11px;
+            background: var(--red-soft);
+            color: var(--red);
+            font-size: 16px;
         }
 
         .card-heading h2 {
             margin: 0;
-
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 750;
         }
 
         .card-heading p {
-            margin: 5px 0 0;
-
-            color: var(--text-muted);
+            margin: 4px 0 0;
             font-size: 11px;
+            color: var(--muted);
         }
 
-        /* ==========================================
-           FORM INPUTS
-        ========================================== */
+        /* =====================================
+           FORM GRID 3-3-2-2
+        ===================================== */
+
+        .field-grid-three {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field-grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
 
         .field-group {
-            margin-bottom: 18px;
-        }
-
-        .field-group:last-child {
-            margin-bottom: 0;
+            min-width: 0;
+            margin-bottom: 15px;
         }
 
         .field-label {
             display: block;
-            margin-bottom: 8px;
-
-            color: #5f6877;
+            margin-bottom: 7px;
+            color: #556171;
             font-size: 12px;
-            font-weight: 650;
+            font-weight: 680;
         }
 
         .required {
-            color: var(--silog-red);
+            color: var(--red);
         }
 
         .form-control,
         .form-select {
-            min-height: 43px;
+            width: 100%;
+            min-height: 40px;
+            padding: 9px 12px;
 
-            padding: 10px 13px;
-
-            border: 1px solid #e1e5ec;
-            border-radius: 9px;
+            border: 1px solid #dde4ec;
+            border-radius: 10px;
 
             background: #fff;
-            color: #343b47;
-
+            color: #313949;
             font-size: 12px;
+
+            box-shadow: none;
+            transition: .18s ease;
+        }
+
+        .form-control::placeholder {
+            color: #a0a9b6;
         }
 
         .form-control:focus,
         .form-select:focus {
-            border-color: var(--silog-red);
-
-            box-shadow:
-                0 0 0 3px rgba(237, 28, 36, .08);
-        }
-
-        textarea.form-control {
-            min-height: 110px;
-            resize: vertical;
+            border-color: #f1a4aa;
+            box-shadow: 0 0 0 3px rgba(237,28,36,.08);
         }
 
         .field-hint {
-            margin: 6px 0 0;
-
-            color: #9aa3af;
+            margin: 5px 0 0;
+            color: #97a1ae;
             font-size: 10px;
-            line-height: 1.6;
+            line-height: 1.45;
         }
 
-        .input-group-text {
-            padding: 10px 15px;
+        /* =====================================
+           NOMINAL & SHORTAGE
+        ===================================== */
 
-            color: #667181;
+        .money-input {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .money-prefix {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            min-width: 46px;
+            padding: 0 13px;
+
             background: #f7f8fa;
+            border: 1px solid #dde4ec;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
 
-            border: 1px solid #e1e5ec;
-            border-radius: 9px 0 0 9px;
-
+            color: #6f7a89;
             font-size: 12px;
             font-weight: 700;
         }
 
-        /* ==========================================
+        .money-input .form-control {
+            border-radius: 0 10px 10px 0;
+        }
+
+        .shortage-input {
+            background: #f7f8fa !important;
+            font-weight: 700;
+            color: #536071;
+            cursor: not-allowed;
+        }
+
+        .shortage-input.has-shortage {
+            background: #fff3f4 !important;
+            border-color: #f2c4c8;
+            color: var(--danger);
+        }
+
+        .shortage-note {
+            margin: 5px 0 0;
+            min-height: 15px;
+            color: #97a1ae;
+            font-size: 10px;
+            line-height: 1.45;
+        }
+
+        .shortage-note.warning {
+            color: var(--danger);
+        }
+
+        /* =====================================
+           KETERANGAN & LAMPIRAN
+        ===================================== */
+
+        .description-input {
+            min-height: 84px;
+            resize: vertical;
+            padding-top: 10px;
+        }
+
+        .upload-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+
+            width: 100%;
+            min-height: 84px;
+            padding: 12px;
+
+            background: #fafbfc;
+            border: 1px dashed #d6dee8;
+            border-radius: 10px;
+
+            text-align: center;
+            transition: .18s;
+        }
+
+        .upload-area:hover {
+            border-color: #f0a8ae;
+            background: #fffafb;
+        }
+
+        .upload-area i {
+            color: var(--red);
+            font-size: 17px;
+        }
+
+        .upload-title {
+            color: #596575;
+            font-size: 11px;
+            font-weight: 650;
+        }
+
+        .upload-subtitle {
+            color: #98a3b0;
+            font-size: 10px;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-warning {
+            margin-top: 8px;
+            padding: 9px 11px;
+
+            background: #fff8e9;
+            border: 1px solid #f4e0b6;
+            border-radius: 9px;
+
+            color: #96681b;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        /* =====================================
            TOM SELECT
-        ========================================== */
+        ===================================== */
 
         .ts-wrapper {
             width: 100%;
@@ -274,291 +370,323 @@
             display: flex;
             align-items: center;
 
-            min-height: 43px;
-            padding: 8px 12px;
+            min-height: 40px;
+            padding: 8px 11px;
 
-            border: 1px solid #e1e5ec;
-            border-radius: 9px;
+            border: 1px solid #dde4ec;
+            border-radius: 10px;
 
             background: #fff;
             box-shadow: none;
-
             font-size: 12px;
         }
 
         .ts-wrapper.focus .ts-control {
-            border-color: var(--silog-red);
-
-            box-shadow:
-                0 0 0 3px rgba(237, 28, 36, .08);
+            border-color: #f1a4aa;
+            box-shadow: 0 0 0 3px rgba(237,28,36,.08);
         }
 
         .ts-control input {
             font-size: 12px !important;
-            min-width: 80px;
         }
 
         .ts-dropdown {
             margin-top: 5px;
-
-            border: 1px solid var(--border);
-            border-radius: 10px;
-
-            box-shadow:
-                0 12px 25px rgba(20, 30, 45, .10);
-
+            border: 1px solid #e3e8ee;
+            border-radius: 12px;
+            box-shadow: 0 16px 28px rgba(15,23,42,.08);
             overflow: hidden;
+            z-index: 1100;
         }
 
         .ts-dropdown .option {
-            padding: 11px 13px;
+            padding: 10px 12px;
             font-size: 12px;
         }
 
         .ts-dropdown .active {
-            background: var(--silog-red-light);
-            color: var(--silog-red);
+            background: var(--red-soft);
+            color: var(--red);
         }
 
-        .ts-dropdown .no-results,
-        .ts-dropdown .loading {
-            padding: 12px;
+        /* =====================================
+           STATUS
+        ===================================== */
 
-            color: var(--text-muted);
-            font-size: 12px;
-        }
+        .form-status {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
 
-        /* ==========================================
-           BUDGET EXAMINATION
-        ========================================== */
+            margin-top: 5px;
+            padding: 11px 13px;
 
-        .budget-placeholder {
-            padding: 27px 17px;
-
-            background: #f8f9fb;
-            border: 1px dashed #dce1e9;
+            background: #f7f9fc;
+            border: 1px solid #e4e9f0;
             border-radius: 11px;
 
-            text-align: center;
-        }
-
-        .budget-placeholder i {
-            display: block;
-
-            margin-bottom: 11px;
-
-            color: #a3acb9;
-            font-size: 28px;
-        }
-
-        .budget-placeholder strong {
-            display: block;
-
-            margin-bottom: 7px;
-
-            font-size: 13px;
-        }
-
-        .budget-placeholder p {
-            max-width: 310px;
-            margin: 0 auto;
-
-            color: #929ba8;
+            color: #6f7b8a;
             font-size: 11px;
-            line-height: 1.7;
+            line-height: 1.55;
         }
 
-        .result-heading {
+        .form-status.success {
+            background: #eef8f3;
+            border-color: #d5eadf;
+            color: #216b4d;
+        }
+
+        .form-status.error {
+            background: #fff2f3;
+            border-color: #ffd8dc;
+            color: #bc2d39;
+        }
+
+        .form-status.info {
+            background: #f6f8fb;
+            border-color: #e5eaf1;
+            color: #6a7685;
+        }
+
+        /* =====================================
+           BUTTONS
+        ===================================== */
+
+        .form-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
-
-            margin: 23px 0 9px;
-
-            font-size: 12px;
-            font-weight: 750;
-        }
-
-        .result-heading i {
-            color: var(--silog-red);
-        }
-
-        .budget-info-row {
-            display: flex;
-            align-items: flex-start;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
 
-            gap: 15px;
-            padding: 12px 0;
-
-            border-bottom: 1px solid #edf0f4;
-
-            font-size: 12px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line-soft);
         }
 
-        .budget-info-row span {
-            color: #8a95a4;
-        }
-
-        .budget-info-row strong {
-            max-width: 58%;
-
-            color: var(--text-primary);
-            font-weight: 700;
-            text-align: right;
-
-            overflow-wrap: anywhere;
-        }
-
-        .budget-info-row strong.negative {
-            color: var(--danger);
-        }
-
-        .budget-info-row strong.positive {
-            color: var(--success);
-        }
-
-        .section-divider {
-            margin: 21px 0;
-            border-color: var(--border);
-        }
-
-        /* ==========================================
-           STATUS MESSAGES
-        ========================================== */
-
-        .status-info {
+        .action-right {
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
-
-            margin-top: 20px;
-            padding: 13px;
-
-            border: 1px solid #e5e9ef;
-            border-radius: 9px;
-
-            background: #f5f7fa;
-            color: #737f8e;
-
-            font-size: 11px;
-            line-height: 1.7;
-        }
-
-        .status-info i {
-            margin-top: 2px;
-            font-size: 15px;
-        }
-
-        .status-info.success {
-            color: #246c52;
-            background: #edf8f2;
-            border-color: #d4eddf;
-        }
-
-        .status-info.error {
-            color: #bb2633;
-            background: #fff2f3;
-            border-color: #ffd6da;
-        }
-
-        .status-info.loading {
-            color: #687586;
-            background: #f0f2f5;
-        }
-
-        /* ==========================================
-           ACTION BUTTONS
-        ========================================== */
-
-        .action-bar {
-            display: flex;
-            justify-content: flex-end;
+            align-items: center;
             flex-wrap: wrap;
             gap: 10px;
-
-            margin-top: 7px;
         }
 
         .btn-cancel,
-        .btn-action {
+        .btn-outline-red,
+        .btn-red {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
 
-            min-height: 43px;
-            padding: 11px 20px;
+            min-height: 40px;
+            padding: 9px 16px;
 
-            border-radius: 9px;
-
+            border-radius: 11px;
             font-size: 12px;
             font-weight: 700;
-
             text-decoration: none;
-            transition: .15s ease;
+            cursor: pointer;
+            transition: .18s ease;
         }
 
         .btn-cancel {
-            background: white;
-            color: #667181;
-            border: 1px solid var(--border);
+            background: #fff;
+            border: 1px solid #dfe5ec;
+            color: #667281;
         }
 
         .btn-cancel:hover {
-            background: #f8f9fa;
-            color: #343b47;
+            background: #f7f9fb;
+            color: #394353;
         }
 
-        .btn-action {
-            background: var(--silog-red);
-            color: #fff;
-            border: 1px solid var(--silog-red);
-            cursor: pointer;
+        .btn-outline-red {
+            background: #fff;
+            border: 1px solid #f0b9be;
+            color: var(--red);
         }
 
-        .btn-action:hover:not(:disabled) {
-            background: var(--silog-red-dark);
+        .btn-outline-red:hover:not(:disabled) {
+            background: var(--red-soft);
+            color: var(--red-dark);
+        }
+
+        .btn-red {
+            border: 1px solid var(--red);
+            background: var(--red);
             color: #fff;
         }
 
-        .btn-action:disabled {
-            background: #e9afb3;
-            border-color: #e9afb3;
+        .btn-red:hover:not(:disabled) {
+            background: var(--red-dark);
             color: #fff;
+        }
 
-            opacity: .75;
+        .btn-red:disabled,
+        .btn-outline-red:disabled {
+            opacity: .48;
             cursor: not-allowed;
         }
 
-        /* ==========================================
-           RESPONSIVE
-        ========================================== */
+        /* =====================================
+           MODAL
+        ===================================== */
 
-        @media (max-width: 1100px) {
-            .form-grid {
+        .modal-content {
+            border: 1px solid #e7ebf1;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 24px 56px rgba(19,30,48,.15);
+        }
+
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .modal-title i {
+            color: var(--red);
+        }
+
+        .modal-body {
+            padding: 20px 22px;
+        }
+
+        .modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        .modal-section-title {
+            margin-bottom: 10px;
+            color: #404b5a;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .mapping-table td {
+            padding: 10px 0;
+            border-bottom: 1px solid #edf1f5;
+            font-size: 12px;
+            vertical-align: top;
+        }
+
+        .mapping-table td:first-child {
+            width: 42%;
+            color: #7e8897;
+        }
+
+        .mapping-table td:last-child {
+            font-weight: 700;
+            color: #313b49;
+            overflow-wrap: anywhere;
+        }
+
+        .modal-result {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+
+            margin-top: 18px;
+            padding: 13px 14px;
+
+            background: #f5f7fa;
+            border-radius: 12px;
+
+            color: #6c7888;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .modal-result.success {
+            background: #edf8f2;
+            color: #216b4d;
+        }
+
+        .modal-result.warning {
+            background: #fff3f4;
+            color: #b9303b;
+        }
+
+        .modal-result.error {
+            background: #fff3f4;
+            color: #b9303b;
+        }
+
+        .modal-result i {
+            font-size: 18px;
+        }
+
+        .modal-result strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .modal-result p {
+            margin: 0;
+        }
+
+        .confirm-hint {
+            margin: 14px 0 0;
+            color: #97a1ae;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        /* =====================================
+           RESPONSIVE
+        ===================================== */
+
+        @media (max-width: 1050px) {
+            .field-grid-three {
+                grid-template-columns: repeat(2, minmax(0,1fr));
+            }
+        }
+
+        @media (max-width: 700px) {
+            .field-grid-three,
+            .field-grid-two {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 650px) {
+        @media (max-width: 640px) {
             .page-content {
-                padding: 22px 16px 40px;
+                padding: 20px 16px 34px;
             }
 
-            .form-card {
-                padding: 20px;
+            .request-card {
+                padding: 18px 16px;
+                border-radius: 16px;
             }
 
             .page-title {
-                font-size: 21px;
+                font-size: 19px;
             }
 
-            .action-bar {
+            .form-actions,
+            .action-right {
                 flex-direction: column;
+                align-items: stretch;
+                width: 100%;
             }
 
-            .action-bar > * {
+            .form-actions > *,
+            .action-right > * {
                 width: 100%;
             }
         }
@@ -569,21 +697,19 @@
 
 <div class="dashboard-layout">
 
-    <!-- ==========================================
+    <!-- =====================================
          SIDEBAR
-    ========================================== -->
+    ===================================== -->
 
     <aside class="sidebar">
 
         <div class="sidebar-brand">
-
             <div class="brand-icon">S</div>
 
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
             </div>
-
         </div>
 
         <p class="sidebar-label">MENU UTAMA</p>
@@ -592,21 +718,18 @@
 
             <a href="{{ url_for('profil') }}"
                class="nav-item">
-
                 <i class="bi bi-person-circle"></i>
                 Profil
             </a>
 
             <a href="{{ url_for('dashboard') }}"
                class="nav-item">
-
                 <i class="bi bi-grid-1x2"></i>
                 Dashboard
             </a>
 
             <a href="{{ url_for('budget_detail_pengusul') }}"
                class="nav-item">
-
                 <i class="bi bi-wallet2"></i>
                 Budget Detail
             </a>
@@ -614,13 +737,11 @@
             <a href="{{ url_for('pengajuan_budget') }}"
                class="nav-item active"
                aria-current="page">
-
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
             </a>
 
             <span class="nav-item disabled">
-
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
             </span>
@@ -628,34 +749,23 @@
         </nav>
 
         <div class="sidebar-bottom">
-
-            <form method="POST"
-                  action="{{ url_for('logout') }}">
-
-                <button type="submit"
-                        class="logout-button">
-
+            <form method="POST" action="{{ url_for('logout') }}">
+                <button type="submit" class="logout-button">
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
-
                 </button>
-
             </form>
-
         </div>
 
     </aside>
 
-    <!-- ==========================================
+    <!-- =====================================
          MAIN CONTENT
-    ========================================== -->
+    ===================================== -->
 
     <main class="main-content">
 
-        <!-- TOPBAR -->
-
         <header class="topbar">
-
             <a href="{{ url_for('profil') }}"
                class="user-profile-link">
 
@@ -669,287 +779,203 @@
                 </div>
 
             </a>
-
         </header>
-
-        <!-- PAGE -->
 
         <section class="page-content">
 
-            <div class="page-header">
+            <div class="page-shell">
 
-                <h1 class="page-title">
-                    <i class="bi bi-file-earmark-plus"></i>
-                    Pengajuan Budget
-                </h1>
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="bi bi-file-earmark-plus"></i>
+                        Pengajuan Budget
+                    </h1>
 
-                <p class="page-subtitle">
-                    Lengkapi informasi kebutuhan dan lakukan
-                    pemeriksaan sebelum mengajukan anggaran.
-                </p>
+                    <p class="page-subtitle">
+                        Lengkapi informasi kebutuhan dan lakukan pemeriksaan
+                        sebelum mengajukan anggaran
+                    </p>
+                </div>
 
-            </div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show"
+                             role="alert">
+                            {{ message }}
 
-            <!-- FLASH MESSAGES -->
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Tutup"></button>
+                        </div>
+                    {% endfor %}
+                {% endwith %}
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
+                <!-- =====================================
+                     PENGAJUAN FORM
+                ===================================== -->
 
-                {% for category, message in messages %}
+                <form id="budgetRequestForm" novalidate>
 
-                    <div class="alert alert-{{ category }} alert-dismissible fade show"
-                         role="alert">
+                    <section class="request-card">
 
-                        {{ message }}
-
-                        <button type="button"
-                                class="btn-close"
-                                data-bs-dismiss="alert"
-                                aria-label="Tutup"></button>
-
-                    </div>
-
-                {% endfor %}
-
-            {% endwith %}
-
-            <!-- FORM -->
-
-            <form id="budgetRequestForm"
-                  method="POST"
-                  enctype="multipart/form-data"
-                  novalidate>
-
-                <div class="form-grid">
-
-                    <!-- =====================================
-                         LEFT COLUMN
-                    ===================================== -->
-
-                    <div class="form-column">
-
-                        <!-- IDENTITAS -->
-
-                        <section class="form-card">
-
-                            <div class="card-heading">
-
-                                <div class="card-icon">
-                                    <i class="bi bi-person-vcard"></i>
-                                </div>
-
-                                <div>
-                                    <h2>Informasi Pengajuan</h2>
-                                    <p>Identitas dan sumber transaksi</p>
-                                </div>
-
+                        <div class="card-heading">
+                            <div class="card-icon">
+                                <i class="bi bi-clipboard-data"></i>
                             </div>
 
-                            <div class="row g-3">
-
-                                <!-- TANGGAL -->
-
-                                <div class="col-md-6">
-
-                                    <label for="tanggal"
-                                           class="field-label">
-
-                                        Tanggal Transaksi
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <input type="date"
-                                           id="tanggal"
-                                           name="tanggal"
-                                           class="form-control"
-                                           required>
-
-                                </div>
-
-                                <!-- PIC -->
-
-                                <div class="col-md-6">
-
-                                    <label for="pic"
-                                           class="field-label">
-
-                                        PIC
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <input type="text"
-                                           id="pic"
-                                           name="pic"
-                                           class="form-control"
-                                           placeholder="Nama penanggung jawab"
-                                           maxlength="150"
-                                           required>
-
-                                </div>
-
-                                <!-- UNIT ENTITY -->
-
-                                <div class="col-12">
-
-                                    <label for="entity_id"
-                                           class="field-label">
-
-                                        Unit Entity
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <select id="entity_id"
-                                            name="entity_id"
-                                            class="form-select"
-                                            required>
-
-                                        <option value="">
-                                            Pilih Unit Entity
-                                        </option>
-
-                                        {% for entity in entity_options %}
-
-                                            <option value="{{ entity.entity_id }}">
-                                                {{ entity.unit_entity }}
-                                            </option>
-
-                                        {% endfor %}
-
-                                    </select>
-
-                                    <p class="field-hint">
-                                        Pilihan Unit Entity mengikuti
-                                        hak akses biro yang sedang login.
-                                    </p>
-
-                                </div>
-
-                                <!-- PROFIT CENTER -->
-
-                                <div class="col-md-6">
-
-                                    <label for="profit_center"
-                                           class="field-label">
-
-                                        Profit Center
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <select id="profit_center"
-                                            name="profit_center"
-                                            required>
-
-                                        <option value="">
-                                            Cari Profit Center...
-                                        </option>
-
-                                    </select>
-
-                                    <p class="field-hint">
-                                        Pencarian menggunakan
-                                        kode asal Master Fund.
-                                    </p>
-
-                                </div>
-
-                                <!-- COST CENTER -->
-
-                                <div class="col-md-6">
-
-                                    <label for="cost_center"
-                                           class="field-label">
-
-                                        Cost Center
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <select id="cost_center"
-                                            name="cost_center"
-                                            required>
-
-                                        <option value="">
-                                            Cari Cost Center...
-                                        </option>
-
-                                    </select>
-
-                                    <p class="field-hint">
-                                        Pencarian menggunakan
-                                        kode asal Master FC.
-                                    </p>
-
-                                </div>
-
-                                <!-- GL ACCOUNT -->
-
-                                <div class="col-12">
-
-                                    <label for="gl_account"
-                                           class="field-label">
-
-                                        CoA / GL Account
-                                        <span class="required">*</span>
-
-                                    </label>
-
-                                    <select id="gl_account"
-                                            name="gl_account"
-                                            required>
-
-                                        <option value="">
-                                            Cari GL Account...
-                                        </option>
-
-                                    </select>
-
-                                    <p class="field-hint">
-                                        GL Account akan diterjemahkan
-                                        menjadi Target Commitment Item
-                                        berdasarkan Master CI.
-                                    </p>
-
-                                </div>
-
+                            <div>
+                                <h2>Informasi Pengajuan</h2>
+                                <p>Lengkapi identitas dan kebutuhan anggaran</p>
                             </div>
+                        </div>
 
-                        </section>
+                        <!-- ===============================
+                             BARIS 1 : 3 KOLOM
+                        =============================== -->
 
-                        <!-- DETAIL KEBUTUHAN -->
+                        <div class="field-grid-three">
 
-                        <section class="form-card">
-
-                            <div class="card-heading">
-
-                                <div class="card-icon">
-                                    <i class="bi bi-cash-coin"></i>
-                                </div>
-
-                                <div>
-                                    <h2>Detail Kebutuhan</h2>
-                                    <p>Nominal dan dokumen pendukung</p>
-                                </div>
-
-                            </div>
-
-                            <!-- NOMINAL -->
-
+                            <!-- TANGGAL TRANSAKSI -->
                             <div class="field-group">
 
-                                <label for="requestAmount"
-                                       class="field-label">
-
-                                    Nominal Pengajuan
+                                <label for="tanggal" class="field-label">
+                                    Tanggal Transaksi
                                     <span class="required">*</span>
-
                                 </label>
 
-                                <div class="input-group">
+                                <input type="date"
+                                       id="tanggal"
+                                       name="tanggal"
+                                       class="form-control"
+                                       required>
 
-                                    <span class="input-group-text">
+                            </div>
+
+                            <!-- UNIT ENTITY -->
+                            <div class="field-group">
+
+                                <label for="entity_id" class="field-label">
+                                    Unit Entity
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="entity_id"
+                                        name="entity_id"
+                                        class="form-select"
+                                        required>
+
+                                    <option value="">Pilih Unit Entity</option>
+
+                                    {% for entity in entity_options %}
+                                        <option value="{{ entity.entity_id }}">
+                                            {{ entity.unit_entity }}
+                                        </option>
+                                    {% endfor %}
+
+                                </select>
+
+                            </div>
+
+                            <!-- PIC -->
+                            <div class="field-group">
+
+                                <label for="pic" class="field-label">
+                                    PIC
+                                    <span class="required">*</span>
+                                </label>
+
+                                <input type="text"
+                                       id="pic"
+                                       name="pic"
+                                       class="form-control"
+                                       maxlength="150"
+                                       placeholder="Nama penanggung jawab"
+                                       required>
+
+                            </div>
+
+                        </div>
+
+                        <!-- ===============================
+                             BARIS 2 : 3 KOLOM
+                        =============================== -->
+
+                        <div class="field-grid-three">
+
+                            <!-- PROFIT CENTER -->
+                            <div class="field-group">
+
+                                <label for="profit_center" class="field-label">
+                                    Profit Center
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="profit_center"
+                                        name="profit_center"
+                                        required></select>
+
+                                <p class="field-hint">
+                                    Kode asal Master Fund
+                                </p>
+
+                            </div>
+
+                            <!-- COST CENTER -->
+                            <div class="field-group">
+
+                                <label for="cost_center" class="field-label">
+                                    Cost Center
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="cost_center"
+                                        name="cost_center"
+                                        required></select>
+
+                                <p class="field-hint">
+                                    Kode asal Master FC
+                                </p>
+
+                            </div>
+
+                            <!-- GL ACCOUNT -->
+                            <div class="field-group">
+
+                                <label for="gl_account" class="field-label">
+                                    CoA / GL Account
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="gl_account"
+                                        name="gl_account"
+                                        required></select>
+
+                                <p class="field-hint">
+                                    Kode asal Master CI
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <!-- ===============================
+                             BARIS 3 : 2 KOLOM
+                        =============================== -->
+
+                        <div class="field-grid-two">
+
+                            <!-- NOMINAL -->
+                            <div class="field-group">
+
+                                <label for="requestAmount" class="field-label">
+                                    Nominal Pengajuan
+                                    <span class="required">*</span>
+                                </label>
+
+                                <div class="money-input">
+
+                                    <span class="money-prefix">
                                         Rp
                                     </span>
 
@@ -965,275 +991,168 @@
                                 </div>
 
                                 <p class="field-hint">
-                                    Pengajuan yang melebihi
-                                    Available Amount tetap dapat
-                                    diteruskan untuk review Approval.
+                                    Nominal melebihi budget tetap dapat
+                                    diajukan untuk review Approval
                                 </p>
 
                             </div>
 
-                            <!-- KETERANGAN -->
-
+                            <!-- SHORTAGE -->
                             <div class="field-group">
 
-                                <label for="keterangan"
-                                       class="field-label">
+                                <label for="shortageAmount" class="field-label">
+                                    Shortage Amount
+                                </label>
 
+                                <div class="money-input">
+
+                                    <span class="money-prefix">
+                                        Rp
+                                    </span>
+
+                                    <input type="text"
+                                           id="shortageAmount"
+                                           class="form-control shortage-input"
+                                           value="—"
+                                           readonly
+                                           aria-readonly="true">
+
+                                </div>
+
+                                <p class="shortage-note"
+                                   id="shortageNote"
+                                   aria-live="polite">
+                                    Lengkapi kode master dan nominal terlebih dahulu
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <!-- ===============================
+                             BARIS 4 : 2 KOLOM
+                        =============================== -->
+
+                        <div class="field-grid-two">
+
+                            <!-- KETERANGAN -->
+                            <div class="field-group">
+
+                                <label for="keterangan" class="field-label">
                                     Keterangan
                                     <span class="required">*</span>
-
                                 </label>
 
                                 <textarea id="keterangan"
                                           name="keterangan"
-                                          class="form-control"
+                                          class="form-control description-input"
                                           maxlength="2000"
-                                          placeholder="Jelaskan tujuan dan kebutuhan pengajuan budget..."
+                                          placeholder="Jelaskan kebutuhan pengajuan budget..."
                                           required></textarea>
 
                             </div>
 
                             <!-- LAMPIRAN -->
-
                             <div class="field-group">
 
-                                <label for="lampiran"
-                                       class="field-label">
-
+                                <label for="lampiran" class="field-label">
                                     Lampiran Pendukung
-
                                 </label>
 
-                                <input type="file"
-                                       id="lampiran"
-                                       name="lampiran"
-                                       class="form-control"
-                                       accept=".pdf,.png,.jpg,.jpeg,.xlsx">
+                                <div class="upload-area">
 
-                                <p class="field-hint">
-                                    Lampiran belum diunggah
-                                    selama tahap pemeriksaan mapping.
-                                    Penyimpanan file akan diaktifkan
-                                    saat endpoint pengajuan dibuat.
-                                </p>
+                                    <i class="bi bi-cloud-arrow-up"></i>
+
+                                    <span class="upload-title"
+                                          id="uploadTitle">
+                                        Pilih dokumen pendukung
+                                    </span>
+
+                                    <span class="upload-subtitle"
+                                          id="uploadSubtitle">
+                                        PDF, JPG, PNG, atau XLSX
+                                    </span>
+
+                                    <input type="file"
+                                           id="lampiran"
+                                           name="lampiran"
+                                           accept=".pdf,.png,.jpg,.jpeg,.xlsx"
+                                           aria-label="Pilih lampiran pendukung">
+
+                                </div>
+
+                                <div class="upload-warning"
+                                     id="attachmentWarning"
+                                     hidden>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Penyimpanan lampiran belum tersedia.
+                                    Hapus lampiran sebelum mengirim pengajuan.
+                                </div>
 
                             </div>
 
-                        </section>
+                        </div>
 
-                    </div>
+                        <!-- ===============================
+                             STATUS
+                        =============================== -->
 
-                    <!-- =====================================
-                         RIGHT COLUMN
-                    ===================================== -->
+                        <div id="formStatus"
+                             class="form-status info"
+                             role="status"
+                             aria-live="polite">
 
-                    <div class="form-column">
+                            <i class="bi bi-info-circle"></i>
 
-                        <section class="form-card">
+                            <span id="formStatusText">
+                                Lengkapi form. Shortage Amount akan dihitung
+                                otomatis setelah kode master dan nominal tersedia.
+                            </span>
 
-                            <div class="card-heading">
+                        </div>
 
-                                <div class="card-icon">
+                        <!-- ===============================
+                             BUTTONS
+                        =============================== -->
+
+                        <div class="form-actions">
+
+                            <a href="{{ url_for('dashboard') }}"
+                               class="btn-cancel">
+                                <i class="bi bi-x-circle"></i>
+                                Batal
+                            </a>
+
+                            <div class="action-right">
+
+                                <button type="button"
+                                        class="btn-outline-red"
+                                        id="checkBudgetBtn">
+
                                     <i class="bi bi-search"></i>
-                                </div>
+                                    Pemeriksaan Budget
 
-                                <div>
-                                    <h2>Pemeriksaan Budget</h2>
-                                    <p>Mapping dan validasi sumber budget</p>
-                                </div>
+                                </button>
 
-                            </div>
+                                <button type="button"
+                                        class="btn-red"
+                                        id="submitBudgetBtn"
+                                        disabled>
 
-                            <!-- EMPTY STATE -->
+                                    <i class="bi bi-send"></i>
+                                    Ajukan Budget
 
-                            <div class="budget-placeholder"
-                                 id="budgetPlaceholder">
-
-                                <i class="bi bi-clipboard-check"></i>
-
-                                <strong>Belum Ada Pemeriksaan</strong>
-
-                                <p>
-                                    Lengkapi informasi pengajuan,
-                                    lalu klik Periksa Mapping untuk
-                                    melihat hasil penerjemahan
-                                    kode master.
-                                </p>
+                                </button>
 
                             </div>
 
-                            <!-- MAPPING -->
+                        </div>
 
-                            <div class="result-heading">
-                                <i class="bi bi-diagram-3"></i>
-                                Hasil Mapping
-                            </div>
+                    </section>
 
-                            <div class="budget-info-row">
+                </form>
 
-                                <span>Mapped Fund</span>
-
-                                <strong id="mappedFund">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Mapped Funds Center</span>
-
-                                <strong id="mappedFC">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Mapped Commitment Item</span>
-
-                                <strong id="mappedCI">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Nama Commitment Item</span>
-
-                                <strong id="mappedCIName">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Status Mapping</span>
-
-                                <strong id="mappingStatus">—</strong>
-
-                            </div>
-
-                            <hr class="section-divider">
-
-                            <!-- BUDGET -->
-
-                            <div class="result-heading">
-                                <i class="bi bi-wallet2"></i>
-                                Informasi Budget
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Budget Scope</span>
-
-                                <strong id="budgetScope">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Consumable Budget</span>
-
-                                <strong id="consumable">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Consumed Budget</span>
-
-                                <strong id="consumed">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Available Amount</span>
-
-                                <strong id="available">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Nominal Pengajuan</span>
-
-                                <strong id="requested">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Shortage Amount</span>
-
-                                <strong id="shortage">—</strong>
-
-                            </div>
-
-                            <div class="budget-info-row">
-
-                                <span>Status Budget</span>
-
-                                <strong id="budgetStatusText">—</strong>
-
-                            </div>
-
-                            <!-- STATUS -->
-
-                            <div class="status-info"
-                                 id="budgetStatus"
-                                 role="status"
-                                 aria-live="polite">
-
-                                <i class="bi bi-info-circle"></i>
-
-                                <span id="statusMessage">
-                                    Status: Belum Diperiksa.
-                                    Lengkapi data pengajuan untuk
-                                    memulai pemeriksaan.
-                                </span>
-
-                            </div>
-
-                        </section>
-
-                    </div>
-
-                </div>
-
-                <!-- =====================================
-                     ACTION BAR
-                ===================================== -->
-
-                <div class="action-bar">
-
-                    <a href="{{ url_for('dashboard') }}"
-                       class="btn-cancel">
-
-                        <i class="bi bi-x-circle"></i>
-                        Batal
-
-                    </a>
-
-                    <button type="button"
-                            id="checkMappingBtn"
-                            class="btn-action">
-
-                        <i class="bi bi-search"></i>
-                        Periksa Mapping
-
-                    </button>
-
-                    <button type="button"
-                            id="submitBudgetBtn"
-                            class="btn-action"
-                            disabled
-                            title="Aktif setelah validasi dan penyimpanan pengajuan terintegrasi">
-
-                        <i class="bi bi-send"></i>
-                        Ajukan Budget
-
-                    </button>
-
-                </div>
-
-            </form>
+            </div>
 
         </section>
 
@@ -1241,9 +1160,138 @@
 
 </div>
 
-<!-- ==========================================
-     JAVASCRIPT DEPENDENCIES
-========================================== -->
+<!-- =====================================
+     MODAL PEMERIKSAAN BUDGET
+===================================== -->
+
+<div class="modal fade"
+     id="budgetCheckModal"
+     tabindex="-1"
+     aria-labelledby="budgetCheckTitle"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg
+                modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2 class="modal-title" id="budgetCheckTitle">
+                    <i class="bi bi-clipboard-check"></i>
+                    Hasil Pemeriksaan Budget
+                </h2>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Tutup"></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <h3 class="modal-section-title">
+                    Hasil Mapping
+                </h3>
+
+                <table class="mapping-table">
+                    <tbody>
+
+                        <tr>
+                            <td>Mapped Fund</td>
+                            <td id="modalFund">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Mapped Funds Center</td>
+                            <td id="modalFC">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Mapped Commitment Item</td>
+                            <td id="modalCI">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Nama Commitment Item</td>
+                            <td id="modalCIName">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Budget Scope</td>
+                            <td id="modalScope">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Nominal Pengajuan</td>
+                            <td id="modalAmount">—</td>
+                        </tr>
+
+                        <tr>
+                            <td>Shortage Amount</td>
+                            <td id="modalShortage">—</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
+                <div class="modal-result"
+                     id="modalResult"
+                     role="status"
+                     aria-live="polite">
+
+                    <i class="bi bi-info-circle"></i>
+
+                    <div>
+                        <strong id="modalResultTitle">
+                            Belum Diperiksa
+                        </strong>
+
+                        <p id="modalResultMessage">
+                            Hasil pemeriksaan akan ditampilkan di sini.
+                        </p>
+                    </div>
+
+                </div>
+
+                <p class="confirm-hint">
+                    Periksa hasil mapping sebelum dikonfirmasi.
+                    Jika nominal melebihi anggaran, pengajuan tetap
+                    dapat diteruskan untuk review Approval.
+                </p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn-cancel"
+                        data-bs-dismiss="modal">
+                    Kembali
+                </button>
+
+                <button type="button"
+                        class="btn-red"
+                        id="confirmMappingBtn"
+                        disabled>
+
+                    <i class="bi bi-check-circle"></i>
+                    Konfirmasi Hasil
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================
+     LIBRARY SCRIPTS
+===================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1252,56 +1300,87 @@
 <script>
 "use strict";
 
-/* ==========================================
-   1. ELEMENT REFERENCES
-========================================== */
+/* =====================================
+   API ENDPOINTS
+===================================== */
 
-const form = document.getElementById("budgetRequestForm");
-
-const checkMappingBtn =
-    document.getElementById("checkMappingBtn");
-
-const submitBudgetBtn =
-    document.getElementById("submitBudgetBtn");
-
-const budgetStatus =
-    document.getElementById("budgetStatus");
-
-const statusMessage =
-    document.getElementById("statusMessage");
-
-const budgetPlaceholder =
-    document.getElementById("budgetPlaceholder");
-
-const amountInput =
-    document.getElementById("requestAmount");
-
-/* ==========================================
-   2. API CONFIGURATION
-========================================== */
-
-const API_MASTER_OPTIONS =
+const API_OPTIONS =
     {{ url_for('pengajuan_master_options') | tojson }};
 
-const API_MAPPING =
-    {{ url_for('pengajuan_mapping') | tojson }};
+const API_SHORTAGE =
+    {{ url_for('pengajuan_shortage') | tojson }};
 
-/* Jika aplikasi memakai CSRF protection,
-   token dapat ditambahkan pada request POST.
-   Endpoint backend juga wajib memvalidasinya. */
+const API_PERIKSA =
+    {{ url_for('pengajuan_periksa') | tojson }};
 
-const csrfElement =
-    document.querySelector('meta[name="csrf-token"]');
+const API_SUBMIT =
+    {{ url_for('pengajuan_submit') | tojson }};
 
-const csrfToken = csrfElement
-    ? csrfElement.getAttribute("content")
-    : null;
+const CSRF_TOKEN =
+    {{ csrf_token | tojson }};
 
-/* ==========================================
-   3. UTILITY FUNCTIONS
-========================================== */
+/* =====================================
+   ELEMENTS
+===================================== */
+
+const form = document.getElementById("budgetRequestForm");
+const amountInput = document.getElementById("requestAmount");
+const shortageInput = document.getElementById("shortageAmount");
+const shortageNote = document.getElementById("shortageNote");
+
+const checkBtn = document.getElementById("checkBudgetBtn");
+const submitBtn = document.getElementById("submitBudgetBtn");
+const confirmBtn = document.getElementById("confirmMappingBtn");
+
+const statusBox = document.getElementById("formStatus");
+const statusText = document.getElementById("formStatusText");
+
+const attachment = document.getElementById("lampiran");
+const attachmentWarning =
+    document.getElementById("attachmentWarning");
+
+const uploadTitle = document.getElementById("uploadTitle");
+const uploadSubtitle = document.getElementById("uploadSubtitle");
+
+const modalElement =
+    document.getElementById("budgetCheckModal");
+
+const modalInstance = (
+    typeof bootstrap !== "undefined"
+        ? new bootstrap.Modal(modalElement)
+        : null
+);
+
+/* =====================================
+   STATE
+===================================== */
+
+let profitSelect = null;
+let costSelect = null;
+let glSelect = null;
+
+let version = 0;
+let shortageTimer = null;
+
+let pendingCheck = false;
+let pendingSubmit = false;
+let submitSuccess = false;
+
+let confirmedData = null;
+let modalResultData = null;
+let modalRequestVersion = null;
+
+const SHORTAGE_DELAY = 450;
+
+/* =====================================
+   HELPERS
+===================================== */
 
 function rupiah(value) {
+    if (value === null || value === undefined || value === "") {
+        return "—";
+    }
+
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
@@ -1313,136 +1392,121 @@ function rupiah(value) {
     });
 }
 
+function moneyValue(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "—";
+    }
+
+    return number.toLocaleString("id-ID", {
+        maximumFractionDigits: 0
+    });
+}
+
 function setText(id, value) {
-    const element = document.getElementById(id);
+    const el = document.getElementById(id);
 
-    if (!element) return;
+    if (!el) return;
 
-    element.textContent =
+    el.textContent = (
         value === null ||
         value === undefined ||
         value === ""
-            ? "—"
-            : String(value);
+    ) ? "—" : String(value);
 }
 
 function setStatus(type, message) {
-    budgetStatus.className = "status-info";
+    statusBox.className =
+        "form-status " + (type || "info");
 
-    if (type) {
-        budgetStatus.classList.add(type);
-    }
+    statusText.textContent = message;
 
-    const icon = budgetStatus.querySelector("i");
+    const icon = statusBox.querySelector("i");
 
     if (icon) {
-        if (type === "success") {
-            icon.className = "bi bi-check-circle";
-        } else if (type === "error") {
-            icon.className = "bi bi-exclamation-circle";
-        } else if (type === "loading") {
-            icon.className = "bi bi-arrow-repeat";
-        } else {
-            icon.className = "bi bi-info-circle";
-        }
+        icon.className =
+            type === "success"
+                ? "bi bi-check-circle"
+                : type === "error"
+                    ? "bi bi-exclamation-circle"
+                    : "bi bi-info-circle";
     }
-
-    statusMessage.textContent = message;
 }
 
-/* ==========================================
-   4. INITIAL DATE
-========================================== */
+function showModalResult(type, title, message) {
+    const box = document.getElementById("modalResult");
+
+    box.className =
+        "modal-result " + (type || "");
+
+    setText("modalResultTitle", title);
+    setText("modalResultMessage", message);
+
+    const icon = box.querySelector("i");
+
+    if (icon) {
+        icon.className =
+            type === "success"
+                ? "bi bi-check-circle"
+                : type === "warning"
+                    ? "bi bi-exclamation-circle"
+                    : type === "error"
+                        ? "bi bi-x-circle"
+                        : "bi bi-info-circle";
+    }
+}
 
 function localDateString() {
     const now = new Date();
 
-    const yyyy = now.getFullYear();
-
-    const mm = String(
-        now.getMonth() + 1
-    ).padStart(2, "0");
-
-    const dd = String(
-        now.getDate()
-    ).padStart(2, "0");
-
-    return `${yyyy}-${mm}-${dd}`;
+    return [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+    ].join("-");
 }
 
 document.getElementById("tanggal").value =
     localDateString();
 
-/* ==========================================
-   5. RESET MAPPING RESULTS
-========================================== */
+async function postJSON(url, payload) {
+    const response = await fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
 
-function resetMappingResults() {
-    [
-        "mappedFund",
-        "mappedFC",
-        "mappedCI",
-        "mappedCIName",
-        "mappingStatus"
-    ].forEach(id => setText(id, "—"));
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": CSRF_TOKEN
+        },
+
+        body: JSON.stringify(payload)
+    });
+
+    let result;
+
+    try {
+        result = await response.json();
+    } catch (_) {
+        throw new Error(
+            "Server tidak mengembalikan respons JSON yang valid."
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            result.error ||
+            result.message ||
+            "Permintaan tidak berhasil diproses."
+        );
+    }
+
+    return result;
 }
 
-/* ==========================================
-   6. RESET BUDGET RESULTS
-========================================== */
-
-function resetBudgetResults() {
-    [
-        "budgetScope",
-        "consumable",
-        "consumed",
-        "available",
-        "shortage",
-        "budgetStatusText"
-    ].forEach(id => setText(id, "—"));
-}
-
-function updateRequestedAmount() {
-    const amount = Number(amountInput.value);
-
-    setText(
-        "requested",
-        amount > 0 && Number.isFinite(amount)
-            ? rupiah(amount)
-            : "—"
-    );
-}
-
-/* ==========================================
-   7. INVALIDATE PREVIOUS CHECK
-========================================== */
-
-let mappingValidated = false;
-let formVersion = 0;
-let checking = false;
-
-function invalidateCheck() {
-    formVersion += 1;
-    mappingValidated = false;
-
-    resetMappingResults();
-    resetBudgetResults();
-    updateRequestedAmount();
-
-    budgetPlaceholder.hidden = false;
-
-    submitBudgetBtn.disabled = true;
-
-    setStatus(
-        "",
-        "Data pengajuan belum diperiksa atau telah berubah. " +
-        "Lakukan pemeriksaan mapping kembali."
-    );
-}
-
-/* ==========================================
-   8. SEARCHABLE MASTER DROPDOWN
-========================================== */
+/* =====================================
+   SEARCHABLE DROPDOWNS
+===================================== */
 
 function initializeMasterSelect(id, type) {
     return new TomSelect("#" + id, {
@@ -1450,9 +1514,8 @@ function initializeMasterSelect(id, type) {
         labelField: "text",
         searchField: [],
 
-        maxItems: 1,
         create: false,
-
+        maxItems: 1,
         preload: false,
         loadThrottle: 300,
 
@@ -1464,22 +1527,26 @@ function initializeMasterSelect(id, type) {
 
         render: {
             no_results(data, escape) {
-                return '<div class="no-results">' +
+                return (
+                    '<div class="no-results p-2">' +
                     'Kode tidak ditemukan: ' +
                     escape(data.input) +
-                    '</div>';
+                    '</div>'
+                );
             },
 
             loading() {
-                return '<div class="loading">' +
+                return (
+                    '<div class="loading p-2">' +
                     'Mencari data master...' +
-                    '</div>';
+                    '</div>'
+                );
             }
         },
 
         load(query, callback) {
             const url = new URL(
-                API_MASTER_OPTIONS,
+                API_OPTIONS,
                 window.location.origin
             );
 
@@ -1493,7 +1560,7 @@ function initializeMasterSelect(id, type) {
             .then(async response => {
                 if (!response.ok) {
                     throw new Error(
-                        "Gagal mengambil pilihan master."
+                        "Pilihan kode master gagal dimuat."
                     );
                 }
 
@@ -1504,333 +1571,616 @@ function initializeMasterSelect(id, type) {
             })
             .catch(error => {
                 console.error(error);
-
                 callback();
 
                 setStatus(
                     "error",
-                    "Pilihan kode master gagal dimuat. " +
-                    "Silakan coba pencarian kembali."
+                    "Gagal mengambil data master. " +
+                    "Coba lakukan pencarian kembali."
                 );
             });
         },
 
         onChange() {
-            invalidateCheck();
+            invalidateForm();
         }
     });
 }
 
-/* ==========================================
-   9. INITIALIZE ALL DROPDOWNS
-========================================== */
-
-let profitSelect;
-let costSelect;
-let glSelect;
-
 if (typeof TomSelect !== "undefined") {
-
     profitSelect = initializeMasterSelect(
-        "profit_center",
-        "fund"
+        "profit_center", "fund"
     );
 
     costSelect = initializeMasterSelect(
-        "cost_center",
-        "fc"
+        "cost_center", "fc"
     );
 
     glSelect = initializeMasterSelect(
-        "gl_account",
-        "ci"
+        "gl_account", "ci"
     );
-
 } else {
+    checkBtn.disabled = true;
 
     setStatus(
         "error",
-        "Komponen pencarian kode gagal dimuat. " +
-        "Periksa koneksi internet dan muat ulang halaman."
+        "Komponen searchable dropdown gagal dimuat. " +
+        "Periksa koneksi internet lalu muat ulang halaman."
     );
-
-    checkMappingBtn.disabled = true;
 }
 
-/* ==========================================
-   10. VALIDATION
-========================================== */
+/* =====================================
+   FORM DATA
+===================================== */
 
-function validateForm() {
-    const tanggal =
-        document.getElementById("tanggal").value;
+function collectData() {
+    return {
+        tanggal:
+            document.getElementById("tanggal").value,
 
-    const pic =
-        document.getElementById("pic").value.trim();
+        entity_id:
+            document.getElementById("entity_id").value,
 
-    const entity =
-        document.getElementById("entity_id").value;
+        pic:
+            document.getElementById("pic").value.trim(),
 
-    const profit =
-        profitSelect ? profitSelect.getValue() : "";
+        profit_center:
+            profitSelect ? profitSelect.getValue() : "",
 
-    const cost =
-        costSelect ? costSelect.getValue() : "";
+        cost_center:
+            costSelect ? costSelect.getValue() : "",
 
-    const gl =
-        glSelect ? glSelect.getValue() : "";
+        gl_account:
+            glSelect ? glSelect.getValue() : "",
 
-    const amount = Number(amountInput.value);
+        request_amount:
+            amountInput.value.trim(),
 
-    const description =
-        document.getElementById("keterangan").value.trim();
+        keterangan:
+            document.getElementById("keterangan").value.trim()
+    };
+}
 
-    if (!tanggal) {
+function hasValidAmount(value) {
+    const amount = Number(value);
+
+    return (
+        value !== "" &&
+        Number.isSafeInteger(amount) &&
+        amount > 0
+    );
+}
+
+function validateForShortage(data) {
+    return (
+        !!data.tanggal &&
+        !!data.entity_id &&
+        !!data.profit_center &&
+        !!data.cost_center &&
+        !!data.gl_account &&
+        hasValidAmount(data.request_amount)
+    );
+}
+
+function validateFullForm(data) {
+    if (!data.tanggal) {
         return "Tanggal transaksi wajib diisi.";
     }
 
-    if (!pic) {
+    if (!data.entity_id) {
+        return "Unit Entity wajib dipilih.";
+    }
+
+    if (!data.pic) {
         return "PIC wajib diisi.";
     }
 
-    if (!entity) {
-        return "Pilih Unit Entity terlebih dahulu.";
-    }
-
-    if (!profit) {
+    if (!data.profit_center) {
         return "Pilih Profit Center dari data master.";
     }
 
-    if (!cost) {
+    if (!data.cost_center) {
         return "Pilih Cost Center dari data master.";
     }
 
-    if (!gl) {
+    if (!data.gl_account) {
         return "Pilih GL Account dari data master.";
     }
 
-    if (
-        !Number.isSafeInteger(amount) ||
-        amount <= 0
-    ) {
-        return "Nominal pengajuan harus berupa bilangan bulat positif.";
+    if (!hasValidAmount(data.request_amount)) {
+        return "Nominal Pengajuan harus berupa bilangan bulat positif.";
     }
 
-    if (!description) {
+    if (!data.keterangan) {
         return "Keterangan pengajuan wajib diisi.";
+    }
+
+    if (data.pic.length > 150) {
+        return "Nama PIC maksimal 150 karakter.";
+    }
+
+    if (data.keterangan.length > 2000) {
+        return "Keterangan maksimal 2000 karakter.";
+    }
+
+    if (attachment.files.length > 0) {
+        return (
+            "Upload lampiran belum tersedia. " +
+            "Hapus lampiran untuk mengirim pengajuan."
+        );
     }
 
     return null;
 }
 
-/* ==========================================
-   11. MAPPING REQUEST
-========================================== */
+/* =====================================
+   SHORTAGE STATE
+===================================== */
 
-async function performMapping() {
-    const error = validateForm();
+function updateSubmitButton() {
+    submitBtn.disabled = (
+        !confirmedData ||
+        pendingCheck ||
+        pendingSubmit ||
+        submitSuccess ||
+        attachment.files.length > 0
+    );
+}
+
+function setShortage(value, note, warning = false) {
+    shortageInput.value = value;
+
+    shortageInput.classList.toggle(
+        "has-shortage",
+        warning
+    );
+
+    shortageNote.textContent = note;
+
+    shortageNote.classList.toggle(
+        "warning",
+        warning
+    );
+}
+
+function invalidateForm() {
+    if (submitSuccess) return;
+
+    version += 1;
+    confirmedData = null;
+    modalResultData = null;
+    modalRequestVersion = null;
+
+    clearTimeout(shortageTimer);
+    updateSubmitButton();
+
+    setShortage(
+        "—",
+        "Menunggu pemeriksaan sumber budget."
+    );
+
+    setStatus(
+        "info",
+        "Data berubah. Pemeriksaan sebelumnya tidak berlaku."
+    );
+
+    scheduleShortage();
+}
+
+/* =====================================
+   AUTOMATIC SHORTAGE
+===================================== */
+
+function scheduleShortage() {
+    const current = collectData();
+
+    if (!validateForShortage(current)) {
+        setShortage(
+            "—",
+            "Lengkapi kode master dan nominal terlebih dahulu"
+        );
+        return;
+    }
+
+    const requestVersion = version;
+
+    shortageTimer = setTimeout(async () => {
+        setShortage(
+            "Menghitung...",
+            "Memeriksa sumber budget secara otomatis."
+        );
+
+        try {
+            const result = await postJSON(
+                API_SHORTAGE,
+                current
+            );
+
+            if (requestVersion !== version) return;
+
+            if (
+                !result.budget_found ||
+                result.shortage_amount === null
+            ) {
+                setShortage(
+                    "—",
+                    result.message ||
+                    "Sumber budget tidak ditemukan."
+                );
+                return;
+            }
+
+            const shortage = Number(
+                result.shortage_amount
+            );
+
+            setShortage(
+                moneyValue(shortage),
+                shortage > 0
+                    ? "Kekurangan anggaran akan diteruskan untuk review Approval."
+                    : "Tidak ada kekurangan anggaran.",
+                shortage > 0
+            );
+
+        } catch (error) {
+            if (requestVersion !== version) return;
+
+            setShortage(
+                "—",
+                error.message ||
+                "Perhitungan Shortage Amount gagal."
+            );
+        }
+
+    }, SHORTAGE_DELAY);
+}
+
+/* =====================================
+   MODAL
+===================================== */
+
+function resetModal() {
+    [
+        "modalFund",
+        "modalFC",
+        "modalCI",
+        "modalCIName",
+        "modalScope",
+        "modalAmount",
+        "modalShortage"
+    ].forEach(id => setText(id, "—"));
+
+    confirmBtn.disabled = true;
+
+    showModalResult(
+        "",
+        "Sedang Diperiksa",
+        "Sistem sedang memeriksa hasil mapping dan sumber budget."
+    );
+}
+
+function fillModal(result, data) {
+    setText("modalFund", result.mapped_fund?.code);
+    setText("modalFC", result.mapped_funds_center?.code);
+    setText("modalCI", result.mapped_commitment_item?.code);
+    setText("modalCIName", result.mapped_commitment_item?.name);
+    setText("modalScope", result.budget_scope);
+    setText("modalAmount", rupiah(data.request_amount));
+
+    setText(
+        "modalShortage",
+        result.shortage_amount === null
+            ? "—"
+            : rupiah(result.shortage_amount)
+    );
+
+    if (!result.budget_found) {
+        showModalResult(
+            "error",
+            "Sumber Budget Tidak Ditemukan",
+            result.message || "Pengajuan belum bisa diproses."
+        );
+
+        confirmBtn.disabled = true;
+        return;
+    }
+
+    const shortage = Number(result.shortage_amount || 0);
+
+    if (shortage > 0) {
+        showModalResult(
+            "warning",
+            "Memerlukan Review Budget",
+            "Mapping berhasil, tetapi nominal pengajuan melebihi anggaran tersedia. Pengajuan tetap dapat diteruskan untuk review Approval."
+        );
+    } else {
+        showModalResult(
+            "success",
+            "Mapping dan Budget Berhasil Diperiksa",
+            "Sumber budget ditemukan. Nominal pengajuan dapat diteruskan ke proses Approval."
+        );
+    }
+
+    confirmBtn.disabled = !result.can_submit;
+}
+
+/* =====================================
+   PERIKSA BUDGET
+===================================== */
+
+checkBtn.addEventListener("click", async () => {
+    if (pendingCheck || pendingSubmit || submitSuccess) {
+        return;
+    }
+
+    const data = collectData();
+    const error = validateFullForm(data);
 
     if (error) {
         setStatus("error", error);
         return;
     }
 
-    if (checking) {
+    if (!modalInstance) {
+        setStatus(
+            "error",
+            "Popup pemeriksaan gagal dimuat. Muat ulang halaman."
+        );
         return;
     }
 
-    const versionAtStart = formVersion;
+    const requestVersion = version;
 
-    const payload = {
-        profit_center: profitSelect.getValue(),
-        cost_center: costSelect.getValue(),
-        gl_account: glSelect.getValue()
-    };
+    pendingCheck = true;
+    checkBtn.disabled = true;
+    confirmedData = null;
 
-    checking = true;
-    checkMappingBtn.disabled = true;
-
-    resetMappingResults();
-    resetBudgetResults();
+    updateSubmitButton();
+    resetModal();
+    modalInstance.show();
 
     setStatus(
-        "loading",
-        "Sedang memeriksa data master dan hasil mapping..."
+        "info",
+        "Memeriksa hasil mapping dan sumber budget..."
     );
 
     try {
-        const headers = {
-            "Content-Type": "application/json"
-        };
-
-        if (csrfToken) {
-            headers["X-CSRFToken"] = csrfToken;
-        }
-
-        const response = await fetch(
-            API_MAPPING,
-            {
-                method: "POST",
-                credentials: "same-origin",
-                headers: headers,
-                body: JSON.stringify(payload)
-            }
+        const result = await postJSON(
+            API_PERIKSA,
+            data
         );
 
-        const result = await response.json();
+        if (requestVersion !== version) return;
 
-        /* Abaikan hasil request lama apabila
-           pengguna mengubah form selama request. */
+        modalResultData = result;
+        modalRequestVersion = requestVersion;
 
-        if (versionAtStart !== formVersion) {
-            return;
-        }
-
-        if (!response.ok) {
-            throw new Error(
-                result.message ||
-                result.error ||
-                "Pemeriksaan mapping gagal."
-            );
-        }
-
-        if (result.mapping_status !== "Mapped") {
-            throw new Error(
-                "Hasil mapping belum lengkap."
-            );
-        }
-
-        const fund = result.mapped_fund;
-        const fc = result.mapped_funds_center;
-        const ci = result.mapped_commitment_item;
-
-        if (
-            !fund || !fund.code ||
-            !fc || !fc.code ||
-            !ci || !ci.code
-        ) {
-            throw new Error(
-                "Respons mapping tidak lengkap."
-            );
-        }
-
-        setText("mappedFund", fund.code);
-        setText("mappedFC", fc.code);
-        setText("mappedCI", ci.code);
-        setText("mappedCIName", ci.name || "—");
-        setText("mappingStatus", "Mapped");
-
-        mappingValidated = true;
-
-        budgetPlaceholder.hidden = true;
+        fillModal(result, data);
 
         setStatus(
-            "success",
-            "Mapping berhasil ditemukan. " +
-            "Fund, Funds Center, dan Commitment Item " +
-            "sudah sesuai dengan data master. " +
-            "Pemeriksaan sumber budget dan Available Amount " +
-            "akan dilakukan pada tahap integrasi berikutnya."
+            "info",
+            "Pemeriksaan selesai. Periksa hasil mapping pada popup."
         );
 
-        /*
-          Selanjutnya:
-          POST /api/pengajuan-budget/periksa
-
-          Menggunakan:
-          - Entity yang diizinkan
-          - Tahun transaksi
-          - Hasil mapping
-          - Budget Scope FC_CI / CI_ONLY
-          - Nominal pengajuan
-
-          Perhitungan dilakukan di backend.
-        */
-
     } catch (error) {
+        if (requestVersion !== version) return;
 
-        if (versionAtStart !== formVersion) {
-            return;
-        }
+        modalResultData = null;
 
-        console.error(error);
+        showModalResult(
+            "error",
+            "Pemeriksaan Gagal",
+            error.message
+        );
 
-        mappingValidated = false;
-        resetMappingResults();
+        setStatus("error", error.message);
 
-        setText("mappingStatus", "Not Found");
+    } finally {
+        pendingCheck = false;
+        checkBtn.disabled = false;
+        updateSubmitButton();
+    }
+});
+
+/* =====================================
+   KONFIRMASI MAPPING
+===================================== */
+
+confirmBtn.addEventListener("click", () => {
+    if (
+        !modalResultData ||
+        !modalResultData.can_submit ||
+        modalRequestVersion !== version ||
+        pendingSubmit ||
+        submitSuccess
+    ) {
+        return;
+    }
+
+    confirmedData = JSON.stringify(
+        collectData()
+    );
+
+    if (modalInstance) {
+        modalInstance.hide();
+    }
+
+    updateSubmitButton();
+
+    setStatus(
+        "success",
+        "Hasil mapping telah dikonfirmasi. Pengajuan siap dikirim ke Approval."
+    );
+});
+
+/* =====================================
+   SUBMIT
+===================================== */
+
+submitBtn.addEventListener("click", async () => {
+    if (
+        !confirmedData ||
+        pendingSubmit ||
+        pendingCheck ||
+        submitSuccess
+    ) {
+        return;
+    }
+
+    const data = collectData();
+    const error = validateFullForm(data);
+
+    if (error) {
+        setStatus("error", error);
+        return;
+    }
+
+    if (JSON.stringify(data) !== confirmedData) {
+        confirmedData = null;
+        updateSubmitButton();
 
         setStatus(
             "error",
+            "Data sudah berubah. Lakukan Pemeriksaan Budget ulang."
+        );
+        return;
+    }
+
+    const approved = window.confirm(
+        "Kirim Pengajuan Budget untuk review Approval?"
+    );
+
+    if (!approved) return;
+
+    pendingSubmit = true;
+
+    updateSubmitButton();
+    checkBtn.disabled = true;
+
+    setStatus(
+        "info",
+        "Sedang menyimpan pengajuan..."
+    );
+
+    try {
+        const response = await postJSON(
+            API_SUBMIT,
+            data
+        );
+
+        if (!response.success) {
+            throw new Error(
+                response.error ||
+                "Pengajuan gagal disimpan."
+            );
+        }
+
+        submitSuccess = true;
+        confirmedData = null;
+
+        setStatus(
+            "success",
+            "Pengajuan berhasil disimpan sebagai Pending. " +
+            "ID Pengajuan: " + response.request_id
+        );
+
+        form.querySelectorAll(
+            "input, select, textarea, button"
+        ).forEach(element => {
+            element.disabled = true;
+        });
+
+        if (profitSelect) profitSelect.disable();
+        if (costSelect) costSelect.disable();
+        if (glSelect) glSelect.disable();
+
+    } catch (error) {
+        setStatus(
+            "error",
             error.message ||
-            "Terjadi kesalahan saat pemeriksaan mapping."
+            "Pengajuan belum berhasil disimpan."
         );
 
     } finally {
+        pendingSubmit = false;
 
-        checking = false;
-        checkMappingBtn.disabled = false;
+        checkBtn.disabled = submitSuccess;
 
+        updateSubmitButton();
     }
-}
+});
 
-/* ==========================================
-   12. BUTTON EVENTS
-========================================== */
+/* =====================================
+   CHANGE EVENTS
+===================================== */
 
-checkMappingBtn.addEventListener(
-    "click",
-    performMapping
-);
+[
+    "tanggal",
+    "entity_id",
+    "pic",
+    "requestAmount",
+    "keterangan"
+].forEach(id => {
+    const element = document.getElementById(id);
 
-/* Form belum disimpan sebelum endpoint
-   budget validation dan penyimpanan
-   Pending selesai diimplementasikan. */
+    element.addEventListener(
+        "input",
+        invalidateForm
+    );
+
+    element.addEventListener(
+        "change",
+        invalidateForm
+    );
+});
+
+/* =====================================
+   FILE UPLOAD
+===================================== */
+
+attachment.addEventListener("change", () => {
+    const file = attachment.files[0];
+
+    if (file) {
+        uploadTitle.textContent = file.name;
+        uploadSubtitle.textContent = "Dokumen telah dipilih";
+
+        attachmentWarning.hidden = false;
+    } else {
+        uploadTitle.textContent = "Pilih Dokumen Pendukung";
+        uploadSubtitle.textContent = "PDF, JPG, PNG, atau XLSX";
+
+        attachmentWarning.hidden = true;
+    }
+
+    invalidateForm();
+
+    if (file) {
+        setStatus(
+            "error",
+            "Upload lampiran belum tersedia. Hapus file sebelum mengirim pengajuan."
+        );
+    }
+});
+
+/* =====================================
+   DISABLE NATIVE FORM SUBMIT
+===================================== */
 
 form.addEventListener("submit", event => {
     event.preventDefault();
 });
 
-submitBudgetBtn.addEventListener("click", () => {
-    setStatus(
-        "",
-        "Pengajuan belum dapat dikirim. " +
-        "Validasi sumber budget dan penyimpanan " +
-        "transaksi Pending masih perlu diintegrasikan."
-    );
-});
+/* =====================================
+   INITIAL STATE
+===================================== */
 
-/* ==========================================
-   13. RESET WHEN INPUTS CHANGE
-========================================== */
+setShortage(
+    "—",
+    "Lengkapi kode master dan nominal terlebih dahulu."
+);
 
-[
-    "tanggal",
-    "pic",
-    "entity_id",
-    "requestAmount",
-    "keterangan",
-    "lampiran"
-].forEach(id => {
-
-    const element = document.getElementById(id);
-
-    if (!element) return;
-
-    element.addEventListener("input", invalidateCheck);
-
-    element.addEventListener("change", invalidateCheck);
-});
-
-/* ==========================================
-   14. INITIAL STATE
-========================================== */
-
-resetMappingResults();
-resetBudgetResults();
-updateRequestedAmount();
-
-submitBudgetBtn.disabled = true;
+submitBtn.disabled = true;
 
 </script>
 
