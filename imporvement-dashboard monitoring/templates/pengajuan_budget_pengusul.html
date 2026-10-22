@@ -5,69 +5,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-
     <title>Pengajuan Budget | SILOG</title>
 
-    <!-- LIBRARIES -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
-
-    <!-- SILOG CSS -->
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/style.css') }}">
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <style>
         :root {
             --red: #ed1c24;
-            --red-dark: #c8161d;
-            --red-soft: #fff4f5;
-
-            --bg: #f6f7fb;
-            --surface: #ffffff;
-            --text: #232a36;
-            --muted: #7b8794;
-
-            --line: #e7ebf1;
-            --line-soft: #eef2f6;
-
+            --red-dark: #cf171e;
+            --red-soft: #fff0f1;
+            --bg: #f3f4f6;
+            --surface: #fff;
+            --text: #252525;
+            --muted: #8c909a;
+            --line: #e7e8ed;
             --success: #18805d;
             --danger: #d92c3a;
-
-            --shadow: 0 8px 24px rgba(18, 32, 56, .04);
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
-        body {
+        body.pengajuan-page {
             margin: 0;
             background: var(--bg);
             color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont,
-                         "Segoe UI", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        /* =====================================
-           MAIN LAYOUT
-        ===================================== */
+        /* =================================================
+           LAYOUT - MENGIKUTI PROFIL PENGUSUL
+        ================================================= */
 
-        .topbar {
+        .pengajuan-page .topbar {
             display: flex;
             align-items: center;
             justify-content: flex-end;
         }
 
-        .user-profile-link {
+        .pengajuan-page .page-content {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 38px 42px 45px;
+        }
+
+        .pengajuan-page .page-shell {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+        }
+
+        .pengajuan-page .page-header {
+            margin-bottom: 22px;
+        }
+
+        .pengajuan-page .page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            color: #252525;
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: normal;
+        }
+
+        .pengajuan-page .page-title i {
+            flex-shrink: 0;
+            color: var(--red);
+            font-size: 27px;
+        }
+
+        .pengajuan-page .page-subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* =================================================
+           USER PROFILE
+        ================================================= */
+
+        .pengajuan-page .user-profile-link {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -75,268 +100,227 @@
             text-decoration: none;
         }
 
-        .user-profile-link:hover {
+        .pengajuan-page .user-profile-link:hover {
             color: inherit;
         }
 
-        .page-content {
-            padding: 26px 28px 44px;
-        }
+        /* =================================================
+           INFORMASI PENGAJUAN CARD
+        ================================================= */
 
-        .page-shell {
+        .pengajuan-page .request-card {
             width: 100%;
-            max-width: 1220px;
-            margin: 0 auto;
-        }
-
-        .page-header {
-            margin-bottom: 18px;
-        }
-
-        .page-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0;
-            font-size: 21px;
-            font-weight: 760;
-            letter-spacing: -.3px;
-        }
-
-        .page-title i {
-            color: var(--red);
-            font-size: 18px;
-        }
-
-        .page-subtitle {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        /* =====================================
-           FORM CARD
-        ===================================== */
-
-        .request-card {
             padding: 22px 24px;
-            background: var(--surface);
             border: 1px solid var(--line);
-            border-radius: 18px;
-            box-shadow: var(--shadow);
+            border-radius: 15px;
+            background: var(--surface);
+            box-shadow: 0 6px 22px rgba(0, 0, 0, .03);
         }
 
-        .card-heading {
+        .pengajuan-page .card-heading {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 21px;
         }
 
-        .card-icon {
+        .pengajuan-page .card-icon {
             display: flex;
             align-items: center;
             justify-content: center;
-
+            flex-shrink: 0;
             width: 38px;
             height: 38px;
-            flex-shrink: 0;
-
-            border-radius: 11px;
+            border-radius: 10px;
             background: var(--red-soft);
             color: var(--red);
-            font-size: 16px;
-        }
-
-        .card-heading h2 {
-            margin: 0;
             font-size: 17px;
-            font-weight: 750;
         }
 
-        .card-heading p {
+        .pengajuan-page .card-heading h2 {
+            margin: 0;
+            color: #31333b;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .pengajuan-page .card-heading p {
             margin: 4px 0 0;
+            color: #9699a2;
             font-size: 11px;
-            color: var(--muted);
         }
 
-        /* =====================================
-           FORM GRID 3-3-2-2
-        ===================================== */
+        /* =================================================
+           FORM GRID: 3 - 3 - 2 - 2
+        ================================================= */
 
-        .field-grid-three {
+        .pengajuan-page .field-grid-three {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 14px;
         }
 
-        .field-grid-two {
+        .pengajuan-page .field-grid-two {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
         }
 
-        .field-group {
+        .pengajuan-page .field-group {
             min-width: 0;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
 
-        .field-label {
+        .pengajuan-page .field-label {
             display: block;
             margin-bottom: 7px;
             color: #556171;
             font-size: 12px;
-            font-weight: 680;
+            font-weight: 650;
         }
 
-        .required {
+        .pengajuan-page .required {
             color: var(--red);
         }
 
-        .form-control,
-        .form-select {
+        .pengajuan-page .form-control,
+        .pengajuan-page .form-select {
             width: 100%;
             min-height: 40px;
             padding: 9px 12px;
-
             border: 1px solid #dde4ec;
-            border-radius: 10px;
-
+            border-radius: 9px;
             background: #fff;
             color: #313949;
             font-size: 12px;
-
             box-shadow: none;
-            transition: .18s ease;
+            transition: border-color .18s, box-shadow .18s;
         }
 
-        .form-control::placeholder {
+        .pengajuan-page .form-control::placeholder {
             color: #a0a9b6;
         }
 
-        .form-control:focus,
-        .form-select:focus {
+        .pengajuan-page .form-control:focus,
+        .pengajuan-page .form-select:focus {
             border-color: #f1a4aa;
             box-shadow: 0 0 0 3px rgba(237,28,36,.08);
         }
 
-        .field-hint {
+        .pengajuan-page .field-hint {
             margin: 5px 0 0;
             color: #97a1ae;
             font-size: 10px;
             line-height: 1.45;
         }
 
-        /* =====================================
+        /* =================================================
            NOMINAL & SHORTAGE
-        ===================================== */
+        ================================================= */
 
-        .money-input {
+        .pengajuan-page .money-input {
             display: flex;
             align-items: stretch;
             width: 100%;
         }
 
-        .money-prefix {
+        .pengajuan-page .money-prefix {
             display: flex;
             align-items: center;
             justify-content: center;
-
             min-width: 46px;
             padding: 0 13px;
-
-            background: #f7f8fa;
             border: 1px solid #dde4ec;
             border-right: none;
-            border-radius: 10px 0 0 10px;
-
+            border-radius: 9px 0 0 9px;
+            background: #f7f8fa;
             color: #6f7a89;
             font-size: 12px;
             font-weight: 700;
         }
 
-        .money-input .form-control {
-            border-radius: 0 10px 10px 0;
+        .pengajuan-page .money-input .form-control {
+            border-radius: 0 9px 9px 0;
         }
 
-        .shortage-input {
+        .pengajuan-page .shortage-input {
             background: #f7f8fa !important;
-            font-weight: 700;
             color: #536071;
+            font-weight: 700;
             cursor: not-allowed;
         }
 
-        .shortage-input.has-shortage {
+        .pengajuan-page .shortage-input.has-shortage {
             background: #fff3f4 !important;
             border-color: #f2c4c8;
             color: var(--danger);
         }
 
-        .shortage-note {
-            margin: 5px 0 0;
+        .pengajuan-page .shortage-note {
             min-height: 15px;
+            margin: 5px 0 0;
             color: #97a1ae;
             font-size: 10px;
             line-height: 1.45;
         }
 
-        .shortage-note.warning {
+        .pengajuan-page .shortage-note.warning {
             color: var(--danger);
         }
 
-        /* =====================================
+        /* =================================================
            KETERANGAN & LAMPIRAN
-        ===================================== */
+        ================================================= */
 
-        .description-input {
+        .pengajuan-page .description-input {
             min-height: 84px;
-            resize: vertical;
             padding-top: 10px;
+            resize: vertical;
         }
 
-        .upload-area {
+        .pengajuan-page .upload-area {
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 5px;
-
             width: 100%;
             min-height: 84px;
             padding: 12px;
-
-            background: #fafbfc;
             border: 1px dashed #d6dee8;
-            border-radius: 10px;
-
+            border-radius: 9px;
+            background: #fafbfc;
             text-align: center;
             transition: .18s;
         }
 
-        .upload-area:hover {
+        .pengajuan-page .upload-area:hover {
             border-color: #f0a8ae;
             background: #fffafb;
         }
 
-        .upload-area i {
+        .pengajuan-page .upload-area i {
             color: var(--red);
             font-size: 17px;
         }
 
-        .upload-title {
+        .pengajuan-page .upload-title {
+            max-width: 100%;
+            overflow: hidden;
             color: #596575;
             font-size: 11px;
             font-weight: 650;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .upload-subtitle {
+        .pengajuan-page .upload-subtitle {
             color: #98a3b0;
             font-size: 10px;
         }
 
-        .upload-area input[type="file"] {
+        .pengajuan-page .upload-area input[type="file"] {
             position: absolute;
             inset: 0;
             width: 100%;
@@ -345,55 +329,55 @@
             cursor: pointer;
         }
 
-        .upload-warning {
+        .pengajuan-page .upload-area:focus-within {
+            outline: 2px solid var(--red);
+            outline-offset: 2px;
+        }
+
+        .pengajuan-page .upload-warning {
             margin-top: 8px;
             padding: 9px 11px;
-
-            background: #fff8e9;
             border: 1px solid #f4e0b6;
             border-radius: 9px;
-
+            background: #fff8e9;
             color: #96681b;
             font-size: 10px;
             line-height: 1.5;
         }
 
-        /* =====================================
+        /* =================================================
            TOM SELECT
-        ===================================== */
+        ================================================= */
 
-        .ts-wrapper {
+        .pengajuan-page .ts-wrapper {
             width: 100%;
         }
 
-        .ts-wrapper.single .ts-control {
+        .pengajuan-page .ts-wrapper.single .ts-control {
             display: flex;
             align-items: center;
-
             min-height: 40px;
             padding: 8px 11px;
-
             border: 1px solid #dde4ec;
-            border-radius: 10px;
-
+            border-radius: 9px;
             background: #fff;
             box-shadow: none;
             font-size: 12px;
         }
 
-        .ts-wrapper.focus .ts-control {
+        .pengajuan-page .ts-wrapper.focus .ts-control {
             border-color: #f1a4aa;
             box-shadow: 0 0 0 3px rgba(237,28,36,.08);
         }
 
-        .ts-control input {
+        .pengajuan-page .ts-control input {
             font-size: 12px !important;
         }
 
         .ts-dropdown {
             margin-top: 5px;
             border: 1px solid #e3e8ee;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 16px 28px rgba(15,23,42,.08);
             overflow: hidden;
             z-index: 1100;
@@ -409,140 +393,133 @@
             color: var(--red);
         }
 
-        /* =====================================
+        /* =================================================
            STATUS
-        ===================================== */
+        ================================================= */
 
-        .form-status {
+        .pengajuan-page .form-status {
             display: flex;
             align-items: flex-start;
             gap: 10px;
-
             margin-top: 5px;
             padding: 11px 13px;
-
-            background: #f7f9fc;
             border: 1px solid #e4e9f0;
-            border-radius: 11px;
-
+            border-radius: 9px;
+            background: #f7f9fc;
             color: #6f7b8a;
             font-size: 11px;
             line-height: 1.55;
         }
 
-        .form-status.success {
+        .pengajuan-page .form-status.success {
             background: #eef8f3;
             border-color: #d5eadf;
             color: #216b4d;
         }
 
-        .form-status.error {
+        .pengajuan-page .form-status.error {
             background: #fff2f3;
             border-color: #ffd8dc;
             color: #bc2d39;
         }
 
-        .form-status.info {
+        .pengajuan-page .form-status.info {
             background: #f6f8fb;
             border-color: #e5eaf1;
             color: #6a7685;
         }
 
-        /* =====================================
+        /* =================================================
            BUTTONS
-        ===================================== */
+        ================================================= */
 
-        .form-actions {
+        .pengajuan-page .form-actions {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 14px;
-
             margin-top: 18px;
             padding-top: 16px;
-            border-top: 1px solid var(--line-soft);
+            border-top: 1px solid #eef2f6;
         }
 
-        .action-right {
+        .pengajuan-page .action-right {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
         }
 
-        .btn-cancel,
-        .btn-outline-red,
-        .btn-red {
+        .pengajuan-page .btn-cancel,
+        .pengajuan-page .btn-outline-red,
+        .pengajuan-page .btn-red {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-
             min-height: 40px;
             padding: 9px 16px;
-
-            border-radius: 11px;
+            border-radius: 9px;
             font-size: 12px;
             font-weight: 700;
             text-decoration: none;
             cursor: pointer;
-            transition: .18s ease;
+            transition: .18s;
         }
 
-        .btn-cancel {
-            background: #fff;
+        .pengajuan-page .btn-cancel {
             border: 1px solid #dfe5ec;
+            background: #fff;
             color: #667281;
         }
 
-        .btn-cancel:hover {
+        .pengajuan-page .btn-cancel:hover {
             background: #f7f9fb;
             color: #394353;
         }
 
-        .btn-outline-red {
-            background: #fff;
+        .pengajuan-page .btn-outline-red {
             border: 1px solid #f0b9be;
+            background: #fff;
             color: var(--red);
         }
 
-        .btn-outline-red:hover:not(:disabled) {
+        .pengajuan-page .btn-outline-red:hover:not(:disabled) {
             background: var(--red-soft);
             color: var(--red-dark);
         }
 
-        .btn-red {
+        .pengajuan-page .btn-red {
             border: 1px solid var(--red);
             background: var(--red);
             color: #fff;
         }
 
-        .btn-red:hover:not(:disabled) {
+        .pengajuan-page .btn-red:hover:not(:disabled) {
             background: var(--red-dark);
-            color: #fff;
         }
 
-        .btn-red:disabled,
-        .btn-outline-red:disabled {
+        .pengajuan-page .btn-red:disabled,
+        .pengajuan-page .btn-outline-red:disabled {
             opacity: .48;
             cursor: not-allowed;
         }
 
-        /* =====================================
-           MODAL
-        ===================================== */
+        /* =================================================
+           PEMERIKSAAN MODAL
+        ================================================= */
 
         .modal-content {
             border: 1px solid #e7ebf1;
-            border-radius: 18px;
+            border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 24px 56px rgba(19,30,48,.15);
         }
 
         .modal-header {
             padding: 18px 22px;
-            border-bottom: 1px solid var(--line);
+            border-bottom: 1px solid #e7ebf1;
         }
 
         .modal-title {
@@ -550,27 +527,24 @@
             align-items: center;
             gap: 9px;
             font-size: 16px;
-            font-weight: 750;
+            font-weight: 700;
         }
 
         .modal-title i {
             color: var(--red);
         }
 
-        .modal-body {
-            padding: 20px 22px;
-        }
-
+        .modal-body { padding: 20px 22px; }
         .modal-footer {
             padding: 14px 22px;
-            border-top: 1px solid var(--line);
+            border-top: 1px solid #e7ebf1;
         }
 
         .modal-section-title {
             margin-bottom: 10px;
             color: #404b5a;
             font-size: 12px;
-            font-weight: 750;
+            font-weight: 700;
         }
 
         .mapping-table {
@@ -591,8 +565,8 @@
         }
 
         .mapping-table td:last-child {
-            font-weight: 700;
             color: #313b49;
+            font-weight: 700;
             overflow-wrap: anywhere;
         }
 
@@ -600,13 +574,10 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
-
             margin-top: 18px;
             padding: 13px 14px;
-
+            border-radius: 10px;
             background: #f5f7fa;
-            border-radius: 12px;
-
             color: #6c7888;
             font-size: 12px;
             line-height: 1.55;
@@ -617,28 +588,19 @@
             color: #216b4d;
         }
 
-        .modal-result.warning {
-            background: #fff3f4;
-            color: #b9303b;
-        }
-
+        .modal-result.warning,
         .modal-result.error {
             background: #fff3f4;
             color: #b9303b;
         }
 
-        .modal-result i {
-            font-size: 18px;
-        }
-
+        .modal-result i { font-size: 18px; }
         .modal-result strong {
             display: block;
             margin-bottom: 3px;
         }
 
-        .modal-result p {
-            margin: 0;
-        }
+        .modal-result p { margin: 0; }
 
         .confirm-hint {
             margin: 14px 0 0;
@@ -647,65 +609,71 @@
             line-height: 1.55;
         }
 
-        /* =====================================
+        /* =================================================
            RESPONSIVE
-        ===================================== */
+        ================================================= */
 
         @media (max-width: 1050px) {
-            .field-grid-three {
-                grid-template-columns: repeat(2, minmax(0,1fr));
+            .pengajuan-page .field-grid-three {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .pengajuan-page .page-content {
+                padding-left: 28px;
+                padding-right: 28px;
             }
         }
 
         @media (max-width: 700px) {
-            .field-grid-three,
-            .field-grid-two {
+            .pengajuan-page .field-grid-three,
+            .pengajuan-page .field-grid-two {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 640px) {
-            .page-content {
-                padding: 20px 16px 34px;
+        @media (max-width: 650px) {
+            .pengajuan-page .page-content {
+                padding: 24px 18px 35px;
             }
 
-            .request-card {
+            .pengajuan-page .page-title {
+                font-size: 22px;
+            }
+
+            .pengajuan-page .page-title i {
+                font-size: 23px;
+            }
+
+            .pengajuan-page .request-card {
                 padding: 18px 16px;
-                border-radius: 16px;
+                border-radius: 13px;
             }
 
-            .page-title {
-                font-size: 19px;
-            }
-
-            .form-actions,
-            .action-right {
+            .pengajuan-page .form-actions,
+            .pengajuan-page .action-right {
                 flex-direction: column;
                 align-items: stretch;
                 width: 100%;
             }
 
-            .form-actions > *,
-            .action-right > * {
+            .pengajuan-page .form-actions > *,
+            .pengajuan-page .action-right > * {
                 width: 100%;
             }
         }
     </style>
 </head>
 
-<body>
+<body class="pengajuan-page">
 
 <div class="dashboard-layout">
 
-    <!-- =====================================
-         SIDEBAR
-    ===================================== -->
-
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-
         <div class="sidebar-brand">
             <div class="brand-icon">S</div>
-
             <div>
                 <strong>SILOG</strong>
                 <small>Budget Monitoring & Approval</small>
@@ -715,21 +683,17 @@
         <p class="sidebar-label">MENU UTAMA</p>
 
         <nav class="sidebar-nav">
-
-            <a href="{{ url_for('profil') }}"
-               class="nav-item">
+            <a href="{{ url_for('profil') }}" class="nav-item">
                 <i class="bi bi-person-circle"></i>
                 Profil
             </a>
 
-            <a href="{{ url_for('dashboard') }}"
-               class="nav-item">
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
                 <i class="bi bi-grid-1x2"></i>
                 Dashboard
             </a>
 
-            <a href="{{ url_for('budget_detail_pengusul') }}"
-               class="nav-item">
+            <a href="{{ url_for('budget_detail_pengusul') }}" class="nav-item">
                 <i class="bi bi-wallet2"></i>
                 Budget Detail
             </a>
@@ -741,15 +705,11 @@
                 Pengajuan Budget
             </a>
 
-            <a
-                href="{{ url_for('riwayat_pengajuan_pengusul') }}"
-                class="nav-item"
-            >
+            <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
+               class="nav-item">
                 <i class="bi bi-clock-history"></i>
                 Riwayat Pengajuan
             </a>
-
-
         </nav>
 
         <div class="sidebar-bottom">
@@ -760,19 +720,13 @@
                 </button>
             </form>
         </div>
-
     </aside>
 
-    <!-- =====================================
-         MAIN CONTENT
-    ===================================== -->
-
+    <!-- MAIN -->
     <main class="main-content">
 
         <header class="topbar">
-            <a href="{{ url_for('profil') }}"
-               class="user-profile-link">
-
+            <a href="{{ url_for('profil') }}" class="user-profile-link">
                 <div class="user-avatar">
                     <i class="bi bi-person-fill"></i>
                 </div>
@@ -781,14 +735,13 @@
                     <strong>{{ username | upper }}</strong>
                     <small>Pengusul Budget</small>
                 </div>
-
             </a>
         </header>
 
         <section class="page-content">
-
             <div class="page-shell">
 
+                <!-- PAGE TITLE -->
                 <div class="page-header">
                     <h1 class="page-title">
                         <i class="bi bi-file-earmark-plus"></i>
@@ -797,16 +750,16 @@
 
                     <p class="page-subtitle">
                         Lengkapi informasi kebutuhan dan lakukan pemeriksaan
-                        sebelum mengajukan anggaran
+                        sebelum mengajukan anggaran.
                     </p>
                 </div>
 
+                <!-- FLASH MESSAGES -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }} alert-dismissible fade show"
                              role="alert">
                             {{ message }}
-
                             <button type="button"
                                     class="btn-close"
                                     data-bs-dismiss="alert"
@@ -815,10 +768,7 @@
                     {% endfor %}
                 {% endwith %}
 
-                <!-- =====================================
-                     PENGAJUAN FORM
-                ===================================== -->
-
+                <!-- FORM -->
                 <form id="budgetRequestForm" novalidate>
 
                     <section class="request-card">
@@ -834,31 +784,22 @@
                             </div>
                         </div>
 
-                        <!-- ===============================
-                             BARIS 1 : 3 KOLOM
-                        =============================== -->
-
+                        <!-- BARIS 1 -->
                         <div class="field-grid-three">
 
-                            <!-- TANGGAL TRANSAKSI -->
                             <div class="field-group">
-
                                 <label for="tanggal" class="field-label">
                                     Tanggal Transaksi
                                     <span class="required">*</span>
                                 </label>
-
                                 <input type="date"
                                        id="tanggal"
                                        name="tanggal"
                                        class="form-control"
                                        required>
-
                             </div>
 
-                            <!-- UNIT ENTITY -->
                             <div class="field-group">
-
                                 <label for="entity_id" class="field-label">
                                     Unit Entity
                                     <span class="required">*</span>
@@ -868,7 +809,6 @@
                                         name="entity_id"
                                         class="form-select"
                                         required>
-
                                     <option value="">Pilih Unit Entity</option>
 
                                     {% for entity in entity_options %}
@@ -876,14 +816,10 @@
                                             {{ entity.unit_entity }}
                                         </option>
                                     {% endfor %}
-
                                 </select>
-
                             </div>
 
-                            <!-- PIC -->
                             <div class="field-group">
-
                                 <label for="pic" class="field-label">
                                     PIC
                                     <span class="required">*</span>
@@ -896,20 +832,13 @@
                                        maxlength="150"
                                        placeholder="Nama penanggung jawab"
                                        required>
-
                             </div>
-
                         </div>
 
-                        <!-- ===============================
-                             BARIS 2 : 3 KOLOM
-                        =============================== -->
-
+                        <!-- BARIS 2 -->
                         <div class="field-grid-three">
 
-                            <!-- PROFIT CENTER -->
                             <div class="field-group">
-
                                 <label for="profit_center" class="field-label">
                                     Profit Center
                                     <span class="required">*</span>
@@ -919,15 +848,10 @@
                                         name="profit_center"
                                         required></select>
 
-                                <p class="field-hint">
-                                    Kode asal Master Fund
-                                </p>
-
+                                <p class="field-hint">Kode asal Master Fund</p>
                             </div>
 
-                            <!-- COST CENTER -->
                             <div class="field-group">
-
                                 <label for="cost_center" class="field-label">
                                     Cost Center
                                     <span class="required">*</span>
@@ -937,15 +861,10 @@
                                         name="cost_center"
                                         required></select>
 
-                                <p class="field-hint">
-                                    Kode asal Master FC
-                                </p>
-
+                                <p class="field-hint">Kode asal Master FC</p>
                             </div>
 
-                            <!-- GL ACCOUNT -->
                             <div class="field-group">
-
                                 <label for="gl_account" class="field-label">
                                     CoA / GL Account
                                     <span class="required">*</span>
@@ -955,34 +874,21 @@
                                         name="gl_account"
                                         required></select>
 
-                                <p class="field-hint">
-                                    Kode asal Master CI
-                                </p>
-
+                                <p class="field-hint">Kode asal Master CI</p>
                             </div>
-
                         </div>
 
-                        <!-- ===============================
-                             BARIS 3 : 2 KOLOM
-                        =============================== -->
-
+                        <!-- BARIS 3 -->
                         <div class="field-grid-two">
 
-                            <!-- NOMINAL -->
                             <div class="field-group">
-
                                 <label for="requestAmount" class="field-label">
                                     Nominal Pengajuan
                                     <span class="required">*</span>
                                 </label>
 
                                 <div class="money-input">
-
-                                    <span class="money-prefix">
-                                        Rp
-                                    </span>
-
+                                    <span class="money-prefix">Rp</span>
                                     <input type="number"
                                            id="requestAmount"
                                            name="request_amount"
@@ -991,57 +897,40 @@
                                            step="1"
                                            placeholder="Masukkan nominal"
                                            required>
-
                                 </div>
 
                                 <p class="field-hint">
                                     Nominal melebihi budget tetap dapat
-                                    diajukan untuk review Approval
+                                    diajukan untuk review Approval.
                                 </p>
-
                             </div>
 
-                            <!-- SHORTAGE -->
                             <div class="field-group">
-
                                 <label for="shortageAmount" class="field-label">
                                     Shortage Amount
                                 </label>
 
                                 <div class="money-input">
-
-                                    <span class="money-prefix">
-                                        Rp
-                                    </span>
-
+                                    <span class="money-prefix">Rp</span>
                                     <input type="text"
                                            id="shortageAmount"
                                            class="form-control shortage-input"
                                            value="—"
-                                           readonly
-                                           aria-readonly="true">
-
+                                           readonly>
                                 </div>
 
                                 <p class="shortage-note"
                                    id="shortageNote"
                                    aria-live="polite">
-                                    Lengkapi kode master dan nominal terlebih dahulu
+                                    Lengkapi kode master dan nominal terlebih dahulu.
                                 </p>
-
                             </div>
-
                         </div>
 
-                        <!-- ===============================
-                             BARIS 4 : 2 KOLOM
-                        =============================== -->
-
+                        <!-- BARIS 4 -->
                         <div class="field-grid-two">
 
-                            <!-- KETERANGAN -->
                             <div class="field-group">
-
                                 <label for="keterangan" class="field-label">
                                     Keterangan
                                     <span class="required">*</span>
@@ -1053,27 +942,21 @@
                                           maxlength="2000"
                                           placeholder="Jelaskan kebutuhan pengajuan budget..."
                                           required></textarea>
-
                             </div>
 
-                            <!-- LAMPIRAN -->
                             <div class="field-group">
-
                                 <label for="lampiran" class="field-label">
                                     Lampiran Pendukung
                                 </label>
 
                                 <div class="upload-area">
-
                                     <i class="bi bi-cloud-arrow-up"></i>
 
-                                    <span class="upload-title"
-                                          id="uploadTitle">
+                                    <span class="upload-title" id="uploadTitle">
                                         Pilih dokumen pendukung
                                     </span>
 
-                                    <span class="upload-subtitle"
-                                          id="uploadSubtitle">
+                                    <span class="upload-subtitle" id="uploadSubtitle">
                                         PDF, JPG, PNG, atau XLSX
                                     </span>
 
@@ -1082,7 +965,6 @@
                                            name="lampiran"
                                            accept=".pdf,.png,.jpg,.jpeg,.xlsx"
                                            aria-label="Pilih lampiran pendukung">
-
                                 </div>
 
                                 <div class="upload-warning"
@@ -1092,35 +974,23 @@
                                     Penyimpanan lampiran belum tersedia.
                                     Hapus lampiran sebelum mengirim pengajuan.
                                 </div>
-
                             </div>
-
                         </div>
 
-                        <!-- ===============================
-                             STATUS
-                        =============================== -->
-
+                        <!-- STATUS -->
                         <div id="formStatus"
                              class="form-status info"
                              role="status"
                              aria-live="polite">
-
                             <i class="bi bi-info-circle"></i>
-
                             <span id="formStatusText">
                                 Lengkapi form. Shortage Amount akan dihitung
                                 otomatis setelah kode master dan nominal tersedia.
                             </span>
-
                         </div>
 
-                        <!-- ===============================
-                             BUTTONS
-                        =============================== -->
-
+                        <!-- ACTIONS -->
                         <div class="form-actions">
-
                             <a href="{{ url_for('dashboard') }}"
                                class="btn-cancel">
                                 <i class="bi bi-x-circle"></i>
@@ -1128,45 +998,33 @@
                             </a>
 
                             <div class="action-right">
-
                                 <button type="button"
                                         class="btn-outline-red"
                                         id="checkBudgetBtn">
-
                                     <i class="bi bi-search"></i>
                                     Pemeriksaan Budget
-
                                 </button>
 
                                 <button type="button"
                                         class="btn-red"
                                         id="submitBudgetBtn"
                                         disabled>
-
                                     <i class="bi bi-send"></i>
                                     Ajukan Budget
-
                                 </button>
-
                             </div>
-
                         </div>
 
                     </section>
-
                 </form>
-
             </div>
-
         </section>
-
     </main>
-
 </div>
 
-<!-- =====================================
-     MODAL PEMERIKSAAN BUDGET
-===================================== -->
+<!-- =================================================
+     MODAL PEMERIKSAAN
+================================================= -->
 
 <div class="modal fade"
      id="budgetCheckModal"
@@ -1180,7 +1038,6 @@
         <div class="modal-content">
 
             <div class="modal-header">
-
                 <h2 class="modal-title" id="budgetCheckTitle">
                     <i class="bi bi-clipboard-check"></i>
                     Hasil Pemeriksaan Budget
@@ -1190,53 +1047,37 @@
                         class="btn-close"
                         data-bs-dismiss="modal"
                         aria-label="Tutup"></button>
-
             </div>
 
             <div class="modal-body">
-
-                <h3 class="modal-section-title">
-                    Hasil Mapping
-                </h3>
+                <h3 class="modal-section-title">Hasil Mapping</h3>
 
                 <table class="mapping-table">
                     <tbody>
-
                         <tr>
                             <td>Mapped Fund</td>
                             <td id="modalFund">—</td>
                         </tr>
-
                         <tr>
                             <td>Mapped Funds Center</td>
                             <td id="modalFC">—</td>
                         </tr>
-
                         <tr>
                             <td>Mapped Commitment Item</td>
                             <td id="modalCI">—</td>
                         </tr>
-
-                        <tr>
-                            <td>Nama Commitment Item</td>
-                            <td id="modalCIName">—</td>
-                        </tr>
-
                         <tr>
                             <td>Budget Scope</td>
                             <td id="modalScope">—</td>
                         </tr>
-
                         <tr>
                             <td>Nominal Pengajuan</td>
                             <td id="modalAmount">—</td>
                         </tr>
-
                         <tr>
                             <td>Shortage Amount</td>
                             <td id="modalShortage">—</td>
                         </tr>
-
                     </tbody>
                 </table>
 
@@ -1244,19 +1085,13 @@
                      id="modalResult"
                      role="status"
                      aria-live="polite">
-
                     <i class="bi bi-info-circle"></i>
-
                     <div>
-                        <strong id="modalResultTitle">
-                            Belum Diperiksa
-                        </strong>
-
+                        <strong id="modalResultTitle">Belum Diperiksa</strong>
                         <p id="modalResultMessage">
                             Hasil pemeriksaan akan ditampilkan di sini.
                         </p>
                     </div>
-
                 </div>
 
                 <p class="confirm-hint">
@@ -1264,11 +1099,9 @@
                     Jika nominal melebihi anggaran, pengajuan tetap
                     dapat diteruskan untuk review Approval.
                 </p>
-
             </div>
 
             <div class="modal-footer">
-
                 <button type="button"
                         class="btn-cancel"
                         data-bs-dismiss="modal">
@@ -1279,53 +1112,34 @@
                         class="btn-red"
                         id="confirmMappingBtn"
                         disabled>
-
                     <i class="bi bi-check-circle"></i>
                     Konfirmasi Hasil
-
                 </button>
-
             </div>
 
         </div>
-
     </div>
-
 </div>
 
-<!-- =====================================
-     LIBRARY SCRIPTS
-===================================== -->
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
 
 <script>
 "use strict";
 
-/* =====================================
+/* =================================================
    API ENDPOINTS
-===================================== */
+================================================= */
 
-const API_OPTIONS =
-    {{ url_for('pengajuan_master_options') | tojson }};
+const API_OPTIONS = {{ url_for('pengajuan_master_options') | tojson }};
+const API_SHORTAGE = {{ url_for('pengajuan_shortage') | tojson }};
+const API_PERIKSA = {{ url_for('pengajuan_periksa') | tojson }};
+const API_SUBMIT = {{ url_for('pengajuan_submit') | tojson }};
+const CSRF_TOKEN = {{ csrf_token | tojson }};
 
-const API_SHORTAGE =
-    {{ url_for('pengajuan_shortage') | tojson }};
-
-const API_PERIKSA =
-    {{ url_for('pengajuan_periksa') | tojson }};
-
-const API_SUBMIT =
-    {{ url_for('pengajuan_submit') | tojson }};
-
-const CSRF_TOKEN =
-    {{ csrf_token | tojson }};
-
-/* =====================================
-   ELEMENTS
-===================================== */
+/* =================================================
+   DOM & STATE
+================================================= */
 
 const form = document.getElementById("budgetRequestForm");
 const amountInput = document.getElementById("requestAmount");
@@ -1340,24 +1154,14 @@ const statusBox = document.getElementById("formStatus");
 const statusText = document.getElementById("formStatusText");
 
 const attachment = document.getElementById("lampiran");
-const attachmentWarning =
-    document.getElementById("attachmentWarning");
-
+const attachmentWarning = document.getElementById("attachmentWarning");
 const uploadTitle = document.getElementById("uploadTitle");
 const uploadSubtitle = document.getElementById("uploadSubtitle");
 
-const modalElement =
-    document.getElementById("budgetCheckModal");
-
-const modalInstance = (
-    typeof bootstrap !== "undefined"
-        ? new bootstrap.Modal(modalElement)
-        : null
-);
-
-/* =====================================
-   STATE
-===================================== */
+const modalElement = document.getElementById("budgetCheckModal");
+const modalInstance = typeof bootstrap !== "undefined"
+    ? new bootstrap.Modal(modalElement)
+    : null;
 
 let profitSelect = null;
 let costSelect = null;
@@ -1365,7 +1169,6 @@ let glSelect = null;
 
 let version = 0;
 let shortageTimer = null;
-
 let pendingCheck = false;
 let pendingSubmit = false;
 let submitSuccess = false;
@@ -1376,9 +1179,9 @@ let modalRequestVersion = null;
 
 const SHORTAGE_DELAY = 450;
 
-/* =====================================
-   HELPERS
-===================================== */
+/* =================================================
+   UTILITY
+================================================= */
 
 function rupiah(value) {
     if (value === null || value === undefined || value === "") {
@@ -1386,10 +1189,7 @@ function rupiah(value) {
     }
 
     const number = Number(value);
-
-    if (!Number.isFinite(number)) {
-        return "—";
-    }
+    if (!Number.isFinite(number)) return "—";
 
     return "Rp" + number.toLocaleString("id-ID", {
         maximumFractionDigits: 0
@@ -1398,10 +1198,7 @@ function rupiah(value) {
 
 function moneyValue(value) {
     const number = Number(value);
-
-    if (!Number.isFinite(number)) {
-        return "—";
-    }
+    if (!Number.isFinite(number)) return "—";
 
     return number.toLocaleString("id-ID", {
         maximumFractionDigits: 0
@@ -1409,81 +1206,65 @@ function moneyValue(value) {
 }
 
 function setText(id, value) {
-    const el = document.getElementById(id);
+    const element = document.getElementById(id);
+    if (!element) return;
 
-    if (!el) return;
-
-    el.textContent = (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) ? "—" : String(value);
+    element.textContent =
+        value === null || value === undefined || value === ""
+            ? "—"
+            : String(value);
 }
 
 function setStatus(type, message) {
-    statusBox.className =
-        "form-status " + (type || "info");
-
+    statusBox.className = "form-status " + (type || "info");
     statusText.textContent = message;
 
     const icon = statusBox.querySelector("i");
+    if (!icon) return;
 
-    if (icon) {
-        icon.className =
-            type === "success"
-                ? "bi bi-check-circle"
-                : type === "error"
-                    ? "bi bi-exclamation-circle"
-                    : "bi bi-info-circle";
-    }
+    icon.className =
+        type === "success" ? "bi bi-check-circle" :
+        type === "error" ? "bi bi-exclamation-circle" :
+        "bi bi-info-circle";
 }
 
 function showModalResult(type, title, message) {
     const box = document.getElementById("modalResult");
-
-    box.className =
-        "modal-result " + (type || "");
+    box.className = "modal-result " + (type || "");
 
     setText("modalResultTitle", title);
     setText("modalResultMessage", message);
 
     const icon = box.querySelector("i");
+    if (!icon) return;
 
-    if (icon) {
-        icon.className =
-            type === "success"
-                ? "bi bi-check-circle"
-                : type === "warning"
-                    ? "bi bi-exclamation-circle"
-                    : type === "error"
-                        ? "bi bi-x-circle"
-                        : "bi bi-info-circle";
-    }
+    icon.className =
+        type === "success" ? "bi bi-check-circle" :
+        type === "warning" ? "bi bi-exclamation-circle" :
+        type === "error" ? "bi bi-x-circle" :
+        "bi bi-info-circle";
 }
 
 function localDateString() {
-    const now = new Date();
+    const date = new Date();
 
     return [
-        now.getFullYear(),
-        String(now.getMonth() + 1).padStart(2, "0"),
-        String(now.getDate()).padStart(2, "0")
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
     ].join("-");
 }
 
-document.getElementById("tanggal").value =
-    localDateString();
+document.getElementById("tanggal").value = localDateString();
 
 async function postJSON(url, payload) {
     const response = await fetch(url, {
         method: "POST",
         credentials: "same-origin",
-
         headers: {
             "Content-Type": "application/json",
             "X-CSRFToken": CSRF_TOKEN
         },
-
         body: JSON.stringify(payload)
     });
 
@@ -1508,9 +1289,9 @@ async function postJSON(url, payload) {
     return result;
 }
 
-/* =====================================
+/* =================================================
    SEARCHABLE DROPDOWNS
-===================================== */
+================================================= */
 
 function initializeMasterSelect(id, type) {
     return new TomSelect("#" + id, {
@@ -1540,19 +1321,12 @@ function initializeMasterSelect(id, type) {
             },
 
             loading() {
-                return (
-                    '<div class="loading p-2">' +
-                    'Mencari data master...' +
-                    '</div>'
-                );
+                return '<div class="loading p-2">Mencari data master...</div>';
             }
         },
 
         load(query, callback) {
-            const url = new URL(
-                API_OPTIONS,
-                window.location.origin
-            );
+            const url = new URL(API_OPTIONS, window.location.origin);
 
             url.searchParams.set("type", type);
             url.searchParams.set("q", query.trim());
@@ -1563,24 +1337,19 @@ function initializeMasterSelect(id, type) {
             })
             .then(async response => {
                 if (!response.ok) {
-                    throw new Error(
-                        "Pilihan kode master gagal dimuat."
-                    );
+                    throw new Error("Pilihan kode master gagal dimuat.");
                 }
 
                 return response.json();
             })
-            .then(data => {
-                callback(data.results || []);
-            })
+            .then(data => callback(data.results || []))
             .catch(error => {
                 console.error(error);
                 callback();
 
                 setStatus(
                     "error",
-                    "Gagal mengambil data master. " +
-                    "Coba lakukan pencarian kembali."
+                    "Gagal mengambil data master. Coba lakukan pencarian kembali."
                 );
             });
         },
@@ -1592,104 +1361,58 @@ function initializeMasterSelect(id, type) {
 }
 
 if (typeof TomSelect !== "undefined") {
-    profitSelect = initializeMasterSelect(
-        "profit_center", "fund"
-    );
-
-    costSelect = initializeMasterSelect(
-        "cost_center", "fc"
-    );
-
-    glSelect = initializeMasterSelect(
-        "gl_account", "ci"
-    );
+    profitSelect = initializeMasterSelect("profit_center", "fund");
+    costSelect = initializeMasterSelect("cost_center", "fc");
+    glSelect = initializeMasterSelect("gl_account", "ci");
 } else {
     checkBtn.disabled = true;
 
     setStatus(
         "error",
-        "Komponen searchable dropdown gagal dimuat. " +
-        "Periksa koneksi internet lalu muat ulang halaman."
+        "Searchable dropdown gagal dimuat. Periksa koneksi internet."
     );
 }
 
-/* =====================================
-   FORM DATA
-===================================== */
+/* =================================================
+   FORM DATA & VALIDATION
+================================================= */
 
 function collectData() {
     return {
-        tanggal:
-            document.getElementById("tanggal").value,
-
-        entity_id:
-            document.getElementById("entity_id").value,
-
-        pic:
-            document.getElementById("pic").value.trim(),
-
-        profit_center:
-            profitSelect ? profitSelect.getValue() : "",
-
-        cost_center:
-            costSelect ? costSelect.getValue() : "",
-
-        gl_account:
-            glSelect ? glSelect.getValue() : "",
-
-        request_amount:
-            amountInput.value.trim(),
-
-        keterangan:
-            document.getElementById("keterangan").value.trim()
+        tanggal: document.getElementById("tanggal").value,
+        entity_id: document.getElementById("entity_id").value,
+        pic: document.getElementById("pic").value.trim(),
+        profit_center: profitSelect ? profitSelect.getValue() : "",
+        cost_center: costSelect ? costSelect.getValue() : "",
+        gl_account: glSelect ? glSelect.getValue() : "",
+        request_amount: amountInput.value.trim(),
+        keterangan: document.getElementById("keterangan").value.trim()
     };
 }
 
 function hasValidAmount(value) {
     const amount = Number(value);
-
-    return (
-        value !== "" &&
-        Number.isSafeInteger(amount) &&
-        amount > 0
-    );
+    return value !== "" && Number.isSafeInteger(amount) && amount > 0;
 }
 
 function validateForShortage(data) {
-    return (
-        !!data.tanggal &&
-        !!data.entity_id &&
-        !!data.profit_center &&
-        !!data.cost_center &&
-        !!data.gl_account &&
+    return Boolean(
+        data.tanggal &&
+        data.entity_id &&
+        data.profit_center &&
+        data.cost_center &&
+        data.gl_account &&
         hasValidAmount(data.request_amount)
     );
 }
 
 function validateFullForm(data) {
-    if (!data.tanggal) {
-        return "Tanggal transaksi wajib diisi.";
-    }
-
-    if (!data.entity_id) {
-        return "Unit Entity wajib dipilih.";
-    }
-
-    if (!data.pic) {
-        return "PIC wajib diisi.";
-    }
-
-    if (!data.profit_center) {
-        return "Pilih Profit Center dari data master.";
-    }
-
-    if (!data.cost_center) {
-        return "Pilih Cost Center dari data master.";
-    }
-
-    if (!data.gl_account) {
-        return "Pilih GL Account dari data master.";
-    }
+    if (!data.tanggal) return "Tanggal transaksi wajib diisi.";
+    if (!data.entity_id) return "Unit Entity wajib dipilih.";
+    if (!data.pic) return "PIC wajib diisi.";
+    if (!data.profit_center) return "Pilih Profit Center dari data master.";
+    if (!data.cost_center) return "Pilih Cost Center dari data master.";
+    if (!data.gl_account) return "Pilih GL Account dari data master.";
 
     if (!hasValidAmount(data.request_amount)) {
         return "Nominal Pengajuan harus berupa bilangan bulat positif.";
@@ -1708,21 +1431,18 @@ function validateFullForm(data) {
     }
 
     if (attachment.files.length > 0) {
-        return (
-            "Upload lampiran belum tersedia. " +
-            "Hapus lampiran untuk mengirim pengajuan."
-        );
+        return "Upload lampiran belum tersedia. Hapus lampiran untuk mengirim pengajuan.";
     }
 
     return null;
 }
 
-/* =====================================
+/* =================================================
    SHORTAGE STATE
-===================================== */
+================================================= */
 
 function updateSubmitButton() {
-    submitBtn.disabled = (
+    submitBtn.disabled = Boolean(
         !confirmedData ||
         pendingCheck ||
         pendingSubmit ||
@@ -1733,18 +1453,9 @@ function updateSubmitButton() {
 
 function setShortage(value, note, warning = false) {
     shortageInput.value = value;
-
-    shortageInput.classList.toggle(
-        "has-shortage",
-        warning
-    );
-
+    shortageInput.classList.toggle("has-shortage", warning);
     shortageNote.textContent = note;
-
-    shortageNote.classList.toggle(
-        "warning",
-        warning
-    );
+    shortageNote.classList.toggle("warning", warning);
 }
 
 function invalidateForm() {
@@ -1758,10 +1469,7 @@ function invalidateForm() {
     clearTimeout(shortageTimer);
     updateSubmitButton();
 
-    setShortage(
-        "—",
-        "Menunggu pemeriksaan sumber budget."
-    );
+    setShortage("—", "Menunggu pemeriksaan sumber budget.");
 
     setStatus(
         "info",
@@ -1771,9 +1479,9 @@ function invalidateForm() {
     scheduleShortage();
 }
 
-/* =====================================
-   AUTOMATIC SHORTAGE
-===================================== */
+/* =================================================
+   AUTO SHORTAGE
+================================================= */
 
 function scheduleShortage() {
     const current = collectData();
@@ -1781,7 +1489,7 @@ function scheduleShortage() {
     if (!validateForShortage(current)) {
         setShortage(
             "—",
-            "Lengkapi kode master dan nominal terlebih dahulu"
+            "Lengkapi kode master dan nominal terlebih dahulu."
         );
         return;
     }
@@ -1789,34 +1497,31 @@ function scheduleShortage() {
     const requestVersion = version;
 
     shortageTimer = setTimeout(async () => {
+        if (requestVersion !== version) return;
+
         setShortage(
             "Menghitung...",
             "Memeriksa sumber budget secara otomatis."
         );
 
         try {
-            const result = await postJSON(
-                API_SHORTAGE,
-                current
-            );
+            const result = await postJSON(API_SHORTAGE, current);
 
             if (requestVersion !== version) return;
 
             if (
                 !result.budget_found ||
-                result.shortage_amount === null
+                result.shortage_amount === null ||
+                result.shortage_amount === undefined
             ) {
                 setShortage(
                     "—",
-                    result.message ||
-                    "Sumber budget tidak ditemukan."
+                    result.message || "Sumber budget tidak ditemukan."
                 );
                 return;
             }
 
-            const shortage = Number(
-                result.shortage_amount
-            );
+            const shortage = Number(result.shortage_amount);
 
             setShortage(
                 moneyValue(shortage),
@@ -1831,24 +1536,21 @@ function scheduleShortage() {
 
             setShortage(
                 "—",
-                error.message ||
-                "Perhitungan Shortage Amount gagal."
+                error.message || "Perhitungan Shortage Amount gagal."
             );
         }
-
     }, SHORTAGE_DELAY);
 }
 
-/* =====================================
-   MODAL
-===================================== */
+/* =================================================
+   MODAL MAPPING
+================================================= */
 
 function resetModal() {
     [
         "modalFund",
         "modalFC",
         "modalCI",
-        "modalCIName",
         "modalScope",
         "modalAmount",
         "modalShortage"
@@ -1867,13 +1569,12 @@ function fillModal(result, data) {
     setText("modalFund", result.mapped_fund?.code);
     setText("modalFC", result.mapped_funds_center?.code);
     setText("modalCI", result.mapped_commitment_item?.code);
-    setText("modalCIName", result.mapped_commitment_item?.name);
     setText("modalScope", result.budget_scope);
     setText("modalAmount", rupiah(data.request_amount));
 
     setText(
         "modalShortage",
-        result.shortage_amount === null
+        result.shortage_amount == null
             ? "—"
             : rupiah(result.shortage_amount)
     );
@@ -1908,14 +1609,12 @@ function fillModal(result, data) {
     confirmBtn.disabled = !result.can_submit;
 }
 
-/* =====================================
-   PERIKSA BUDGET
-===================================== */
+/* =================================================
+   PEMERIKSAAN BUDGET
+================================================= */
 
 checkBtn.addEventListener("click", async () => {
-    if (pendingCheck || pendingSubmit || submitSuccess) {
-        return;
-    }
+    if (pendingCheck || pendingSubmit || submitSuccess) return;
 
     const data = collectData();
     const error = validateFullForm(data);
@@ -1949,10 +1648,7 @@ checkBtn.addEventListener("click", async () => {
     );
 
     try {
-        const result = await postJSON(
-            API_PERIKSA,
-            data
-        );
+        const result = await postJSON(API_PERIKSA, data);
 
         if (requestVersion !== version) return;
 
@@ -1981,14 +1677,14 @@ checkBtn.addEventListener("click", async () => {
 
     } finally {
         pendingCheck = false;
-        checkBtn.disabled = false;
+        checkBtn.disabled = submitSuccess;
         updateSubmitButton();
     }
 });
 
-/* =====================================
-   KONFIRMASI MAPPING
-===================================== */
+/* =================================================
+   KONFIRMASI HASIL
+================================================= */
 
 confirmBtn.addEventListener("click", () => {
     if (
@@ -2001,13 +1697,9 @@ confirmBtn.addEventListener("click", () => {
         return;
     }
 
-    confirmedData = JSON.stringify(
-        collectData()
-    );
+    confirmedData = JSON.stringify(collectData());
 
-    if (modalInstance) {
-        modalInstance.hide();
-    }
+    if (modalInstance) modalInstance.hide();
 
     updateSubmitButton();
 
@@ -2017,9 +1709,9 @@ confirmBtn.addEventListener("click", () => {
     );
 });
 
-/* =====================================
-   SUBMIT
-===================================== */
+/* =================================================
+   SIMPAN PENGAJUAN
+================================================= */
 
 submitBtn.addEventListener("click", async () => {
     if (
@@ -2047,6 +1739,7 @@ submitBtn.addEventListener("click", async () => {
             "error",
             "Data sudah berubah. Lakukan Pemeriksaan Budget ulang."
         );
+
         return;
     }
 
@@ -2057,25 +1750,17 @@ submitBtn.addEventListener("click", async () => {
     if (!approved) return;
 
     pendingSubmit = true;
-
     updateSubmitButton();
     checkBtn.disabled = true;
 
-    setStatus(
-        "info",
-        "Sedang menyimpan pengajuan..."
-    );
+    setStatus("info", "Sedang menyimpan pengajuan...");
 
     try {
-        const response = await postJSON(
-            API_SUBMIT,
-            data
-        );
+        const response = await postJSON(API_SUBMIT, data);
 
         if (!response.success) {
             throw new Error(
-                response.error ||
-                "Pengajuan gagal disimpan."
+                response.error || "Pengajuan gagal disimpan."
             );
         }
 
@@ -2101,22 +1786,19 @@ submitBtn.addEventListener("click", async () => {
     } catch (error) {
         setStatus(
             "error",
-            error.message ||
-            "Pengajuan belum berhasil disimpan."
+            error.message || "Pengajuan belum berhasil disimpan."
         );
 
     } finally {
         pendingSubmit = false;
-
         checkBtn.disabled = submitSuccess;
-
         updateSubmitButton();
     }
 });
 
-/* =====================================
-   CHANGE EVENTS
-===================================== */
+/* =================================================
+   FIELD CHANGE EVENTS
+================================================= */
 
 [
     "tanggal",
@@ -2127,20 +1809,13 @@ submitBtn.addEventListener("click", async () => {
 ].forEach(id => {
     const element = document.getElementById(id);
 
-    element.addEventListener(
-        "input",
-        invalidateForm
-    );
-
-    element.addEventListener(
-        "change",
-        invalidateForm
-    );
+    element.addEventListener("input", invalidateForm);
+    element.addEventListener("change", invalidateForm);
 });
 
-/* =====================================
-   FILE UPLOAD
-===================================== */
+/* =================================================
+   LAMPIRAN
+================================================= */
 
 attachment.addEventListener("change", () => {
     const file = attachment.files[0];
@@ -2148,12 +1823,10 @@ attachment.addEventListener("change", () => {
     if (file) {
         uploadTitle.textContent = file.name;
         uploadSubtitle.textContent = "Dokumen telah dipilih";
-
         attachmentWarning.hidden = false;
     } else {
-        uploadTitle.textContent = "Pilih Dokumen Pendukung";
+        uploadTitle.textContent = "Pilih dokumen pendukung";
         uploadSubtitle.textContent = "PDF, JPG, PNG, atau XLSX";
-
         attachmentWarning.hidden = true;
     }
 
@@ -2167,17 +1840,13 @@ attachment.addEventListener("change", () => {
     }
 });
 
-/* =====================================
-   DISABLE NATIVE FORM SUBMIT
-===================================== */
+/* =================================================
+   INITIAL STATE
+================================================= */
 
 form.addEventListener("submit", event => {
     event.preventDefault();
 });
-
-/* =====================================
-   INITIAL STATE
-===================================== */
 
 setShortage(
     "—",
@@ -2185,7 +1854,6 @@ setShortage(
 );
 
 submitBtn.disabled = true;
-
 </script>
 
 </body>
