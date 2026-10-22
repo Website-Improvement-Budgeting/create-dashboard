@@ -487,17 +487,21 @@
                 Dashboard
             </a>
 
-            <!-- menu 3 budget detail -->
-            <span class="nav-item disabled">
+            <a
+                href="{{ url_for('budget_detail_pengusul') }}"
+                class="nav-item"
+            >
                 <i class="bi bi-wallet2"></i>
                 Budget Detail
-            </span>
+            </a>
 
-            <!-- menu 4 pengajuan budget -->
-            <span class="nav-item disabled">
+            <a
+                href="{{ url_for('pengajuan_budget') }}"
+                class="nav-item"
+            >
                 <i class="bi bi-file-earmark-plus"></i>
                 Pengajuan Budget
-            </span>
+            </a>
 
             <!-- menu 5 riwayat pengajuan -->
             <span class="nav-item disabled">
