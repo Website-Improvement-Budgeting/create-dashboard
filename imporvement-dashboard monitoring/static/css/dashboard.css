@@ -494,3 +494,66 @@ body {
 .sidebar-bottom {
     border-top: 1px solid #f1d6d8;
 }
+
+
+/* =====================================================
+   SILOG - KONSISTENSI ALIGNMENT HALAMAN PENGUSUL
+
+   Berlaku untuk:
+   1. Profil
+   2. Dashboard
+   3. Budget Detail
+   4. Pengajuan Budget
+   5. Riwayat Pengajuan
+
+   Acuan alignment: Halaman Profil
+===================================================== */
+
+/* Area konten lima halaman */
+.profile-page .dashboard-content,
+.pengusul-dashboard-page .dashboard-content,
+.budget-detail-page .dashboard-content,
+.main-content > .page-content,
+.main-content > .history-content {
+    width: 100%;
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 42px;
+    padding-right: 42px;
+}
+
+/* Hilangkan tambahan pemusatan wrapper
+   yang membuat konten bergeser ke tengah */
+.pengusul-dashboard-page .dashboard-inner,
+.main-content .page-shell,
+.main-content .history-shell {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Responsif tablet */
+@media (max-width: 1000px) {
+    .profile-page .dashboard-content,
+    .pengusul-dashboard-page .dashboard-content,
+    .budget-detail-page .dashboard-content,
+    .main-content > .page-content,
+    .main-content > .history-content {
+        padding-left: 28px;
+        padding-right: 28px;
+    }
+}
+
+/* Responsif mobile */
+@media (max-width: 650px) {
+    .profile-page .dashboard-content,
+    .pengusul-dashboard-page .dashboard-content,
+    .budget-detail-page .dashboard-content,
+    .main-content > .page-content,
+    .main-content > .history-content {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
