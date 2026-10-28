@@ -1,67 +1,146 @@
 
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Pengajuan | SILOG</title>
 
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/style.css') }}">
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <style>
         :root {
             --red: #ed1c24;
+            --red-dark: #c91620;
             --red-soft: #fff1f2;
-            --bg: #f6f7fb;
-            --text: #29313d;
-            --muted: #8993a2;
-            --line: #e8ebf0;
+            --bg: #f5f6f8;
+            --text: #292e38;
+            --muted: #8b94a1;
+            --line: #e5e9ef;
         }
 
         body {
+            margin: 0;
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont,
                          "Segoe UI", sans-serif;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         .topbar {
             display: flex;
+            align-items: center;
             justify-content: flex-end;
         }
 
-        .user-profile-link {
+        /* ==========================================
+           PROFILE DROPDOWN
+        ========================================== */
+
+        .user-dropdown-toggle {
             display: flex;
             align-items: center;
-            gap: 12px;
-            color: inherit;
+            gap: 11px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text);
+            text-align: left;
+            cursor: pointer;
+            transition: background .2s ease;
+        }
+
+        .user-dropdown-toggle:hover,
+        .user-dropdown-toggle[aria-expanded="true"] {
+            background: #f5f5f5;
+        }
+
+        .user-dropdown-toggle .user-info strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .user-dropdown-toggle .user-info small {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .dropdown-chevron {
+            margin-left: 5px;
+            color: var(--muted);
+            font-size: 12px;
+            transition: transform .2s ease;
+        }
+
+        .user-dropdown-toggle[aria-expanded="true"]
+        .dropdown-chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            min-width: 215px;
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 12px 30px rgba(0,0,0,.09);
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            padding: 9px 12px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #40434b;
+            font-size: 12px;
             text-decoration: none;
         }
 
-        .user-profile-link:hover {
-            color: inherit;
+        .user-dropdown-menu .dropdown-item:hover {
+            background: #f5f6f8;
         }
 
+        .user-dropdown-menu .user-logout-item {
+            color: var(--red);
+            font-weight: 650;
+        }
+
+        .user-dropdown-menu .user-logout-item:hover {
+            background: var(--red-soft);
+            color: var(--red-dark);
+        }
+
+        /* ==========================================
+           PAGE LAYOUT
+        ========================================== */
+
         .history-content {
-            padding: 26px 30px 48px;
+            padding: 28px 30px 48px;
         }
 
         .history-shell {
-            max-width: 1260px;
+            width: 100%;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -72,71 +151,80 @@
         .page-title {
             display: flex;
             align-items: center;
-            gap: 11px;
+            gap: 10px;
             margin: 0;
-            font-size: 22px;
+            font-size: 23px;
             font-weight: 750;
+            letter-spacing: -.4px;
         }
 
         .page-title i {
             color: var(--red);
+            font-size: 21px;
         }
 
         .page-subtitle {
-            margin: 7px 0 0;
+            margin: 6px 0 0;
             color: var(--muted);
             font-size: 12px;
+            line-height: 1.5;
         }
 
-        /* SUMMARY */
+        /* ==========================================
+           SUMMARY CARDS
+        ========================================== */
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 13px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(4, minmax(0,1fr));
+            gap: 15px;
+            margin-bottom: 24px;
         }
 
         .summary-card {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-
-            padding: 18px;
+            gap: 12px;
+            min-height: 105px;
+            padding: 18px 20px;
             background: white;
             border: 1px solid var(--line);
-            border-radius: 13px;
+            border-radius: 14px;
+            box-shadow: 0 5px 18px rgba(0,0,0,.025);
         }
 
         .summary-label {
             display: block;
-            color: var(--muted);
+            color: #828b98;
             font-size: 11px;
+            font-weight: 650;
         }
 
         .summary-value {
             display: block;
-            margin-top: 7px;
-            font-size: 25px;
+            margin-top: 9px;
+            font-size: 27px;
             font-weight: 750;
-            line-height: 1;
+            line-height: 1.2;
+            letter-spacing: -.5px;
         }
 
         .summary-icon {
             display: flex;
-            justify-content: center;
             align-items: center;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
             background: #f5f6f8;
             color: #798392;
-            font-size: 17px;
+            font-size: 21px;
         }
 
         .summary-icon.red {
-            background: #fff0f1;
+            background: var(--red-soft);
             color: var(--red);
         }
 
@@ -150,93 +238,200 @@
             color: #20815e;
         }
 
-        /* MAIN CARD */
+        /* ==========================================
+           HISTORY CARD
+        ========================================== */
 
         .history-card {
             background: white;
             border: 1px solid var(--line);
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 5px 20px rgba(20,30,45,.025);
+            box-shadow: 0 5px 20px rgba(0,0,0,.025);
         }
 
         .history-card-header {
+            padding: 22px 24px 20px;
+        }
+
+        .history-heading-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            padding: 20px 22px;
+            gap: 16px;
         }
 
         .history-card-header h2 {
             margin: 0;
-            font-size: 15px;
-            font-weight: 750;
+            color: #31333b;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -.4px;
         }
 
         .history-card-header p {
             margin: 5px 0 0;
-            color: var(--muted);
+            color: #9699a2;
             font-size: 11px;
+        }
+
+        .history-record-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--red-soft);
+            color: #d91d27;
+            font-size: 12px;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .history-header-divider {
+            height: 1px;
+            margin: 19px 0;
+            background: #f0f1f4;
+        }
+
+        /* ==========================================
+           SEARCH & FILTER
+           CONSISTENT WITH DASHBOARD
+        ========================================== */
+
+        .history-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            width: 100%;
+        }
+
+        .history-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 1 430px;
+            min-width: 0;
+            max-width: 430px;
+            height: 39px;
+            padding: 0 13px;
+            background: white;
+            border: 1px solid #e4e6eb;
+            border-radius: 9px;
+            transition: border-color .2s ease,
+                        box-shadow .2s ease;
+        }
+
+        .history-search:focus-within {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.08);
+        }
+
+        .history-search i {
+            color: #9a9da7;
+            font-size: 15px;
+        }
+
+        .history-search input {
+            flex: 1;
+            width: 100%;
+            min-width: 0;
+            height: 100%;
+            padding: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            box-shadow: none;
+            color: #30323a;
+            font-size: 12px;
+        }
+
+        .history-search input::placeholder {
+            color: #a0a4ae;
         }
 
         .filter-bar {
             display: flex;
-            gap: 9px;
-            flex-wrap: wrap;
-        }
-
-        .filter-input,
-        .filter-select {
-            min-height: 38px;
-            padding: 8px 11px;
-            border: 1px solid #dfe5ec;
-            border-radius: 9px;
-            font-size: 11px;
-            color: #404956;
+            align-items: flex-end;
+            gap: 11px;
+            flex-shrink: 0;
+            margin-left: auto;
+            padding: 12px 14px;
             background: white;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.02);
         }
 
-        .filter-input {
-            width: 205px;
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .filter-group label {
+            margin: 0;
+            color: #858f9c;
+            font-size: 10px;
+            font-weight: 700;
         }
 
         .filter-select {
-            min-width: 130px;
+            width: 175px;
+            height: 36px;
+            padding: 6px 27px 6px 10px;
+            background: white;
+            border: 1px solid #dfe5ec;
+            border-radius: 8px;
+            color: #394250;
+            font-size: 11px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
         }
 
-        .filter-input:focus,
         .filter-select:focus {
-            outline: none;
             border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(237,28,36,.06);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.07);
         }
 
         .btn-filter {
-            min-height: 38px;
-            padding: 8px 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            height: 36px;
+            padding: 0 15px;
             border: 1px solid var(--red);
-            border-radius: 9px;
+            border-radius: 8px;
             background: var(--red);
             color: white;
             font-size: 11px;
-            font-weight: 650;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
         }
 
         .btn-filter:hover {
-            background: #d21820;
+            background: var(--red-dark);
+            border-color: var(--red-dark);
+            color: white;
         }
 
         .btn-reset {
             display: inline-flex;
             align-items: center;
-            min-height: 38px;
-            padding: 8px 11px;
-            border: 1px solid #e3e7ed;
-            border-radius: 9px;
+            justify-content: center;
+            height: 36px;
+            padding: 0 13px;
+            border: 1px solid #dfe5ec;
+            border-radius: 8px;
+            background: white;
             color: #697483;
             font-size: 11px;
+            font-weight: 650;
             text-decoration: none;
         }
 
@@ -245,65 +440,94 @@
             color: #343b46;
         }
 
-        /* TABLE */
+        /* ==========================================
+           TABLE
+        ========================================== */
 
         .table-container {
+            width: 100%;
             overflow-x: auto;
         }
 
         .history-table {
             width: 100%;
-            min-width: 850px;
+            min-width: 950px;
+            margin: 0;
             border-collapse: collapse;
         }
 
         .history-table thead {
-            background: #fafbfc;
+            background: #f8f9fb;
         }
 
         .history-table th {
-            padding: 14px 16px;
+            padding: 16px 14px;
+            color: #858c9b;
             font-size: 11px;
             font-weight: 700;
-            color: #788392;
+            letter-spacing: .2px;
             white-space: nowrap;
-            border-top: 1px solid var(--line);
             border-bottom: 1px solid var(--line);
         }
 
         .history-table td {
-            padding: 15px 16px;
-            font-size: 11px;
-            color: #46505e;
+            padding: 18px 14px;
+            color: #48546a;
+            font-size: 12px;
             vertical-align: middle;
-            border-bottom: 1px solid #eef1f5;
+            border-bottom: 1px solid #edf0f3;
+        }
+
+        .history-table th:first-child,
+        .history-table td:first-child {
+            padding-left: 24px;
+        }
+
+        .history-table th:last-child,
+        .history-table td:last-child {
+            padding-right: 24px;
         }
 
         .history-table tbody tr:hover {
-            background: #fcfcfd;
+            background: #fafbfc;
         }
 
         .request-id {
-            color: #303845;
+            color: #364257;
+            font-size: 12px;
             font-weight: 750;
         }
 
         .request-entity {
             max-width: 210px;
-            color: #384251;
+            color: #526073;
             font-weight: 600;
         }
 
         .request-date {
-            white-space: nowrap;
             color: #75808f;
+            white-space: nowrap;
+        }
+
+        .request-time {
+            margin-top: 4px;
+            color: #9ca5b1;
+            font-size: 10px;
         }
 
         .money-value {
+            color: #29313d;
             font-weight: 700;
             white-space: nowrap;
-            color: #29313d;
         }
+
+        .shortage-positive {
+            color: #d72736;
+        }
+
+        /* ==========================================
+           STATUS
+        ========================================== */
 
         .status-pill {
             display: inline-flex;
@@ -311,11 +535,11 @@
             justify-content: center;
             padding: 6px 10px;
             border-radius: 999px;
+            background: #f1f3f6;
+            color: #697485;
             font-size: 10px;
             font-weight: 700;
             white-space: nowrap;
-            background: #f1f3f6;
-            color: #697485;
         }
 
         .status-pill.pending {
@@ -336,22 +560,26 @@
         .btn-detail {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 7px 11px;
+            padding: 8px 11px;
             border: 1px solid #ead7d9;
             border-radius: 8px;
-            background: #fff;
+            background: white;
             color: var(--red);
             font-size: 11px;
             font-weight: 650;
             white-space: nowrap;
+            cursor: pointer;
         }
 
         .btn-detail:hover {
             background: var(--red-soft);
         }
 
-        /* EMPTY STATE */
+        /* ==========================================
+           EMPTY STATE
+        ========================================== */
 
         .empty-state {
             padding: 58px 20px;
@@ -360,9 +588,9 @@
 
         .empty-state i {
             display: block;
-            font-size: 35px;
-            color: #bac2cd;
             margin-bottom: 13px;
+            color: #bac2cd;
+            font-size: 35px;
         }
 
         .empty-state strong {
@@ -371,24 +599,27 @@
         }
 
         .empty-state p {
+            margin: 8px 0 0;
             color: var(--muted);
             font-size: 11px;
-            margin: 8px 0 0;
         }
 
-        /* FOOTER & PAGINATION */
+        /* ==========================================
+           FOOTER & PAGINATION
+        ========================================== */
 
         .history-footer {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 14px;
-            padding: 15px 22px;
+            padding: 18px 24px;
+            border-top: 1px solid #eceef1;
         }
 
         .history-count {
             color: var(--muted);
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .pagination-controls {
@@ -401,14 +632,15 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 32px;
-            height: 32px;
-            padding: 0 9px;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 10px;
             border: 1px solid #e3e8ee;
             border-radius: 8px;
+            background: white;
             color: #556171;
-            text-decoration: none;
             font-size: 11px;
+            text-decoration: none;
         }
 
         .page-link-custom:hover {
@@ -421,7 +653,16 @@
             opacity: .4;
         }
 
-        /* MODAL */
+        .page-link-custom.current {
+            background: var(--red-soft);
+            border-color: #ffd3d7;
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        /* ==========================================
+           MODAL
+        ========================================== */
 
         .modal-content {
             border: none;
@@ -444,22 +685,22 @@
         }
 
         .detail-section-title {
-            margin: 0 0 10px;
-            font-size: 12px;
+            margin: 0 0 15px;
+            font-size: 13px;
             font-weight: 750;
         }
 
         .detail-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0,1fr));
-            gap: 15px;
+            gap: 18px;
         }
 
         .detail-label {
             display: block;
-            color: var(--muted);
-            font-size: 10px;
             margin-bottom: 5px;
+            color: var(--muted);
+            font-size: 11px;
         }
 
         .detail-value {
@@ -472,17 +713,36 @@
 
         .detail-divider {
             border-top: 1px solid var(--line);
-            margin: 20px 0;
+            margin: 22px 0;
         }
 
         .detail-description {
-            padding: 12px;
+            padding: 13px;
             background: #f7f8fa;
             border-radius: 9px;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
             font-size: 12px;
             line-height: 1.6;
+        }
+
+        /* ==========================================
+           RESPONSIVE
+        ========================================== */
+
+        @media (max-width: 1150px) {
+            .history-toolbar {
+                flex-wrap: wrap;
+            }
+
+            .history-search {
+                flex: 1 1 260px;
+                max-width: none;
+            }
+
+            .filter-bar {
+                margin-left: auto;
+            }
         }
 
         @media (max-width: 1050px) {
@@ -493,33 +753,81 @@
 
         @media (max-width: 650px) {
             .history-content {
-                padding: 20px 16px 35px;
+                padding: 23px 16px 35px;
+            }
+
+            .page-title {
+                font-size: 21px;
             }
 
             .summary-grid {
-                gap: 9px;
+                gap: 10px;
             }
 
             .summary-card {
+                min-height: 94px;
                 padding: 14px;
             }
 
             .summary-value {
-                font-size: 21px;
+                font-size: 22px;
             }
 
-            .history-card-header,
-            .history-footer {
-                padding: 15px;
+            .summary-icon {
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
+            }
+
+            .history-card-header {
+                padding: 19px 18px;
+            }
+
+            .history-card-header h2 {
+                font-size: 17px;
+            }
+
+            .history-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+
+            .history-search {
+                flex: none;
+                width: 100%;
+                max-width: 100%;
             }
 
             .filter-bar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                width: 100%;
+                margin: 0;
+            }
+
+            .filter-group {
+                grid-column: 1 / -1;
+            }
+
+            .filter-select {
                 width: 100%;
             }
 
-            .filter-input,
-            .filter-select {
+            .btn-filter,
+            .btn-reset {
                 width: 100%;
+            }
+
+            .history-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 18px;
+            }
+
+            .pagination-controls {
+                align-self: flex-end;
             }
 
             .detail-grid {
@@ -530,10 +838,11 @@
 </head>
 
 <body>
-
 <div class="dashboard-layout">
 
-    <!-- SIDEBAR -->
+    <!-- ==========================================
+         SIDEBAR
+    ========================================== -->
     <aside class="sidebar">
 
         <div class="sidebar-brand">
@@ -548,14 +857,12 @@
 
         <nav class="sidebar-nav">
 
-            <a href="{{ url_for('profil') }}"
-               class="nav-item">
+            <a href="{{ url_for('profil') }}" class="nav-item">
                 <i class="bi bi-person-circle"></i>
                 Profil
             </a>
 
-            <a href="{{ url_for('dashboard') }}"
-               class="nav-item">
+            <a href="{{ url_for('dashboard') }}" class="nav-item">
                 <i class="bi bi-grid-1x2"></i>
                 Dashboard
             </a>
@@ -582,8 +889,7 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <form method="POST"
-                  action="{{ url_for('logout') }}">
+            <form method="POST" action="{{ url_for('logout') }}">
                 <button type="submit" class="logout-button">
                     <i class="bi bi-box-arrow-right"></i>
                     Logout
@@ -593,27 +899,63 @@
 
     </aside>
 
-    <!-- MAIN -->
+    <!-- ==========================================
+         MAIN
+    ========================================== -->
     <main class="main-content">
 
+        <!-- TOPBAR -->
         <header class="topbar">
-            <a href="{{ url_for('profil') }}"
-               class="user-profile-link">
+            <div class="dropdown">
 
-                <div class="user-avatar">
-                    <i class="bi bi-person-fill"></i>
-                </div>
+                <button type="button"
+                        class="user-profile user-dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-label="Buka menu akun pengguna">
 
-                <div class="user-info">
-                    <strong>{{ username | upper }}</strong>
-                    <small>Pengusul Budget</small>
+                    <div class="user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+
+                    <div class="user-info">
+                        <strong>{{ username | upper }}</strong>
+                        <small>Pengusul Budget</small>
+                    </div>
+
+                    <i class="bi bi-chevron-down dropdown-chevron"></i>
+
+                </button>
+
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+
+                    <div class="dropdown-header">Akun Pengusul</div>
+
+                    <a href="{{ url_for('profil') }}"
+                       class="dropdown-item">
+                        <i class="bi bi-person-circle"></i>
+                        Profil
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <button type="submit"
+                                class="dropdown-item user-logout-item">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </button>
+                    </form>
+
                 </div>
-            </a>
+            </div>
         </header>
 
+        <!-- CONTENT -->
         <section class="history-content">
             <div class="history-shell">
 
+                <!-- PAGE HEADER -->
                 <div class="page-header">
                     <h1 class="page-title">
                         <i class="bi bi-clock-history"></i>
@@ -625,9 +967,12 @@
                     </p>
                 </div>
 
-                <!-- SUMMARY CARDS -->
+                <!-- ======================================
+                     SUMMARY CARDS
+                ======================================= -->
                 <div class="summary-grid">
 
+                    <!-- TOTAL -->
                     <div class="summary-card">
                         <div>
                             <span class="summary-label">
@@ -637,11 +982,13 @@
                                 {{ summary.total or 0 }}
                             </strong>
                         </div>
+
                         <div class="summary-icon red">
                             <i class="bi bi-files"></i>
                         </div>
                     </div>
 
+                    <!-- PENDING -->
                     <div class="summary-card">
                         <div>
                             <span class="summary-label">
@@ -651,11 +998,13 @@
                                 {{ summary.pending or 0 }}
                             </strong>
                         </div>
+
                         <div class="summary-icon amber">
                             <i class="bi bi-hourglass-split"></i>
                         </div>
                     </div>
 
+                    <!-- APPROVED -->
                     <div class="summary-card">
                         <div>
                             <span class="summary-label">
@@ -665,11 +1014,13 @@
                                 {{ summary.approved or 0 }}
                             </strong>
                         </div>
+
                         <div class="summary-icon green">
                             <i class="bi bi-check-circle"></i>
                         </div>
                     </div>
 
+                    <!-- REJECTED -->
                     <div class="summary-card">
                         <div>
                             <span class="summary-label">
@@ -679,6 +1030,7 @@
                                 {{ summary.rejected or 0 }}
                             </strong>
                         </div>
+
                         <div class="summary-icon">
                             <i class="bi bi-x-circle"></i>
                         </div>
@@ -686,57 +1038,99 @@
 
                 </div>
 
-                <!-- HISTORY TABLE -->
+                <!-- ======================================
+                     HISTORY CARD
+                ======================================= -->
                 <div class="history-card">
 
                     <div class="history-card-header">
-                        <div>
-                            <h2>Daftar Pengajuan Budget</h2>
-                            <p>
-                                Seluruh pengajuan budget
-                            </p>
+
+                        <!-- HEADING -->
+                        <div class="history-heading-row">
+                            <div>
+                                <h2>Daftar Pengajuan Budget</h2>
+                                <p>Seluruh pengajuan budget</p>
+                            </div>
+
+                            <span class="history-record-count">
+                                <i class="bi bi-list-ul"></i>
+                                {{ total_rows }} Data
+                            </span>
                         </div>
 
+                        <div class="history-header-divider"></div>
+
+                        <!-- ==================================
+                             SEARCH & FILTER
+                        =================================== -->
                         <form method="GET"
                               action="{{ url_for('riwayat_pengajuan_pengusul') }}"
-                              class="filter-bar">
+                              class="history-toolbar"
+                              id="historyFilterForm">
 
-                            <input type="search"
-                                   name="q"
-                                   class="filter-input"
-                                   value="{{ keyword }}"
-                                   placeholder="Cari ID, PIC, keterangan...">
+                            <!-- SEARCH -->
+                            <label class="history-search"
+                                   for="historySearch">
 
-                            <select name="status"
-                                    class="filter-select">
-                                <option value="">
-                                    Semua Status
-                                </option>
+                                <i class="bi bi-search"></i>
 
-                                {% for status in status_options %}
-                                    <option value="{{ status }}"
-                                        {% if selected_status == status %}
-                                            selected
-                                        {% endif %}>
-                                        {{ status }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                                <input type="search"
+                                       name="q"
+                                       id="historySearch"
+                                       value="{{ keyword }}"
+                                       placeholder="Cari ID, PIC, keterangan..."
+                                       autocomplete="off">
+                            </label>
 
-                            <button type="submit"
-                                    class="btn-filter">
-                                <i class="bi bi-funnel"></i>
-                                Terapkan
-                            </button>
+                            <!-- FILTER CONTAINER -->
+                            <div class="filter-bar">
 
-                            <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
-                               class="btn-reset">
-                                Reset
-                            </a>
+                                <div class="filter-group">
+                                    <label for="statusFilter">
+                                        Status Pengajuan
+                                    </label>
 
+                                    <select name="status"
+                                            id="statusFilter"
+                                            class="filter-select">
+
+                                        <option value=""
+                                            {% if not selected_status %}selected{% endif %}>
+                                            Semua Status
+                                        </option>
+
+                                        {% for status in status_options %}
+                                            <option value="{{ status }}"
+                                                {% if selected_status == status %}
+                                                    selected
+                                                {% endif %}>
+                                                {{ status }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- TERAPKAN -->
+                                <button type="submit"
+                                        class="btn-filter">
+                                    <i class="bi bi-funnel"></i>
+                                    Terapkan
+                                </button>
+
+                                <!-- RESET -->
+                                <a href="{{ url_for('riwayat_pengajuan_pengusul') }}"
+                                   class="btn-reset">
+                                    Reset
+                                </a>
+
+                            </div>
                         </form>
+
                     </div>
 
+                    <!-- ======================================
+                         TABLE
+                    ======================================= -->
                     <div class="table-container">
 
                         {% if history_rows %}
@@ -756,20 +1150,21 @@
                             </thead>
 
                             <tbody>
-
                                 {% for item in history_rows %}
 
                                 <tr>
+                                    <!-- ID -->
                                     <td>
                                         <span class="request-id">
                                             #{{ item.request_id }}
                                         </span>
                                     </td>
 
+                                    <!-- DATE -->
                                     <td class="request-date">
                                         {% if item.request_date_local %}
                                             {{ item.request_date_local.strftime('%d/%m/%Y') }}
-                                            <div style="font-size:10px;color:#9ca5b1;margin-top:3px">
+                                            <div class="request-time">
                                                 {{ item.request_date_local.strftime('%H:%M') }} WIB
                                             </div>
                                         {% else %}
@@ -777,29 +1172,34 @@
                                         {% endif %}
                                     </td>
 
+                                    <!-- ENTITY -->
                                     <td class="request-entity">
                                         {{ item.unit_entity or "—" }}
                                     </td>
 
+                                    <!-- PIC -->
                                     <td>
                                         {{ item.pic or "—" }}
                                     </td>
 
+                                    <!-- NOMINAL -->
                                     <td>
                                         <span class="money-value">
                                             {{ format_rupiah(item.request_amount) }}
                                         </span>
                                     </td>
 
+                                    <!-- SHORTAGE -->
                                     <td>
-                                        <span class="money-value"
-                                              {% if item.shortage_amount and item.shortage_amount > 0 %}
-                                                  style="color:#d72736"
-                                              {% endif %}>
+                                        <span class="money-value
+                                            {% if item.shortage_amount and item.shortage_amount > 0 %}
+                                                shortage-positive
+                                            {% endif %}">
                                             {{ format_rupiah(item.shortage_amount) }}
                                         </span>
                                     </td>
 
+                                    <!-- STATUS -->
                                     <td>
                                         {% set status_name = (item.request_status or '') | lower %}
 
@@ -812,12 +1212,12 @@
                                         </span>
                                     </td>
 
+                                    <!-- DETAIL -->
                                     <td>
                                         <button type="button"
                                                 class="btn-detail"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#detailModal{{ item.request_id }}">
-
                                             <i class="bi bi-eye"></i>
                                             Lihat Detail
                                         </button>
@@ -825,7 +1225,6 @@
                                 </tr>
 
                                 {% endfor %}
-
                             </tbody>
                         </table>
 
@@ -835,8 +1234,8 @@
                             <i class="bi bi-inbox"></i>
                             <strong>Belum Ada Pengajuan</strong>
                             <p>
-                                Belum ditemukan pengajuan sesuai
-                                pencarian atau filter yang dipilih
+                                Belum ditemukan pengajuan sesuai pencarian
+                                atau filter yang dipilih.
                             </p>
                         </div>
 
@@ -844,6 +1243,9 @@
 
                     </div>
 
+                    <!-- ======================================
+                         FOOTER & PAGINATION
+                    ======================================= -->
                     <div class="history-footer">
 
                         <span class="history-count">
@@ -852,8 +1254,10 @@
 
                         <div class="pagination-controls">
 
+                            <!-- PREVIOUS -->
                             {% if page > 1 %}
                                 <a class="page-link-custom"
+                                   aria-label="Halaman sebelumnya"
                                    href="{{ url_for('riwayat_pengajuan_pengusul',
                                                     page=page-1,
                                                     q=keyword,
@@ -866,12 +1270,15 @@
                                 </span>
                             {% endif %}
 
-                            <span class="page-link-custom">
+                            <!-- PAGE NUMBER -->
+                            <span class="page-link-custom current">
                                 {{ page }} / {{ total_pages }}
                             </span>
 
+                            <!-- NEXT -->
                             {% if page < total_pages %}
                                 <a class="page-link-custom"
+                                   aria-label="Halaman berikutnya"
                                    href="{{ url_for('riwayat_pengajuan_pengusul',
                                                     page=page+1,
                                                     q=keyword,
@@ -885,18 +1292,18 @@
                             {% endif %}
 
                         </div>
-
                     </div>
 
                 </div>
-
             </div>
         </section>
-
     </main>
 </div>
 
-<!-- DETAIL MODALS -->
+<!-- ==========================================
+     DETAIL MODALS
+========================================== -->
+
 {% for item in history_rows %}
 
 <div class="modal fade"
@@ -904,9 +1311,7 @@
      tabindex="-1"
      aria-hidden="true">
 
-    <div class="modal-dialog modal-dialog-centered modal-lg
-                modal-dialog-scrollable">
-
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -922,6 +1327,7 @@
 
             <div class="modal-body">
 
+                <!-- INFORMASI PENGAJUAN -->
                 <h3 class="detail-section-title">
                     Informasi Pengajuan
                 </h3>
@@ -1006,6 +1412,7 @@
 
                 <div class="detail-divider"></div>
 
+                <!-- HASIL MAPPING -->
                 <h3 class="detail-section-title">
                     Hasil Mapping
                 </h3>
@@ -1058,6 +1465,7 @@
 
                 <div class="detail-divider"></div>
 
+                <!-- KETERANGAN -->
                 <h3 class="detail-section-title">
                     Keterangan
                 </h3>
