@@ -357,7 +357,10 @@ def login():
     if role == "Pengusul":
         return redirect(url_for("profil"))
 
-    return redirect(url_for("dashboard"))
+    if role == "Approval":
+        return redirect(url_for("profil_approval"))
+
+    return redirect(url_for("login"))
 
 
 # registrasi akun approval
@@ -1840,6 +1843,272 @@ def logout():
 
     return redirect(url_for("login"))
 
+# halaman profil approval
+def get_approval_csrf_token():
+    if "approval_password_csrf" not in session:
+        session["approval_password_csrf"] = secrets.token_urlsafe(32)
+
+    return session["approval_password_csrf"]
+
+
+@app.route("/profil-approval", methods=["GET"])
+def profil_approval():
+
+    # 1. Pastikan pengguna sudah login
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+
+    # 2. Halaman ini hanya untuk Approval
+    if session.get("role") != "Approval":
+        return redirect(url_for("dashboard"))
+
+    conn = None
+
+    try:
+        # 3. Ambil data akun dari database
+        conn = get_db_connection()
+
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT username, role
+                FROM public.users
+                WHERE user_id = %s
+                  AND role = 'Approval'
+                LIMIT 1
+                """,
+                (session["user_id"],)
+            )
+
+            result = cursor.fetchone()
+
+        # 4. Validasi akun
+        if result is None:
+            session.clear()
+            flash(
+                "Akun Approval tidak ditemukan.",
+                "danger"
+            )
+            return redirect(url_for("login"))
+
+        # 5. Data yang ditampilkan pada halaman Profil
+        user = {
+            "username": result[0],
+            "role": result[1]
+        }
+
+        # 6. Render halaman Profil Approval
+        return render_template(
+            "profil_approval.html",
+            user=user,
+            approval_csrf_token=get_approval_csrf_token()
+        )
+
+    except psycopg2.Error:
+        app.logger.exception(
+            "Gagal memuat Profil Approval"
+        )
+
+        flash(
+            "Data Profil Approval gagal dimuat.",
+            "danger"
+        )
+
+        return redirect(url_for("dashboard"))
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+# ubah password approval
+@app.route(
+    "/ubah-password-approval",
+    methods=["POST"]
+)
+def ubah_password_approval():
+
+    # 1. Validasi login
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+
+    # 2. Validasi role
+    if session.get("role") != "Approval":
+        return redirect(url_for("dashboard"))
+
+    # 3. Validasi CSRF
+    expected_token = session.get(
+        "approval_password_csrf",
+        ""
+    )
+
+    submitted_token = request.form.get(
+        "approval_csrf_token",
+        ""
+    )
+
+    if (
+        not expected_token
+        or not submitted_token
+        or not hmac.compare_digest(
+            expected_token,
+            submitted_token
+        )
+    ):
+        flash(
+            "Token keamanan tidak valid. Silakan coba lagi.",
+            "danger"
+        )
+        return redirect(url_for("profil_approval"))
+
+    # 4. Ambil input password
+    password_lama = request.form.get(
+        "password_lama",
+        ""
+    )
+
+    password_baru = request.form.get(
+        "password_baru",
+        ""
+    )
+
+    konfirmasi = request.form.get(
+        "konfirmasi_password",
+        ""
+    )
+
+    # 5. Validasi kelengkapan
+    if not password_lama or not password_baru or not konfirmasi:
+        flash(
+            "Semua kolom password wajib diisi.",
+            "danger"
+        )
+        return redirect(url_for("profil_approval"))
+
+    # 6. Validasi panjang password
+    if len(password_baru) < 8:
+        flash(
+            "Password baru minimal 8 karakter.",
+            "danger"
+        )
+        return redirect(url_for("profil_approval"))
+
+    # 7. Validasi konfirmasi
+    if password_baru != konfirmasi:
+        flash(
+            "Konfirmasi password baru tidak sesuai.",
+            "danger"
+        )
+        return redirect(url_for("profil_approval"))
+
+    # 8. Password baru harus berbeda
+    if password_baru == password_lama:
+        flash(
+            "Password baru harus berbeda dari password lama.",
+            "danger"
+        )
+        return redirect(url_for("profil_approval"))
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+
+        with conn:
+            with conn.cursor() as cursor:
+
+                # 9. Ambil password akun yang sedang login
+                # FOR UPDATE mencegah perubahan bersamaan
+                cursor.execute(
+                    """
+                    SELECT password
+                    FROM public.users
+                    WHERE user_id = %s
+                      AND role = 'Approval'
+                    FOR UPDATE
+                    """,
+                    (session["user_id"],)
+                )
+
+                result = cursor.fetchone()
+
+                if result is None:
+                    flash(
+                        "Akun Approval tidak ditemukan.",
+                        "danger"
+                    )
+                    return redirect(
+                        url_for("profil_approval")
+                    )
+
+                # 10. Periksa password lama
+                if not verify_password(
+                    password_lama,
+                    result[0]
+                ):
+                    flash(
+                        "Password lama tidak sesuai.",
+                        "danger"
+                    )
+                    return redirect(
+                        url_for("profil_approval")
+                    )
+
+                # 11. Buat hash password baru
+                password_hash = generate_password_hash(
+                    password_baru
+                )
+
+                # 12. Simpan password baru
+                cursor.execute(
+                    """
+                    UPDATE public.users
+                    SET password = %s
+                    WHERE user_id = %s
+                      AND role = 'Approval'
+                    """,
+                    (
+                        password_hash,
+                        session["user_id"]
+                    )
+                )
+
+                if cursor.rowcount != 1:
+                    raise RuntimeError(
+                        "Gagal memperbarui akun Approval."
+                    )
+
+        # 13. Buat ulang token setelah berhasil
+        session.pop("approval_password_csrf", None)
+
+        flash(
+            "Password berhasil diperbarui.",
+            "success"
+        )
+
+        return redirect(
+            url_for("profil_approval")
+        )
+
+    except (psycopg2.Error, RuntimeError):
+        app.logger.exception(
+            "Gagal mengubah password Approval"
+        )
+
+        flash(
+            "Password gagal diperbarui.",
+            "danger"
+        )
+
+        return redirect(
+            url_for("profil_approval")
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
 
 # menjalankan aplikasi flask lokal
 if __name__ == "__main__":
