@@ -10,7 +10,7 @@
 
        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-       <title>Dashboard Approval | SILOG</title>
+       <title>Dashboard Budgetting Approval | SILOG</title>
 
        <!-- Bootstrap -->
 
@@ -132,7 +132,7 @@
 
                cursor: pointer;
 
-               transition: *background* .2s ease;
+               transition: background .2s ease;
 
            }
 
@@ -428,7 +428,7 @@
 
                cursor: pointer;
 
-               transition: *background* .2s ease;
+               transition: background .2s ease;
 
            }
 
@@ -947,7 +947,7 @@
         }
         .attention-table tbody tr:last-child td { border-bottom: 0; }
         .attention-entity { color: var(--silog-text); font-weight: 700; }
-        .attention-table td.attention-rate {color: var(--silog-red); font-weight:750; }
+        .attention-rate { color: var(--silog-red); font-weight: 750; }
         .attention-empty {
             padding: 28px 12px;
             color: #969faa;
@@ -1119,7 +1119,57 @@
 
            }
 
-       </style>
+       
+        /* ==========================================
+           SILOG DASHBOARD - COMPACT LAYOUT
+           Tetap mendukung scroll vertikal natural
+        ========================================== */
+        .approval-dashboard .dashboard-content { padding-top: 18px; padding-bottom: 24px; }
+        .summary-header { margin-bottom: 14px; }
+        .section-title { font-size: 21px; }
+        .section-caption { margin-top: 4px; }
+        .approval-kpi-grid { gap: 13px; margin-bottom: 22px; }
+        .approval-kpi { min-height: 88px; padding: 14px 16px; gap: 12px; border-radius: 12px; }
+        .approval-kpi-icon { width: 42px; height: 42px; font-size: 20px; border-radius: 10px; }
+        .approval-kpi-info { gap: 5px; }
+        .approval-kpi-label { font-size: 10px; }
+        .approval-kpi-value { font-size: clamp(17px, 1.3vw, 21px); }
+        .visual-header { margin-bottom: 13px; }
+        .visual-header .section-title { font-size: 19px; }
+        .approval-charts-bottom { gap: 14px; }
+        .approval-charts-bottom .approval-chart-card { min-height: 300px; padding: 18px 20px; border-radius: 13px; }
+        .chart-header { margin-bottom: 12px; }
+        .chart-header h4 { font-size: 14px; }
+        .chart-header p { font-size: 10px; }
+        .donut-layout { min-height: 220px; gap: 16px; }
+        .donut-chart-wrap { width: 170px; height: 170px; flex-basis: 170px; }
+        .donut-center strong { font-size: 24px; }
+        .donut-legend { gap: 17px; }
+        .legend-row div span { font-size: 10px; }
+        .legend-row strong { font-size: 14px; }
+        .entity-chart-wrap { height: 280px; }
+        .budget-attention-card { margin-top: 14px; padding: 17px 20px; border-radius: 13px; }
+        .budget-attention-card .chart-header { margin-bottom: 10px; }
+        .attention-table th { padding: 9px 11px; font-size: 10px; }
+        .attention-table td { padding: 10px 11px; font-size: 11px; }
+        .attention-table td.attention-rate { color: var(--silog-red); font-weight: 750; }
+
+        @media (max-width: 950px) {
+            .approval-charts-bottom { grid-template-columns: 1fr; }
+            .approval-charts-bottom .approval-chart-card { min-height: 300px; }
+            .entity-chart-wrap { height: 280px; }
+        }
+
+        @media (max-width: 550px) {
+            .approval-kpi-grid { grid-template-columns: 1fr; }
+            .donut-layout { flex-direction: column; gap: 15px; }
+            .donut-chart-wrap { width: 165px; height: 165px; flex-basis: 165px; }
+            .donut-legend { width: 100%; justify-content: center; }
+            .budget-attention-card { padding: 15px; }
+        }
+
+
+</style>
 
 </head>
 
@@ -1173,6 +1223,11 @@
 
                </a>
 
+               <a href="{{ url_for('budget_detail_approval') }}" class="nav-item">
+                   <i class="bi bi-wallet2"></i>
+                   Budget Detail
+               </a>
+
                <a href="#"
 
                   class="nav-item nav-item-disabled"
@@ -1182,18 +1237,6 @@
                    <i class="bi bi-clipboard-check"></i>
 
                    Manajemen Approval
-
-               </a>
-
-               <a href="#"
-
-                  class="nav-item nav-item-disabled"
-
-                  aria-disabled="true">
-
-                   <i class="bi bi-graph-up-arrow"></i>
-
-                   Dashboard Tren RKAP vs Realisasi
 
                </a>
 
@@ -1332,6 +1375,7 @@
                        {% endfor %}
 
                    {% endwith %}
+
 
                    <!-- HEADER + FILTER -->
 
@@ -1573,7 +1617,7 @@
 
                                        <h4>Tingkat Pengunaan Anggaran</h4>
 
-                                       <p>Perbandingan Consumed Budget & sisa anggaran</p>
+                                       <p>Perbandingan Consumed Budget dan sisa anggaran</p>
 
                                    </div>
 
@@ -1663,11 +1707,11 @@
 
                                    <div>
 
-                                       <h4>Peringkat Unit Entity Dengan Penggunaan Anggaran Tertinggi</h4>
+                                       <h4>Peringkat Pengunaan Anggaran</h4>
 
                                        <p>
 
-                                           Ranking seluruh Unit Entity berdasarkan persentase penggunaan anggaran
+                                           Ranking seluruh Unit Entity berdasarkan persentase penyerapan anggaran
 
                                        </p>
 
@@ -1713,7 +1757,7 @@
                     <div class="chart-header">
                         <div>
                             <h4>Pemantauan Anggaran</h4>
-                            <p>Ringkasan seluruh Unit Entity untuk pemantauan anggaran</p>
+                            <p>Kondisi anggaran seluruh Unit Entity</p>
                         </div>
                     </div>
                     <div class="attention-table-wrap">
@@ -1734,6 +1778,7 @@
                         </table>
                     </div>
                 </section>
+
 
                </div>
 
@@ -1916,44 +1961,32 @@ const donutAvailableLabel = document.getElementById("donutAvailableLabel");
 let donutChart = null;
 
 function renderDonut(mode) {
-
     const denominator = mode === "current"
         ? currentBudget
         : consumableBudget;
 
     const consumed = Math.max(consumedBudget, 0);
-
     const remaining = Math.max(denominator - consumed, 0);
-
     const utilization = denominator > 0
         ? (consumed / denominator) * 100
         : 0;
 
     /* UPDATE TEXT */
-
     donutPercentage.textContent = denominator > 0
         ? formatPercentage(utilization)
         : "—";
 
-    donutConsumed.textContent =
-        formatCompactRupiah(consumed);
-
-    donutAvailable.textContent =
-        formatCompactRupiah(remaining);
-
+    donutConsumed.textContent = formatCompactRupiah(consumed);
+    donutAvailable.textContent = formatCompactRupiah(remaining);
     donutAvailableLabel.textContent = "Sisa Anggaran";
 
-
     /* DESTROY PREVIOUS CHART */
-
     if (donutChart) {
         donutChart.destroy();
         donutChart = null;
     }
 
-
     /* CHECK DATA */
-
     if (denominator <= 0) {
         donutCanvas.style.display = "none";
         donutPercentage.textContent = "—";
@@ -1962,81 +1995,50 @@ function renderDonut(mode) {
 
     donutCanvas.style.display = "block";
 
-
     /* CREATE DONUT */
-
     donutChart = new Chart(donutCanvas, {
-
         type: "doughnut",
-
         data: {
-
             labels: [
                 "Anggaran Terpakai",
                 "Sisa Anggaran"
             ],
-
             datasets: [{
-
-                data: [
-                    consumed,
-                    remaining
-                ],
-
-                backgroundColor: [
-                    "#ed1c24",
-                    "#e5e7eb"
-                ],
-
+                data: [consumed, remaining],
+                backgroundColor: ["#ed1c24", "#e5e7eb"],
                 borderWidth: 0,
                 hoverOffset: 6,
                 borderRadius: 3
-
             }]
-
         },
-
         options: {
-
             responsive: true,
             maintainAspectRatio: false,
             cutout: "76%",
-
             plugins: {
-
                 legend: {
                     display: false
                 },
-
                 tooltip: {
-
                     enabled: true,
                     backgroundColor: "#292e38",
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: false,
-
                     callbacks: {
-
                         title(context) {
                             return context[0].label;
                         },
-
                         label(context) {
                             return formatRupiah(context.raw);
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     });
-
 }
+
 /* DONUT FILTER */
 
 donutAnalysis.addEventListener("change", function() {
@@ -2085,7 +2087,7 @@ if (topEntities.length > 0) {
     const maxRate = Math.max(...topEntities.map(item => item.rate));
     const axisMax = Math.max(100, Math.ceil(maxRate / 10) * 10);
 
-    new Chart(entityCanvas, {
+    window.entityUtilizationChart = new Chart(entityCanvas, {
         type: "bar",
         data: {
             labels: topEntities.map(item => item.label),
@@ -2169,7 +2171,7 @@ if (attentionBody) {
                 <td>${formatCompactRupiah(item.budget)}</td>
                 <td>${formatCompactRupiah(item.consumed)}</td>
                 <td>${formatCompactRupiah(item.available)}</td>
-                <td class="${item.rate > 70 ? 'attention-rate' : ''}">${formatPercentage(item.rate)}</td>
+                <td class="${item.rate > 70 ? 'attention-rate' : '' }">${formatPercentage(item.rate)}</td>
             </tr>
         `).join("");
     }
@@ -2184,6 +2186,7 @@ function escapeHtml(value) {
         "'": "&#039;"
     })[char]);
 }
+
 
 /* DEBUG */
 

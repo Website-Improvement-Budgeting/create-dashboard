@@ -942,6 +942,29 @@ def get_approval_budget_options():
 
             cursor.execute("""
                 SELECT DISTINCT
+                    b.biro_id,
+                    b.entity_id,
+                    b.biro_code,
+                    b.biro_name,
+                    ue.unit_entity
+                FROM public.biro b
+                LEFT JOIN public.unit_entity ue
+                    ON b.entity_id = ue.entity_id
+                ORDER BY ue.unit_entity, b.biro_code
+            """)
+            biros = [
+                {
+                    "id": row[0],
+                    "entity_id": row[1],
+                    "code": row[2],
+                    "name": row[3],
+                    "entity": row[4]
+                }
+                for row in cursor.fetchall()
+            ]
+
+            cursor.execute("""
+                SELECT DISTINCT
                     funds_center_id,
                     funds_center_code
                 FROM public.funds_center
@@ -968,6 +991,7 @@ def get_approval_budget_options():
         return {
             "years": years,
             "entities": entities,
+            "biros": biros,
             "funds_centers": funds_centers,
             "commitment_items": commitment_items
         }
@@ -1208,7 +1232,94 @@ def get_approval_budget_data(
                 "commitment_item": commitment_item_chart
             }
 
-            # BUDGET DETAIL
+
+        return {
+            "summary": summary,
+            "scope_summary": scope_summary,
+            "visualization_data": visualization_data
+        }
+
+    finally:
+        conn.close()
+
+
+# ============================================================
+# BUDGET DETAIL APPROVAL
+# Halaman terpisah dari Dashboard Budgetting.
+# Tidak mengubah alur maupun query Budget Detail Pengusul.
+# ============================================================
+
+def get_approval_budget_detail(
+    budget_year,
+    budget_scope="all",
+    entity_ids=None,
+    biro_ids=None,
+    funds_center_ids=None,
+    commitment_item_ids=None,
+    keyword=""
+):
+    """Mengambil seluruh detail budget Approval tanpa membatasi jumlah baris."""
+    conn = get_db_connection()
+    try:
+        conditions = ["bm.budget_year = %s"]
+        params = [budget_year]
+
+        # Filter multiselect: setiap filter dapat berisi lebih dari satu ID.
+        entity_ids = [str(x) for x in (entity_ids or [])]
+        biro_ids = [str(x) for x in (biro_ids or [])]
+        funds_center_ids = [str(x) for x in (funds_center_ids or [])]
+        commitment_item_ids = [str(x) for x in (commitment_item_ids or [])]
+
+        if budget_scope != "all":
+            conditions.append("bm.budget_scope = %s")
+            params.append(budget_scope)
+        if entity_ids:
+            conditions.append("bm.entity_id::text = ANY(%s)")
+            params.append(entity_ids)
+        if biro_ids:
+            conditions.append("bm.biro_id::text = ANY(%s)")
+            params.append(biro_ids)
+        if funds_center_ids:
+            conditions.append("bm.funds_center_id::text = ANY(%s)")
+            params.append(funds_center_ids)
+        if commitment_item_ids:
+            conditions.append("bm.commitment_item_id::text = ANY(%s)")
+            params.append(commitment_item_ids)
+
+        if keyword:
+            conditions.append("""(
+                COALESCE(ue.unit_entity, '') ILIKE %s
+                OR COALESCE(b.biro_code, '') ILIKE %s
+                OR COALESCE(b.biro_name, '') ILIKE %s
+                OR COALESCE(fc.funds_center_code, '') ILIKE %s
+                OR COALESCE(ci.commitment_item_code, '') ILIKE %s
+                OR COALESCE(ci.commitment_item_name, '') ILIKE %s
+                OR COALESCE(bm.budget_scope, '') ILIKE %s
+                OR bm.budget_id::text ILIKE %s
+            )""")
+            pattern = f"%{keyword}%"
+            params.extend([pattern] * 8)
+
+        where_sql = " WHERE " + " AND ".join(conditions)
+
+        with conn.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT COUNT(*)
+                FROM public.budget_master bm
+                LEFT JOIN public.unit_entity ue
+                    ON bm.entity_id = ue.entity_id
+                LEFT JOIN public.biro b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+                LEFT JOIN public.funds_center fc
+                    ON bm.funds_center_id = fc.funds_center_id
+                LEFT JOIN public.commitment_item ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+                {where_sql}
+            """, params)
+            total_rows = cursor.fetchone()[0] or 0
+
+            # Ambil SEMUA baris yang sesuai filter. Pagination dilakukan di browser.
             cursor.execute(f"""
                 SELECT
                     bm.budget_id,
@@ -1222,62 +1333,145 @@ def get_approval_budget_data(
                     bm.current_budget,
                     bm.consumable_budget,
                     bm.consumed_budget,
-                    bm.available_amount
-
+                    bm.available_amount,
+                    CASE
+                        WHEN COALESCE(bm.consumable_budget, 0) > 0
+                        THEN ROUND(
+                            COALESCE(bm.consumed_budget, 0) * 100.0
+                            / NULLIF(bm.consumable_budget, 0), 1
+                        )
+                        ELSE NULL
+                    END AS utilization
                 FROM public.budget_master bm
-
                 LEFT JOIN public.unit_entity ue
                     ON bm.entity_id = ue.entity_id
-
                 LEFT JOIN public.biro b
                     ON bm.biro_id = b.biro_id
                    AND bm.entity_id = b.entity_id
-
                 LEFT JOIN public.funds_center fc
                     ON bm.funds_center_id = fc.funds_center_id
-
                 LEFT JOIN public.commitment_item ci
                     ON bm.commitment_item_id = ci.commitment_item_id
-
                 {where_sql}
-
                 ORDER BY
-                    ue.unit_entity,
-                    bm.budget_scope,
-                    ci.commitment_item_code
-
-                LIMIT 200
+                    ue.unit_entity NULLS LAST,
+                    b.biro_code NULLS LAST,
+                    fc.funds_center_code NULLS LAST,
+                    ci.commitment_item_code NULLS LAST,
+                    bm.budget_id
             """, params)
 
-            detail_rows = cursor.fetchall()
+            rows = cursor.fetchall()
 
-            details = [
-                {
-                    "budget_id": r[0],
-                    "entity": r[1] or "-",
-                    "scope": r[2] or "-",
-                    "biro_code": r[3] or "-",
-                    "biro_name": r[4] or "-",
-                    "funds_center": r[5] or "-",
-                    "commitment_item": r[6] or "-",
-                    "commitment_name": r[7] or "-",
-                    "current": float(r[8] or 0),
-                    "consumable": float(r[9] or 0),
-                    "consumed": float(r[10] or 0),
-                    "available": float(r[11] or 0)
-                }
-                for r in detail_rows
-            ]
+        details = []
+        for row in rows:
+            details.append({
+                "budget_id": row[0],
+                "entity": row[1] or "-",
+                "scope": row[2] or "-",
+                "biro_code": row[3] or "-",
+                "biro_name": row[4] or "-",
+                "biro": (
+                    f"{row[3]} - {row[4]}" if row[3] and row[4]
+                    else str(row[3] or row[4] or "-")
+                ),
+                "funds_center": row[5] or "-",
+                "commitment_item": row[6] or "-",
+                "commitment_name": row[7] or "-",
+                "current": float(row[8] or 0),
+                "consumable": float(row[9] or 0),
+                "consumed": float(row[10] or 0),
+                "available": float(row[11] or 0),
+                "utilization": float(row[12]) if row[12] is not None else None
+            })
 
         return {
-            "summary": summary,
-            "scope_summary": scope_summary,
             "details": details,
-            "visualization_data": visualization_data
+            "page": 1,
+            "per_page": total_rows,
+            "total_rows": total_rows,
+            "total_pages": 1
         }
-
     finally:
         conn.close()
+
+
+@app.route("/budget-detail-approval", methods=["GET"])
+def budget_detail_approval():
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+
+    if session.get("role") != "Approval":
+        return redirect(url_for("dashboard"))
+
+    try:
+        options = get_approval_budget_options()
+        if not options["years"]:
+            flash("Data budget NRM belum tersedia.", "warning")
+            return redirect(url_for("profil_approval"))
+
+        selected_year = request.args.get("year", type=int)
+        if selected_year not in options["years"]:
+            selected_year = options["years"][0]
+
+        selected_scope = request.args.get("scope", "all")
+        if selected_scope not in ("all", "FC_CI", "CI_ONLY"):
+            selected_scope = "all"
+
+        # getlist memungkinkan beberapa checkbox dipilih sekaligus.
+        selected_entities = request.args.getlist("entity_id")
+        selected_biros = request.args.getlist("biro_id")
+        selected_fcs = request.args.getlist("funds_center_id")
+        selected_cis = request.args.getlist("commitment_item_id")
+
+        keyword = request.args.get("q", "").strip()[:100]
+        valid_entities = {str(x["id"]) for x in options["entities"]}
+        valid_biros = {str(x["id"]) for x in options["biros"]}
+        valid_fcs = {str(x["id"]) for x in options["funds_centers"]}
+        valid_cis = {str(x["id"]) for x in options["commitment_items"]}
+
+        # Buang ID yang tidak dikenal agar query hanya memakai opsi sah.
+        selected_entities = [x for x in selected_entities if x in valid_entities]
+        selected_biros = [x for x in selected_biros if x in valid_biros]
+        selected_fcs = [x for x in selected_fcs if x in valid_fcs]
+        selected_cis = [x for x in selected_cis if x in valid_cis]
+
+        result = get_approval_budget_detail(
+            budget_year=selected_year,
+            budget_scope=selected_scope,
+            entity_ids=selected_entities,
+            biro_ids=selected_biros,
+            funds_center_ids=selected_fcs,
+            commitment_item_ids=selected_cis,
+            keyword=keyword
+        )
+
+        return render_template(
+            "budget_detail_approval.html",
+            username=session.get("username", ""),
+            budget_years=options["years"],
+            entity_options=options["entities"],
+            biro_options=options["biros"],
+            funds_center_options=options["funds_centers"],
+            commitment_item_options=options["commitment_items"],
+            selected_year=selected_year,
+            selected_scope=selected_scope,
+            selected_entities=selected_entities,
+            selected_biros=selected_biros,
+            selected_fcs=selected_fcs,
+            selected_cis=selected_cis,
+            keyword=keyword,
+            budget_details=result["details"],
+            page=result["page"],
+            per_page=result["per_page"],
+            total_rows=result["total_rows"],
+            total_pages=result["total_pages"]
+        )
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat Budget Detail Approval")
+        flash("Data Budget Detail Approval gagal dimuat.", "danger")
+        return redirect(url_for("dashboard"))
 
 
 # halaman dashboard berdasarkan role
@@ -1412,7 +1606,6 @@ def dashboard():
                 # Data dashboard
                 summary=dashboard_data["summary"],
                 scope_summary=dashboard_data["scope_summary"],
-                budget_details=dashboard_data["details"],
                 visualization_data=dashboard_data["visualization_data"]
             )
 
