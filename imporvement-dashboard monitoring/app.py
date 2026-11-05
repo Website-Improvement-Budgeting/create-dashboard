@@ -910,22 +910,525 @@ def get_pengusul_budget_detail(user_id, budget_year, entity_id=None):
         conn.close()
 
 
-# dashboard berdasarkan role
+# =========================================================
+# DASHBOARD BUDGETING APPROVAL - DATA NRM
+# Fungsi terpisah, tidak mengubah fungsi Pengusul
+# =========================================================
+
+def get_approval_budget_options():
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+
+            cursor.execute("""
+                SELECT DISTINCT budget_year
+                FROM public.budget_master
+                WHERE budget_year IS NOT NULL
+                ORDER BY budget_year DESC
+            """)
+            years = [row[0] for row in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT entity_id, unit_entity
+                FROM public.unit_entity
+                ORDER BY unit_entity
+            """)
+            entities = [
+                {"id": row[0], "name": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+            cursor.execute("""
+                SELECT DISTINCT
+                    funds_center_id,
+                    funds_center_code
+                FROM public.funds_center
+                WHERE funds_center_id IS NOT NULL
+                ORDER BY funds_center_code
+            """)
+            funds_centers = [
+                {"id": row[0], "code": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+            cursor.execute("""
+                SELECT
+                    commitment_item_id,
+                    commitment_item_code
+                FROM public.commitment_item
+                ORDER BY commitment_item_code
+            """)
+            commitment_items = [
+                {"id": row[0], "code": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+        return {
+            "years": years,
+            "entities": entities,
+            "funds_centers": funds_centers,
+            "commitment_items": commitment_items
+        }
+
+    finally:
+        conn.close()
+
+
+def get_approval_budget_data(
+    budget_year,
+    budget_scope="all",
+    entity_id="all",
+    funds_center_id="all",
+    commitment_item_id="all"
+):
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+
+            # Filter menggunakan parameter SQL,
+            # bukan menggabungkan input pengguna ke query.
+            where_sql = """
+                WHERE bm.budget_year = %s
+                  AND (%s = 'all' OR bm.budget_scope = %s)
+                  AND (%s = 'all' OR bm.entity_id::text = %s)
+                  AND (%s = 'all' OR bm.funds_center_id::text = %s)
+                  AND (%s = 'all' OR bm.commitment_item_id::text = %s)
+            """
+
+            params = (
+                budget_year,
+                budget_scope, budget_scope,
+                entity_id, entity_id,
+                funds_center_id, funds_center_id,
+                commitment_item_id, commitment_item_id
+            )
+
+            # RINGKASAN KPI
+            cursor.execute(f"""
+                SELECT
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0),
+                    COALESCE(
+                        SUM(
+                            bm.current_budget - bm.consumable_budget
+                        ), 0
+                    ),
+                    COUNT(*)
+
+                FROM public.budget_master bm
+
+                {where_sql}
+            """, params)
+
+            row = cursor.fetchone()
+
+            summary = {
+                "current_budget": float(row[0] or 0),
+                "consumable_budget": float(row[1] or 0),
+                "consumed_budget": float(row[2] or 0),
+                "available_amount": float(row[3] or 0),
+                "approval_hold": float(row[4] or 0),
+                "total_records": row[5] or 0
+            }
+
+            # RINGKASAN BERDASARKAN SCOPE
+            cursor.execute(f"""
+                SELECT
+                    bm.budget_scope,
+                    COUNT(*),
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0)
+
+                FROM public.budget_master bm
+
+                {where_sql}
+
+                GROUP BY bm.budget_scope
+                ORDER BY bm.budget_scope
+            """, params)
+
+            scope_rows = cursor.fetchall()
+
+            scope_summary = [
+                {
+                    "scope": r[0],
+                    "records": r[1],
+                    "current": float(r[2] or 0),
+                    "consumable": float(r[3] or 0),
+                    "consumed": float(r[4] or 0),
+                    "available": float(r[5] or 0)
+                }
+                for r in scope_rows
+            ]
+
+            # DATA VISUALISASI BUDGET
+            # Seluruh visualisasi mengikuti filter dashboard yang sedang dipilih.
+
+            # 1. Agregasi anggaran berdasarkan Unit Entity.
+            # Data ini menjadi sumber Entity Utilization Ranking dan
+            # Budget Attention pada frontend.
+            cursor.execute(f"""
+                SELECT
+                    bm.entity_id,
+                    COALESCE(ue.unit_entity, 'Tidak diketahui') AS unit_entity,
+                    COALESCE(SUM(bm.current_budget), 0) AS current_budget,
+                    COALESCE(SUM(bm.consumable_budget), 0) AS consumable_budget,
+                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed_budget,
+                    COALESCE(SUM(bm.available_amount), 0) AS available_amount,
+                    COALESCE(
+                        SUM(bm.current_budget - bm.consumable_budget), 0
+                    ) AS approval_hold
+                FROM public.budget_master bm
+                LEFT JOIN public.unit_entity ue
+                    ON bm.entity_id = ue.entity_id
+                {where_sql}
+                GROUP BY bm.entity_id, ue.unit_entity
+                ORDER BY
+                    CASE
+                        WHEN SUM(COALESCE(bm.consumable_budget, 0)) > 0
+                        THEN
+                            SUM(COALESCE(bm.consumed_budget, 0)) * 100.0
+                            / NULLIF(
+                                SUM(COALESCE(bm.consumable_budget, 0)), 0
+                            )
+                        ELSE NULL
+                    END DESC NULLS LAST,
+                    consumed_budget DESC
+            """, params)
+
+            entity_rows = cursor.fetchall()
+            entity_utilization = []
+
+            for row in entity_rows:
+                entity_current = float(row[2] or 0)
+                entity_consumable = float(row[3] or 0)
+                entity_consumed = float(row[4] or 0)
+                entity_available = float(row[5] or 0)
+                entity_hold = float(row[6] or 0)
+
+                utilization_rate = (
+                    (entity_consumed / entity_consumable) * 100
+                    if entity_consumable > 0
+                    else None
+                )
+
+                entity_utilization.append({
+                    "entity_id": row[0],
+                    "label": row[1] or "Tidak diketahui",
+                    "current_budget": entity_current,
+                    "approval_hold": entity_hold,
+                    "consumable_budget": entity_consumable,
+                    "consumed_budget": entity_consumed,
+                    "available_amount": entity_available,
+                    "utilization_rate": (
+                        round(utilization_rate, 2)
+                        if utilization_rate is not None
+                        else None
+                    )
+                })
+
+            # Format lama tetap dipertahankan agar tidak memutus
+            # pemakaian key "entity" pada bagian frontend lain.
+            entity_chart = [
+                {
+                    "label": item["label"],
+                    "value": item["consumed_budget"]
+                }
+                for item in entity_utilization
+            ]
+
+            # 2. Penggunaan berdasarkan Funds Center
+            # Data CI_ONLY yang tidak memiliki Funds Center tetap ditampilkan.
+            cursor.execute(f"""
+                SELECT
+                    COALESCE(fc.funds_center_code, 'Tanpa Funds Center') AS funds_center,
+                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed
+                FROM public.budget_master bm
+                LEFT JOIN public.funds_center fc
+                    ON bm.funds_center_id = fc.funds_center_id
+                {where_sql}
+                GROUP BY fc.funds_center_id, fc.funds_center_code
+                ORDER BY consumed DESC
+            """, params)
+
+            funds_center_chart = [
+                {
+                    "label": r[0] or "Tidak diketahui",
+                    "value": float(r[1] or 0)
+                }
+                for r in cursor.fetchall()
+            ]
+
+            # 3. Penggunaan berdasarkan Commitment Item
+            cursor.execute(f"""
+                SELECT
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed
+                FROM public.budget_master bm
+                LEFT JOIN public.commitment_item ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+                {where_sql}
+                GROUP BY
+                    ci.commitment_item_id,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name
+                ORDER BY consumed DESC
+            """, params)
+
+            commitment_item_chart = [
+                {
+                    "label": (
+                        f"{r[0]} - {r[1]}"
+                        if r[0] and r[1]
+                        else str(r[0] or r[1] or "Tidak diketahui")
+                    ),
+                    "value": float(r[2] or 0)
+                }
+                for r in cursor.fetchall()
+            ]
+
+            visualization_data = {
+                # Key entity lama dipertahankan untuk kompatibilitas.
+                "entity": entity_chart,
+
+                # Data lengkap untuk visualisasi baru.
+                "entity_utilization": entity_utilization,
+                "budget_attention": entity_utilization,
+
+                "funds_center": funds_center_chart,
+                "commitment_item": commitment_item_chart
+            }
+
+            # BUDGET DETAIL
+            cursor.execute(f"""
+                SELECT
+                    bm.budget_id,
+                    ue.unit_entity,
+                    bm.budget_scope,
+                    b.biro_code,
+                    b.biro_name,
+                    fc.funds_center_code,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    bm.current_budget,
+                    bm.consumable_budget,
+                    bm.consumed_budget,
+                    bm.available_amount
+
+                FROM public.budget_master bm
+
+                LEFT JOIN public.unit_entity ue
+                    ON bm.entity_id = ue.entity_id
+
+                LEFT JOIN public.biro b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+
+                LEFT JOIN public.funds_center fc
+                    ON bm.funds_center_id = fc.funds_center_id
+
+                LEFT JOIN public.commitment_item ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+
+                {where_sql}
+
+                ORDER BY
+                    ue.unit_entity,
+                    bm.budget_scope,
+                    ci.commitment_item_code
+
+                LIMIT 200
+            """, params)
+
+            detail_rows = cursor.fetchall()
+
+            details = [
+                {
+                    "budget_id": r[0],
+                    "entity": r[1] or "-",
+                    "scope": r[2] or "-",
+                    "biro_code": r[3] or "-",
+                    "biro_name": r[4] or "-",
+                    "funds_center": r[5] or "-",
+                    "commitment_item": r[6] or "-",
+                    "commitment_name": r[7] or "-",
+                    "current": float(r[8] or 0),
+                    "consumable": float(r[9] or 0),
+                    "consumed": float(r[10] or 0),
+                    "available": float(r[11] or 0)
+                }
+                for r in detail_rows
+            ]
+
+        return {
+            "summary": summary,
+            "scope_summary": scope_summary,
+            "details": details,
+            "visualization_data": visualization_data
+        }
+
+    finally:
+        conn.close()
+
+
+# halaman dashboard berdasarkan role
 @app.route("/dashboard")
 def dashboard():
 
+    # Validasi login
     if not session.get("user_id"):
         flash("Silakan login terlebih dahulu.", "danger")
         return redirect(url_for("login"))
 
     role = session.get("role")
 
+    # dashboard approval
     if role == "Approval":
-        return render_template(
-            "dashboard_approval.html",
-            username=session.get("username")
-        )
 
+        try:
+            # Ambil pilihan filter Approval
+            options = get_approval_budget_options()
+
+            if not options["years"]:
+                flash(
+                    "Data budget NRM belum tersedia.",
+                    "warning"
+                )
+                return redirect(url_for("profil_approval"))
+
+            # Filter tahun
+            selected_year = request.args.get(
+                "year",
+                type=int
+            )
+
+            if selected_year not in options["years"]:
+                selected_year = options["years"][0]
+
+            # Filter budget scope
+            selected_scope = request.args.get(
+                "scope",
+                "all"
+            )
+
+            if selected_scope not in (
+                "all",
+                "FC_CI",
+                "CI_ONLY"
+            ):
+                selected_scope = "all"
+
+            # Filter entity
+            selected_entity = request.args.get(
+                "entity_id",
+                "all"
+            )
+
+            # Filter funds center
+            selected_fc = request.args.get(
+                "funds_center_id",
+                "all"
+            )
+
+            # Filter commitment item
+            selected_ci = request.args.get(
+                "commitment_item_id",
+                "all"
+            )
+
+            # Validasi pilihan filter entity
+            valid_entities = {
+                str(item["id"])
+                for item in options["entities"]
+            }
+
+            # Validasi pilihan filter funds center
+            valid_fcs = {
+                str(item["id"])
+                for item in options["funds_centers"]
+            }
+
+            # Validasi pilihan filter commitment item
+            valid_cis = {
+                str(item["id"])
+                for item in options["commitment_items"]
+            }
+
+            if (
+                selected_entity != "all"
+                and selected_entity not in valid_entities
+            ):
+                selected_entity = "all"
+
+            if (
+                selected_fc != "all"
+                and selected_fc not in valid_fcs
+            ):
+                selected_fc = "all"
+
+            if (
+                selected_ci != "all"
+                and selected_ci not in valid_cis
+            ):
+                selected_ci = "all"
+
+            # Ambil data dashboard Approval
+            dashboard_data = get_approval_budget_data(
+                budget_year=selected_year,
+                budget_scope=selected_scope,
+                entity_id=selected_entity,
+                funds_center_id=selected_fc,
+                commitment_item_id=selected_ci
+            )
+
+            # Tampilkan dashboard Approval
+            return render_template(
+                "dashboard_approval.html",
+
+                username=session.get("username"),
+
+                # Data pilihan filter
+                budget_years=options["years"],
+                entity_options=options["entities"],
+                funds_center_options=options["funds_centers"],
+                commitment_item_options=options["commitment_items"],
+
+                # Filter yang sedang digunakan
+                selected_year=selected_year,
+                selected_scope=selected_scope,
+                selected_entity=selected_entity,
+                selected_fc=selected_fc,
+                selected_ci=selected_ci,
+
+                # Data dashboard
+                summary=dashboard_data["summary"],
+                scope_summary=dashboard_data["scope_summary"],
+                budget_details=dashboard_data["details"],
+                visualization_data=dashboard_data["visualization_data"]
+            )
+
+        except psycopg2.Error:
+            app.logger.exception(
+                "Gagal memuat Dashboard Budgeting Approval"
+            )
+
+            flash(
+                "Dashboard Budgeting Approval gagal dimuat.",
+                "danger"
+            )
+
+            return redirect(url_for("profil_approval"))
+
+    # validasi role pengusul
     if role != "Pengusul":
         session.clear()
         return redirect(url_for("login"))
@@ -933,7 +1436,8 @@ def dashboard():
     user_id = session["user_id"]
 
     try:
-        # daftar periode yang tersedia
+
+        # Daftar periode yang tersedia
         budget_years = get_budget_years(user_id)
 
         if not budget_years:
@@ -943,16 +1447,19 @@ def dashboard():
             )
             return redirect(url_for("profil"))
 
-        # filter tahun
-        selected_year = request.args.get("year", type=int)
+        # Filter tahun
+        selected_year = request.args.get(
+            "year",
+            type=int
+        )
 
         if selected_year not in budget_years:
             selected_year = budget_years[0]
 
-        # daftar entity sesuai kode biro
+        # Daftar entity sesuai kode biro
         entity_options = get_pengusul_entity_options(user_id)
 
-        # filter entity
+        # Filter entity
         selected_entity_id = request.args.get(
             "entity_id",
             "all"
@@ -964,48 +1471,66 @@ def dashboard():
         }
 
         if selected_entity_id != "all":
+
             if selected_entity_id not in allowed_entity_ids:
-                flash("Unit Entity tidak valid.", "danger")
+                flash(
+                    "Unit Entity tidak valid.",
+                    "danger"
+                )
                 return redirect(url_for("dashboard"))
 
-        # ubah entity id menjadi integer atau none
+        # Ubah entity ID menjadi integer atau None
         entity_filter = (
             None
             if selected_entity_id == "all"
             else int(selected_entity_id)
         )
 
-        # ringkasan budget
+        # Ringkasan budget
         budget_summary = get_pengusul_budget_summary(
             user_id,
             selected_year,
             entity_filter
         )
 
-        # mengambil lima commitment item terbesar
+        # Mengambil lima commitment item terbesar
         top5_details = get_pengusul_top5_details(
             user_id,
             selected_year,
             entity_filter
         )
 
-
+        # Tampilkan dashboard Pengusul
         return render_template(
             "dashboard_pengusul.html",
+
             username=session.get("username"),
+
             budget_summary=budget_summary,
+
             budget_years=budget_years,
+
             selected_year=selected_year,
+
             entity_options=entity_options,
+
             selected_entity_id=selected_entity_id,
+
             top5_details=top5_details
         )
 
     except psycopg2.Error:
-        app.logger.exception("Gagal memuat dashboard pengusul")
-        flash("Dashboard gagal dimuat.", "danger")
-        return redirect(url_for("profil"))
 
+        app.logger.exception(
+            "Gagal memuat dashboard pengusul"
+        )
+
+        flash(
+            "Dashboard gagal dimuat.",
+            "danger"
+        )
+
+        return redirect(url_for("profil"))
 
 
 # halaman budget detail pengusul
