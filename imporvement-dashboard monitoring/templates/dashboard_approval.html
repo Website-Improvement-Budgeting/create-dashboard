@@ -504,9 +504,9 @@
 
                border-radius: 12px;
 
-               background: var(--silog-red-soft);
+               background: #eaf2ff;
 
-               color: var(--silog-red);
+               color: #1673df;
 
                font-size: 22px;
 
@@ -876,6 +876,29 @@
 
                flex: 1;
 
+           }
+
+           .entity-chart-legend-note {
+               display: flex;
+               flex-wrap: wrap;
+               align-items: center;
+               gap: 14px;
+               margin-top: 12px;
+               color: #7f8997;
+               font-size: 10px;
+           }
+
+           .entity-chart-legend-note span {
+               display: inline-flex;
+               align-items: center;
+               gap: 6px;
+           }
+
+           .entity-chart-legend-note i {
+               width: 9px;
+               height: 9px;
+               display: inline-block;
+               border-radius: 3px;
            }
 
            .entity-chart-wrap canvas {
@@ -1639,6 +1662,435 @@
             #analysisPane .analysis-chart-wrap { height: 300px; }
         }
 
+    
+        /* ==========================================================
+           APPROVAL DASHBOARD — VISUAL SYSTEM SAMA DENGAN PENGUSUL
+        ========================================================== */
+        :root {
+            --silog-red:#ed1c24;
+            --silog-red-dark:#c91620;
+            --silog-red-soft:#fff1f2;
+            --silog-text:#292e38;
+            --silog-muted:#8b94a1;
+            --silog-border:#e5e9ef;
+            --silog-background:#f5f6f8;
+            --silog-surface:#fff;
+        }
+        html, body.approval-dashboard { width:100%; min-height:100%; margin:0; }
+        body.approval-dashboard {
+            overflow-x:hidden;
+            background:var(--silog-background);
+            color:var(--silog-text);
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        }
+        .approval-dashboard .dashboard-layout { min-height:100vh; width:100%; }
+        .approval-dashboard .main-content { min-width:0; width:calc(100% - var(--sidebar-width, 250px)); }
+        .approval-dashboard .dashboard-content {
+            padding:12px 18px 14px !important;
+            height:calc(100vh - 60px);
+            min-height:0;
+            overflow:hidden;
+        }
+        .approval-dashboard .dashboard-inner {
+            width:100%; max-width:1600px; height:100%; min-width:0; margin:0 auto;
+        }
+        .reference-dashboard {
+            display:flex; flex-direction:column; gap:10px;
+            width:100%; height:100%; min-width:0;
+        }
+        .dashboard-tabs { display:none !important; }
+
+        /* Header + filters: copy pengusul filter surface */
+        .reference-page-header {
+            display:flex; align-items:center; justify-content:space-between;
+            gap:16px; margin:0 !important; flex:0 0 auto; min-width:0;
+        }
+        .reference-page-header .summary-heading { min-width:210px; }
+        .reference-page-header .section-title {
+            display:block; margin:0; color:var(--silog-text);
+            font-size:23px; font-weight:750; letter-spacing:-.4px; line-height:1.3;
+        }
+        .reference-page-header .section-caption {
+            margin:5px 0 0; color:var(--silog-muted); font-size:11px; line-height:1.4;
+        }
+        .reference-filters {
+            display:flex; align-items:flex-end; flex-wrap:nowrap; gap:10px;
+            width:auto; min-width:0; max-width:760px; padding:11px 13px;
+            background:#fff; border:1px solid var(--silog-border);
+            border-radius:14px; box-shadow:0 3px 12px rgba(0,0,0,.025);
+        }
+        .reference-filters .summary-filter-group {
+            display:flex; flex-direction:column; gap:5px; min-width:0;
+        }
+        .reference-filters .summary-filter-group label {
+            color:#858f9c; font-size:10px; font-weight:700;
+        }
+        .reference-filters .summary-filter-group select {
+            height:36px; min-width:0; padding:6px 27px 6px 10px;
+            border:1px solid #dfe5ec; border-radius:9px;
+            background:#fff; color:#394250; font-size:11px; font-weight:600;
+            outline:none; cursor:pointer;
+        }
+        .reference-filters .summary-filter-group select:focus {
+            border-color:var(--silog-red);
+            box-shadow:0 0 0 3px rgba(237,28,36,.07);
+        }
+        .reference-filters .year-group { width:95px; flex:0 0 95px; }
+        .reference-filters .entity-group { width:180px; flex:0 1 180px; }
+        .reference-filters .biro-group { width:180px; flex:0 1 180px; }
+        .reference-filters .btn-apply-filter {
+            display:inline-flex; align-items:center; justify-content:center; gap:7px;
+            width:112px; height:36px; flex:0 0 112px; padding:0 12px;
+            border:1px solid var(--silog-red); border-radius:9px;
+            background:var(--silog-red); color:#fff; font-size:11px;
+            font-weight:700; white-space:nowrap; cursor:pointer;
+            transition:background .2s ease,border-color .2s ease;
+        }
+        .reference-filters .btn-apply-filter:hover { background:var(--silog-red-dark); }
+
+        /* KPI: 3-card pengusul style, compact 6 cards */
+        .reference-kpi-grid {
+            display:grid; grid-template-columns:repeat(6,minmax(0,1fr));
+            gap:9px; margin:0 !important; flex:0 0 auto;
+        }
+        .reference-kpi-grid .approval-kpi {
+            display:flex; align-items:center; gap:9px; min-width:0;
+            min-height:84px; padding:10px 11px;
+            border:1px solid var(--silog-border); border-radius:12px;
+            background:#fff; box-shadow:0 4px 14px rgba(0,0,0,.025);
+            transition:transform .2s ease,box-shadow .2s ease;
+        }
+        .reference-kpi-grid .approval-kpi:hover {
+            transform:translateY(-1px); box-shadow:0 7px 18px rgba(0,0,0,.045);
+        }
+        .reference-kpi-grid .approval-kpi-icon {
+            display:flex; align-items:center; justify-content:center;
+            flex:0 0 35px; width:35px; height:35px; border-radius:10px;
+            background:var(--silog-red-soft); color:var(--silog-red); font-size:17px;
+        }
+        .reference-kpi-grid .approval-kpi-info {
+            display:flex; flex-direction:column; justify-content:center;
+            gap:3px; min-width:0;
+        }
+        .reference-kpi-grid .approval-kpi-label {
+            display:block; color:#828b98; font-size:9px; font-weight:650; line-height:1.25;
+        }
+        .reference-kpi-grid .approval-kpi-value {
+            display:block; margin:0; color:var(--silog-text);
+            font-size:clamp(13px,1.15vw,19px); font-weight:750;
+            line-height:1.2; letter-spacing:-.35px; overflow-wrap:anywhere;
+        }
+        .reference-kpi-grid .approval-kpi small {
+            color:#969faa; font-size:8px; line-height:1.25;
+        }
+        .reference-kpi-grid .approval-kpi-consumed {
+            background:#fff; border-color:var(--silog-border);
+        }
+        .reference-kpi-grid .approval-kpi-consumed .approval-kpi-icon {
+            background:var(--silog-red-soft); color:var(--silog-red);
+        }
+        .reference-kpi-grid .approval-kpi-consumed .approval-kpi-value,
+        .reference-kpi-grid .reference-utilization-kpi .approval-kpi-value {
+            color:var(--silog-text);
+        }
+        .reference-kpi-grid .utilization-kpi-icon {
+            background:var(--silog-red-soft);
+            color:var(--silog-red);
+        }
+
+        /* Chart cards: consistent white surfaces and red accent */
+        .reference-chart-grid {
+            display:grid; grid-template-columns:1fr 1fr 1.32fr;
+            gap:9px; align-items:stretch; min-width:0; flex:0 0 31%;
+            min-height:0;
+        }
+        .reference-card {
+            display:flex; flex-direction:column; min-width:0; min-height:0;
+            padding:12px 13px 10px; border:1px solid var(--silog-border);
+            border-radius:14px; background:#fff;
+            box-shadow:0 5px 18px rgba(0,0,0,.025);
+        }
+        .reference-card-heading {
+            display:flex; align-items:center; gap:8px;
+            min-height:32px; margin:0 0 7px; min-width:0;
+        }
+        .reference-heading-icon {
+            display:flex; align-items:center; justify-content:center;
+            flex:0 0 30px; width:30px; height:30px; border-radius:9px;
+            background:var(--silog-red-soft); color:var(--silog-red); font-size:15px;
+        }
+        .reference-card-heading > div:not(.reference-heading-icon) { min-width:0; }
+        .reference-card-heading h3 {
+            margin:0; color:#333b47; font-size:12px; font-weight:750; line-height:1.25;
+        }
+        .reference-card-heading p {
+            margin:3px 0 0; color:#929aa7; font-size:9px; line-height:1.3;
+        }
+        .reference-card-heading .chart-filter {
+            width:95px; height:28px; flex:0 0 95px; margin-left:auto;
+            padding:3px 7px; border:1px solid #dfe5ec; border-radius:7px;
+            background:#fff; color:#394250; font-size:9px;
+        }
+        .reference-donut-content {
+            display:flex; align-items:center; justify-content:center;
+            gap:10px; flex:1; min-height:0; height:auto;
+        }
+        .reference-donut-card .donut-chart-wrap {
+            position:relative; flex:0 0 clamp(112px,10vw,150px);
+            width:clamp(112px,10vw,150px); height:clamp(112px,10vw,150px);
+        }
+        .reference-donut-card .donut-center strong { font-size:20px; }
+        .reference-donut-card .donut-center span { font-size:9px; }
+        .reference-donut-legend { display:flex; flex-direction:column; gap:10px; min-width:0; }
+        .reference-legend-row { display:flex; align-items:flex-start; gap:6px; min-width:0; }
+        .reference-legend-row .legend-swatch {
+            flex:0 0 9px; width:9px; height:9px; margin-top:2px; border-radius:3px;
+        }
+        .consumed-swatch { background:var(--silog-red); }
+        .available-swatch { background:#e5e7eb; }
+        .hold-swatch { background:#b9c1cb; }
+        .reference-legend-row div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+        .reference-legend-row b { color:#454e5b; font-size:9px; line-height:1.2; }
+        .reference-legend-row span { color:#828b97; font-size:9px; line-height:1.2; }
+        .reference-chart-body { position:relative; width:100%; min-width:0; min-height:0; flex:1; }
+        .utilization-chart-body { height:auto; min-height:120px; }
+        .allocation-chart-body { height:auto; min-height:112px; }
+        .reference-chart-body canvas { width:100% !important; height:100% !important; }
+        .reference-card .entity-chart-legend-note {
+            display:flex; justify-content:center; flex-wrap:wrap;
+            gap:9px; margin-top:4px; font-size:8px;
+        }
+        .reference-card .entity-chart-legend-note span { display:flex; align-items:center; gap:4px; }
+        .reference-card .entity-chart-legend-note i { width:7px; height:7px; border-radius:2px; }
+
+        /* Bottom cards: fit page and no horizontal scrolling */
+        .reference-bottom-grid {
+            display:grid; grid-template-columns:minmax(0, .92fr) minmax(0, 1.28fr);
+            gap:9px; align-items:stretch; min-width:0; flex:1 1 0; min-height:0;
+        }
+        .reference-bottom-grid .reference-card { min-height:0; height:100%; }
+        .reference-bottom-heading { align-items:center; }
+        .reference-top5-controls {
+            display:flex; align-items:center; gap:5px; margin-left:auto; flex:0 0 auto;
+        }
+        .reference-top5-controls label { color:#858f9c; font-size:9px; font-weight:650; white-space:nowrap; }
+        .reference-top5-select {
+            width:76px; height:29px; padding:3px 7px; border:1px solid #dfe5ec;
+            border-radius:7px; background:#fff; color:#394250; font-size:9px; font-weight:650;
+        }
+        .top5-reference-chart { flex:1; height:auto; min-height:0; margin-top:2px; }
+        .reference-table-search {
+            display:flex; align-items:center; gap:5px; margin-left:auto;
+            width:118px; height:29px; padding:0 7px; border:1px solid #dfe5ec;
+            border-radius:8px; color:#8b94a1; flex:0 0 118px;
+        }
+        .reference-table-search input { width:100%; min-width:0; border:0; outline:0; font-size:9px; color:#394250; }
+        .reference-download-button {
+            display:flex; align-items:center; justify-content:center; flex:0 0 29px;
+            width:29px; height:29px; border:1px solid #dfe5ec; border-radius:8px;
+            background:#fff; color:#657184; cursor:pointer;
+        }
+        .reference-download-button:hover { border-color:var(--silog-red); color:var(--silog-red); background:var(--silog-red-soft); }
+        .reference-monitoring-wrap {
+            width:100%; flex:1; min-width:0; min-height:0; overflow:hidden;
+            border:1px solid #edf0f3; border-radius:8px;
+        }
+        .reference-monitoring-table {
+            width:100%; min-width:0; height:100%; table-layout:fixed; border-collapse:collapse;
+        }
+        .reference-monitoring-table th {
+            padding:6px 3px; background:#f8f9fb; color:#748094; font-size:7px;
+            font-weight:750; text-align:left; line-height:1.2;
+            white-space:normal; overflow-wrap:anywhere; border-bottom:1px solid #e8ecf1;
+        }
+        .reference-monitoring-table th:nth-child(1) { width:11%; }
+        .reference-monitoring-table th:nth-child(2) { width:8%; }
+        .reference-monitoring-table th:nth-child(3) { width:17%; }
+        .reference-monitoring-table th:nth-child(n+4) { width:9.14%; }
+        .reference-monitoring-table td {
+            padding:5px 3px; color:#465164; font-size:7.5px;
+            white-space:normal; overflow-wrap:anywhere; line-height:1.2;
+            border-bottom:1px solid #eff1f4; vertical-align:middle;
+        }
+        .reference-monitoring-table tbody tr:last-child td { border-bottom:0; }
+        .reference-monitoring-table .monitoring-entity { color:#26344b; font-weight:700; }
+        .reference-monitoring-table .monitoring-subtext { color:#8d98a8; font-size:7px; white-space:normal; }
+        .reference-monitoring-table .monitoring-utilization {
+            display:inline-block; padding:3px 6px; border-radius:20px;
+            background:#fff1f2; color:var(--silog-red); font-weight:750;
+            white-space:nowrap;
+        }
+        .reference-monitoring-table .monitoring-utilization.low {
+            background:#eaf7ef; color:#16834a;
+        }
+        .reference-monitoring-table .monitoring-utilization.medium {
+            background:#fff6e5; color:#a86b08;
+        }
+        .reference-monitoring-table .monitoring-utilization.high {
+            background:#fff1f2; color:var(--silog-red);
+        }
+        .reference-table-footer {
+            display:flex; align-items:center; justify-content:space-between;
+            gap:8px; padding-top:5px; color:#8a93a1; font-size:8px; flex:0 0 auto;
+        }
+        .reference-table-footer .pagination-controls { display:flex; gap:3px; }
+        .reference-table-footer .page-button {
+            min-width:21px; height:21px; padding:0 4px;
+            border:1px solid #e2e6ec; border-radius:6px;
+            background:#fff; color:#667286; font-size:8px;
+        }
+        .reference-table-footer .page-button.active {
+            background:var(--silog-red); border-color:var(--silog-red); color:#fff;
+        }
+        .reference-table-footer .page-button:disabled { opacity:.4; }
+        .chart-empty-state { min-height:80px; padding:12px; color:#969faa; font-size:10px; }
+
+        /* Hide old analysis controls that were retained for JS compatibility */
+        #analysisDimension, #dimensionConsumedTotal, #dimensionHoldTotal,
+        #dimensionAverageRate, #dimensionTableTitle { display:none !important; }
+
+        /* Fit common laptop/desktop viewports without page scrolling */
+        @media (min-width:1101px) {
+            .approval-dashboard .dashboard-content { overflow:hidden; }
+            .reference-chart-grid { flex-basis:30%; }
+        }
+        @media (max-width:1250px) {
+            .approval-dashboard .dashboard-content { height:auto; min-height:calc(100vh - 60px); overflow:visible; }
+            .reference-page-header { align-items:flex-start; flex-direction:column; }
+            .reference-filters { width:100%; max-width:none; }
+            .reference-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+            .reference-chart-grid { grid-template-columns:repeat(2,minmax(0,1fr)); flex:0 0 auto; }
+            .reference-donut-card { grid-column:span 2; min-height:180px; }
+            .reference-bottom-grid { grid-template-columns:1fr; flex:0 0 auto; }
+            .reference-bottom-grid .reference-card { min-height:260px; }
+        }
+        @media (max-width:760px) {
+            .approval-dashboard .dashboard-content { padding:16px 12px 22px !important; }
+            .reference-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .reference-filters .year-group,
+            .reference-filters .entity-group,
+            .reference-filters .biro-group { width:auto; flex:auto; }
+            .reference-filters .btn-apply-filter { width:100%; grid-column:1/-1; }
+            .reference-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .reference-chart-grid { grid-template-columns:1fr; }
+            .reference-donut-card { grid-column:auto; }
+            .reference-bottom-grid { grid-template-columns:1fr; }
+            .reference-bottom-grid .reference-card { min-height:250px; }
+        }
+        @media (max-height:820px) and (min-width:1101px) {
+            .approval-dashboard .dashboard-content { padding-top:8px !important; padding-bottom:8px !important; }
+            .reference-dashboard { gap:7px; }
+            .reference-kpi-grid .approval-kpi { min-height:73px; padding:8px 9px; }
+            .reference-chart-grid { flex-basis:28%; }
+            .reference-card { padding:9px 10px 8px; }
+            .reference-card-heading { margin-bottom:4px; }
+            .reference-bottom-grid .reference-card { padding:9px 10px 7px; }
+        }
+
+    
+        /* Filter dibuat ringkas dan ditempatkan di pojok kanan header */
+        .reference-page-header {
+            align-items:center !important;
+            gap:16px !important;
+        }
+        .reference-filters {
+            display:flex !important;
+            flex:0 0 auto !important;
+            align-items:flex-end !important;
+            justify-content:flex-end !important;
+            gap:8px !important;
+            width:fit-content !important;
+            max-width:100% !important;
+            min-width:0 !important;
+            padding:9px 11px !important;
+            margin-left:auto !important;
+            border:1px solid #e1e7ef !important;
+            border-radius:12px !important;
+            background:#fff !important;
+            box-shadow:0 3px 10px rgba(24,39,75,.03) !important;
+        }
+        .reference-filters .summary-filter-group {
+            display:flex !important;
+            flex-direction:column !important;
+            justify-content:flex-end !important;
+            gap:4px !important;
+            min-width:0 !important;
+        }
+        .reference-filters .summary-filter-group label {
+            margin:0 !important;
+            color:#8792a2 !important;
+            font-size:10px !important;
+            font-weight:700 !important;
+            line-height:1.1 !important;
+        }
+        .reference-filters .summary-filter-group select {
+            height:34px !important;
+            padding:0 25px 0 9px !important;
+            border:1px solid #dce3ec !important;
+            border-radius:8px !important;
+            background-color:#fff !important;
+            color:#3d4859 !important;
+            font-size:11px !important;
+            font-weight:600 !important;
+            box-shadow:none !important;
+        }
+        .reference-filters .year-group {
+            width:78px !important;
+            flex:0 0 78px !important;
+        }
+        .reference-filters .entity-group {
+            width:138px !important;
+            flex:0 1 138px !important;
+        }
+        .reference-filters .biro-group {
+            width:138px !important;
+            flex:0 1 138px !important;
+        }
+        .reference-filters .btn-apply-filter {
+            width:94px !important;
+            height:34px !important;
+            flex:0 0 94px !important;
+            padding:0 10px !important;
+            border-radius:8px !important;
+            font-size:11px !important;
+            font-weight:700 !important;
+        }
+        .reference-filters .btn-apply-filter i {
+            font-size:12px !important;
+        }
+        @media (max-width:1100px) {
+            .reference-page-header {
+                align-items:flex-start !important;
+                flex-wrap:wrap !important;
+            }
+            .reference-filters {
+                margin-left:auto !important;
+            }
+        }
+        @media (max-width:760px) {
+            .reference-filters {
+                display:grid !important;
+                grid-template-columns:minmax(75px,.55fr) minmax(120px,1fr) !important;
+                width:100% !important;
+                padding:10px !important;
+                gap:8px !important;
+                margin-left:0 !important;
+            }
+            .reference-filters .year-group,
+            .reference-filters .entity-group,
+            .reference-filters .biro-group {
+                width:auto !important;
+                flex:initial !important;
+            }
+            .reference-filters .biro-group { grid-column:1/-1; }
+            .reference-filters .btn-apply-filter {
+                width:100% !important;
+                height:34px !important;
+                flex:initial !important;
+                grid-column:1/-1;
+            }
+        }
+
     </style>
 
 </head>
@@ -1661,7 +2113,7 @@
 
                    <strong>SILOG</strong>
 
-                   <small>Budget Monitoring & Approval</small>
+                   <small>Pemantauan Anggaran & Approval</small>
 
                </div>
 
@@ -1847,546 +2299,203 @@
                    {% endwith %}
 
 
-                   <div class="dashboard-tabs" role="tablist" aria-label="Bagian dashboard">
-                       <button type="button" class="dashboard-tab-button active"
-                               id="overviewTab" role="tab" aria-selected="true"
-                               aria-controls="overviewPane" data-target="overviewPane">
-                           <i class="bi bi-grid-1x2"></i> Ringkasan Budget
-                       </button>
-                       <button type="button" class="dashboard-tab-button"
-                               id="analysisTab" role="tab" aria-selected="false"
-                               aria-controls="analysisPane" data-target="analysisPane">
-                           <i class="bi bi-bar-chart-line"></i> Analisis Anggaran
-                       </button>
-                   </div>
-
-                   <div id="overviewPane" class="dashboard-tab-pane" role="tabpanel"
-                        aria-labelledby="overviewTab">
-                   <!-- HEADER + FILTER -->
-
-                   <div class="summary-header">
-
-                       <div class="summary-heading">
-
-                           <h1 class="section-title">
-
-                               <i class="bi bi-wallet2 section-title-icon"></i>
-
-                               Ringkasan Budget
-
-                           </h1>
-
-                           <p class="section-caption">
-
-                               Overview anggaran biro
-
-                           </p>
-
-                       </div>
-
-                       <form method="GET"
-
-                             action="{{ url_for('dashboard') }}"
-
-                             class="summary-filters"
-
-                             id="dashboardFilterForm">
-
-                           <div class="summary-filter-group year-group">
-
-                               <label for="year">Tahun</label>
-
-                               <select id="year" name="year">
-
-                                   {% for year in budget_years %}
-
-                                       <option value="{{ year }}"
-
-                                           {% if year|string == selected_year|string %}selected{% endif %}>
-
-                                           {{ year }}
-
-                                       </option>
-
-                                   {% endfor %}
-
-                               </select>
-
+                   <div class="reference-dashboard">
+                       <div class="summary-header reference-page-header">
+                           <div class="summary-heading">
+                               <h1 class="section-title"><i class="bi bi-wallet2 section-title-icon"></i> Analisis Anggaran</h1>
+                               <p class="section-caption">Monitoring penggunaan, ketersediaan, dan posisi anggaran perusahaan</p>
                            </div>
-
-                           <div class="summary-filter-group entity-group">
-
-                               <label for="entity_id">Unit Entity</label>
-
-                               <select id="entity_id" name="entity_id">
-
-                                   <option value="all"
-
-                                       {% if selected_entity|string == 'all' %}selected{% endif %}>
-
-                                       Semua Entity
-
-                                   </option>
-
-                                   {% for item in entity_options %}
-
-                                       <option value="{{ item.id }}"
-
-                                           {% if selected_entity|string == item.id|string %}selected{% endif %}>
-
-                                           {{ item.name }}
-
-                                       </option>
-
-                                   {% endfor %}
-
-                               </select>
-
-                           </div>
-
-                           <button type="submit" class="btn-apply-filter">
-
-                               <i class="bi bi-funnel"></i>
-
-                               Terapkan
-
-                           </button>
-
-                           <input type="hidden"
-
-                                  name="scope"
-
-                                  value="{{ selected_scope | default('all') }}">
-
-                       </form>
-
-                   </div>
-
-                   <!-- KPI CARDS -->
-
-                   <div class="approval-kpi-grid">
-
-                       <div class="approval-kpi">
-
-                           <div class="approval-kpi-icon">
-
-                               <i class="bi bi-wallet2"></i>
-
-                           </div>
-
-                           <div class="approval-kpi-info">
-
-                               <span class="approval-kpi-label">Current Budget</span>
-
-                               <strong class="approval-kpi-value rupiah-value"
-
-                                       data-value="{{ summary.current_budget }}">Rp0</strong>
-
-                           </div>
-
-                       </div>
-
-                       <div class="approval-kpi">
-
-                           <div class="approval-kpi-icon">
-
-                               <i class="bi bi-arrow-left-right"></i>
-
-                           </div>
-
-                           <div class="approval-kpi-info">
-
-                               <span class="approval-kpi-label">Consumable Budget</span>
-
-                               <strong class="approval-kpi-value rupiah-value"
-
-                                       data-value="{{ summary.consumable_budget }}">Rp0</strong>
-
-                           </div>
-
-                       </div>
-
-                       <div class="approval-kpi approval-kpi-consumed">
-
-                           <div class="approval-kpi-icon">
-
-                               <i class="bi bi-receipt"></i>
-
-                           </div>
-
-                           <div class="approval-kpi-info">
-
-                               <span class="approval-kpi-label">Consumed Budget</span>
-
-                               <strong class="approval-kpi-value rupiah-value"
-
-                                       data-value="{{ summary.consumed_budget }}">Rp0</strong>
-
-                           </div>
-
-                       </div>
-
-                       <div class="approval-kpi">
-
-                           <div class="approval-kpi-icon">
-
-                               <i class="bi bi-cash-stack"></i>
-
-                           </div>
-
-                           <div class="approval-kpi-info">
-
-                               <span class="approval-kpi-label">Available Amount</span>
-
-                               <strong class="approval-kpi-value rupiah-value"
-
-                                       data-value="{{ summary.available_amount }}">Rp0</strong>
-
-                           </div>
-
-                       </div>
-
-                       <div class="approval-kpi">
-
-                           <div class="approval-kpi-icon">
-
-                               <i class="bi bi-hourglass-split"></i>
-
-                           </div>
-
-                           <div class="approval-kpi-info">
-
-                               <span class="approval-kpi-label">Approval Hold Amount</span>
-
-                               <strong class="approval-kpi-value rupiah-value"
-
-                                       data-value="{{ summary.approval_hold }}">Rp0</strong>
-
-                           </div>
-
-                       </div>
-
-                   </div>
-
-                   <!-- VISUALISASI BUDGET -->
-
-                   <section class="visualization-section">
-
-                       <div class="visual-header">
-
-                           <h2 class="section-title">
-
-                               <i class="bi bi-bar-chart-line section-title-icon"></i>
-
-                               Visualisasi Budget
-
-                           </h2>
-
-                           <p class="section-caption">
-
-                               Analisis tingkat penggunaan anggaran dan penyerapan berdasarkan Unit Entity.
-
-                           </p>
-
-                       </div>
-
-                       <div class="approval-charts-bottom">
-
-                           <!-- BUDGET UTILIZATION RATE -->
-
-                           <div class="approval-chart-card">
-
-                               <div class="chart-header">
-
-                                   <div>
-
-                                       <h4>Tingkat Pengunaan Anggaran</h4>
-
-                                       <p>Perbandingan Consumed Budget dan sisa anggaran</p>
-
-                                   </div>
-
-                                   <select id="donutAnalysis"
-
-                                           class="chart-filter"
-
-                                           aria-label="Pilih basis utilization">
-
-                                       <option value="consumable">
-
-                                           vs Consumable
-
-                                       </option>
-
-                                       <option value="current">
-
-                                           vs Current
-
-                                       </option>
-
+                           <form method="GET" action="{{ url_for('dashboard') }}"
+                                 class="summary-filters reference-filters" id="dashboardFilterForm">
+                               <div class="summary-filter-group year-group">
+                                   <label for="year">Tahun</label>
+                                   <select id="year" name="year">
+                                       {% for year in budget_years %}
+                                       <option value="{{ year }}" {% if year|string == selected_year|string %}selected{% endif %}>{{ year }}</option>
+                                       {% endfor %}
                                    </select>
-
                                </div>
+                               <div class="summary-filter-group entity-group">
+                                   <label for="entity_id">Unit Entity</label>
+                                   <select id="entity_id" name="entity_id">
+                                       <option value="all" {% if selected_entity|string == 'all' %}selected{% endif %}>Semua Entity</option>
+                                       {% for item in entity_options %}
+                                       <option value="{{ item.id }}" {% if selected_entity|string == item.id|string %}selected{% endif %}>{{ item.name }}</option>
+                                       {% endfor %}
+                                   </select>
+                               </div>
+                               <div class="summary-filter-group biro-group">
+                                   <label for="biro_id">Biro</label>
+                                   <select id="biro_id" name="biro_id">
+                                       <option value="all" {% if selected_biro|string == 'all' %}selected{% endif %}>Semua Biro</option>
+                                       {% for item in biro_options %}
+                                       <option value="{{ item.id }}" {% if selected_biro|string == item.id|string %}selected{% endif %}>{{ item.code }} - {{ item.name }}</option>
+                                       {% endfor %}
+                                   </select>
+                               </div>
+                               <button type="submit" class="btn-apply-filter">
+                                   <i class="bi bi-funnel"></i> Terapkan
+                               </button>
+                               <input type="hidden" name="scope" value="{{ selected_scope | default('all') }}">
+                           </form>
+                       </div>
 
-                               <div class="donut-layout">
+                       <div class="approval-kpi-grid reference-kpi-grid">
+                           <div class="approval-kpi">
+                               <div class="approval-kpi-icon"><i class="bi bi-layers"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Total Current Budget</span>
+                                   <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.current_budget }}">Rp0</strong>
+                                   <small>Total plafon anggaran RKAP</small>
+                               </div>
+                           </div>
+                           <div class="approval-kpi">
+                               <div class="approval-kpi-icon"><i class="bi bi-wallet2"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Total Consumable Budget</span>
+                                   <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.consumable_budget }}">Rp0</strong>
+                                   <small>Total anggaran yang sudah dibuka</small>
+                               </div>
+                           </div>
+                           <div class="approval-kpi approval-kpi-consumed">
+                               <div class="approval-kpi-icon"><i class="bi bi-bar-chart-line"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Total Consumed Budget</span>
+                                   <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.consumed_budget }}">Rp0</strong>
+                                   <small>Total anggaran yang telah digunakan</small>
+                               </div>
+                           </div>
+                           <div class="approval-kpi">
+                               <div class="approval-kpi-icon"><i class="bi bi-pie-chart"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Total Available Amount</span>
+                                   <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.available_amount }}">Rp0</strong>
+                                   <small>Anggaran terbuka yang belum digunakan</small>
+                               </div>
+                           </div>
+                           <div class="approval-kpi">
+                               <div class="approval-kpi-icon"><i class="bi bi-lock"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Total Approval Hold</span>
+                                   <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.approval_hold }}">Rp0</strong>
+                                   <small>Anggaran yang belum dibuka</small>
+                               </div>
+                           </div>
+                           <div class="approval-kpi reference-utilization-kpi">
+                               <div class="approval-kpi-icon utilization-kpi-icon"><i class="bi bi-speedometer2"></i></div>
+                               <div class="approval-kpi-info">
+                                   <span class="approval-kpi-label">Budget Utilization</span>
+                                   <strong class="approval-kpi-value" id="overviewBudgetUtilization">—</strong>
+                                   <small>Persentase penggunaan anggaran terbuka</small>
+                               </div>
+                           </div>
+                       </div>
 
+                       <section class="reference-chart-grid">
+                           <article class="reference-card reference-donut-card">
+                               <div class="reference-card-heading">
+                                   <div class="reference-heading-icon"><i class="bi bi-pie-chart"></i></div>
+                                   <div><h3>Komposisi Anggaran</h3><p>Perbandingan penggunaan & ketersediaan anggaran</p></div>
+                                   <select id="donutAnalysis" class="chart-filter" aria-label="Pilih basis komposisi">
+                                       <option value="current">Current Budget</option>
+                                       <option value="consumable">Consumable Budget</option>
+                                   </select>
+                               </div>
+                               <div class="reference-donut-content">
                                    <div class="donut-chart-wrap">
-
                                        <canvas id="budgetDonutChart"></canvas>
-
                                        <div class="donut-center">
-
                                            <strong id="donutPercentage">—</strong>
-
                                            <span id="donutCenterLabel">Terpakai</span>
-
                                        </div>
-
                                    </div>
-
-                                   <div class="donut-legend">
-
-                                       <div class="legend-row">
-
-                                           <span class="legend-dot consumed-dot"></span>
-
-                                           <div>
-
-                                               <span>Consumed Budget</span>
-
-                                               <strong id="donutConsumed">Rp0</strong>
-
-                                           </div>
-
-                                       </div>
-
-                                       <div class="legend-row">
-
-                                           <span class="legend-dot available-dot"></span>
-
-                                           <div>
-
-                                               <span id="donutAvailableLabel">
-
-                                                   Available Amount
-
-                                               </span>
-
-                                               <strong id="donutAvailable">Rp0</strong>
-
-                                           </div>
-
-                                       </div>
-
-                                   </div>
-
-                               </div>
-
-                           </div>
-
-                           <!-- ENTITY UTILIZATION RANKING -->
-
-                           <div class="approval-chart-card">
-
-                               <div class="chart-header">
-
-                                   <div>
-
-                                       <h4>Peringkat Penggunaan Anggaran</h4>
-
-                                       <p>
-
-                                           Unit Entity diurutkan berdasarkan nominal Consumed Budget terbesar
-
-                                       </p>
-
-                                   </div>
-
-                               </div>
-
-                               <div class="chart-wrap entity-chart-wrap">
-
-                                   <canvas id="entityUtilizationChart"></canvas>
-
-                               </div>
-
-                               <div id="entityUtilizationEmpty"
-
-                                    class="chart-empty-state"
-
-                                    style="display:none;">
-
-                                   <span class="chart-empty-symbol">—</span>
-
-                                   <span class="chart-empty-message">
-
-                                       Data utilization per entity belum tersedia.
-
-                                       Pastikan backend mengirimkan consumable_budget
-
-                                       dan consumed_budget untuk setiap entity.
-
-                                   </span>
-
-                               </div>
-
-                           </div>
-
-                       </div>
-
-                   </section>
-
-   
-                <!-- BUDGET ATTENTION -->
-                <section class="budget-attention-card">
-                    <div class="chart-header">
-                        <div>
-                            <h4>Pemantauan Anggaran</h4>
-                            <p>Diurutkan berdasarkan nominal Consumed Budget terbesar</p>
-                        </div>
-                    </div>
-                    <div class="attention-table-wrap">
-                        <table class="attention-table">
-                            <thead>
-                                <tr>
-                                    <th>UNIT ENTITY</th>
-                                    <th>CURRENT BUDGET</th>
-                                    <th>CONSUMABLE BUDGET</th>
-                                    <th>CONSUMED BUDGET</th>
-                                    <th>AVAILABLE AMOUNT</th>
-                                    <th>UTILIZATION</th>
-                                </tr>
-                            </thead>
-                            <tbody id="budgetAttentionBody">
-                                <tr><td colspan="6" class="attention-empty">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-                   </div> <!-- /overviewPane -->
-
-                   <div id="analysisPane" class="dashboard-tab-pane" role="tabpanel"
-                        aria-labelledby="analysisTab" hidden>
-                       <div class="analysis-header">
-                           <div>
-                               <h1 class="section-title">
-                                   <i class="bi bi-graph-up-arrow section-title-icon"></i>
-                                   Analisis Anggaran
-                               </h1>
-                               <p class="section-caption">
-                                   Analisis penyerapan, ketersediaan, dan Approval Hold berdasarkan dimensi anggaran
-                               </p>
-                           </div>
-                           <div class="analysis-dimension-control">
-                               <label for="analysisDimension">DIMENSI</label>
-                               <select id="analysisDimension">
-                                   <option value="entity">Unit Entity</option>
-                                   <option value="biro">Biro</option>
-                                   <option value="funds_center">Funds Center</option>
-                                   <option value="commitment_item">Commitment Item</option>
-                               </select>
-                           </div>
-                       </div>
-
-                        <div class="analysis-kpi-grid">
-                           <div class="analysis-kpi analysis-kpi-blue">
-                               <div class="analysis-kpi-icon"><i class="bi bi-wallet2"></i></div>
-                               <div class="analysis-kpi-content">
-                                   <span>Total Consumed Budget</span>
-                                   <strong id="dimensionConsumedTotal">Rp0</strong>
-                               </div>
-                           </div>
-                           <div class="analysis-kpi analysis-kpi-amber">
-                               <div class="analysis-kpi-icon"><i class="bi bi-hourglass-split"></i></div>
-                               <div class="analysis-kpi-content">
-                                   <span>Total Approval Hold</span>
-                                   <strong id="dimensionHoldTotal">Rp0</strong>
-                               </div>
-                           </div>
-                           <div class="analysis-kpi analysis-kpi-teal">
-                               <div class="analysis-kpi-icon"><i class="bi bi-speedometer2"></i></div>
-                               <div class="analysis-kpi-content">
-                                   <span>Utilization Anggaran</span>
-                                   <strong id="dimensionAverageRate">—</strong>
-                               </div>
-                           </div>
-                       </div>
-
-                       <div class="analysis-grid analysis-chart-grid">
-                           <section class="analysis-card">
-                               <div class="chart-header">
-                                   <div>
-                                       <h4>Penggunaan Setiap Unit Entity</h4>
-                                       <p>Urutan berdasarkan nominal Consumed Budget terbesar</p>
+                                   <div class="reference-donut-legend">
+                                       <div class="reference-legend-row"><i class="legend-swatch consumed-swatch"></i><div><b>Consumed Budget</b><span id="donutConsumed">Rp0</span></div></div>
+                                       <div class="reference-legend-row"><i class="legend-swatch available-swatch"></i><div><b id="donutAvailableLabel">Available Amount</b><span id="donutAvailable">Rp0</span></div></div>
+                                       <div class="reference-legend-row"><i class="legend-swatch hold-swatch"></i><div><b>Approval Hold</b><span id="donutHold">Rp0</span></div></div>
                                    </div>
                                </div>
-                               <div class="analysis-chart-wrap entity-analysis-chart-wrap">
+                           </article>
+
+                           <article class="reference-card">
+                               <div class="reference-card-heading">
+                                   <div class="reference-heading-icon"><i class="bi bi-bar-chart-line"></i></div>
+                                   <div><h3>Penggunaan Anggaran Setiap Unit Entity</h3><p>Tingkat penggunaan anggaran terbuka</p></div>
+                               </div>
+                               <div class="reference-chart-body utilization-chart-body">
                                    <canvas id="dimensionUtilizationChart"></canvas>
-                                   <div id="entityAnalysisEmpty" class="chart-empty-state" style="display:none;">
-                                       <span class="chart-empty-symbol">—</span>
-                                       <span class="chart-empty-message">Data penggunaan anggaran per Unit Entity belum tersedia.</span>
-                                   </div>
+                                   <div id="entityAnalysisEmpty" class="chart-empty-state" style="display:none;">Data utilization belum tersedia.</div>
                                </div>
-                           </section>
+                           </article>
 
-                           <section class="analysis-card">
-                               <div class="chart-header">
-                                   <div>
-                                       <h4>Top 5 Commitment Item</h4>
-                                       <p>5 Commitment Item dengan nominal Consumed Budget terbesar</p>
-                                   </div>
+                           <article class="reference-card">
+                               <div class="reference-card-heading">
+                                   <div class="reference-heading-icon"><i class="bi bi-layers"></i></div>
+                                   <div><h3>Alokasi Anggaran Setiap Unit Entity</h3><p>Distribusi Consumed Budget, Available Budget, dan Approval Hold Amount</p></div>
                                </div>
-                               <div class="analysis-chart-wrap top5-chart-wrap">
-                                   <canvas id="top5CommitmentChart"></canvas>
-                                   <div id="top5CommitmentEmpty" class="chart-empty-state" style="display:none;">
-                                       <span class="chart-empty-symbol">—</span>
-                                       <span class="chart-empty-message">Data Commitment Item belum tersedia.</span>
-                                   </div>
+                               <div class="reference-chart-body allocation-chart-body">
+                                   <canvas id="entityUtilizationChart"></canvas>
+                                   <div id="entityUtilizationEmpty" class="chart-empty-state" style="display:none;">Data komposisi anggaran belum tersedia.</div>
                                </div>
-                           </section>
-                       </div>
-
-                       <section class="analysis-card" style="margin-bottom:14px;">
-                           <div class="chart-header">
-                               <div>
-                                   <h4 id="dimensionTableTitle">Pemantauan Anggaran Setiap Unit Entity</h4>
-                                   <p>Rincian anggaran</p>
+                               <div class="entity-chart-legend-note">
+                                   <span><i style="background:#ed1c24"></i>Consumed Budget</span>
+                                   <span><i style="background:#1673df"></i>Available Amount</span>
+                                   <span><i style="background:#b9c1cb"></i>Approval Hold</span>
                                </div>
-                           </div>
-                           <div class="analysis-table-toolbar">
-                               <div class="analysis-table-search">
-                                   <i class="bi bi-search"></i>
-                                   <input type="search" id="dimensionTableSearch"
-                                          placeholder="Cari dimensi atau nama anggaran..."
-                                          aria-label="Cari data tabel analisis anggaran">
-                               </div>
-                               <span class="analysis-search-hint">Cari berdasarkan nama dimensi</span>
-                           </div>
-                           <div class="analysis-table-wrap">
-                               <table class="analysis-table">
-                                   <thead>
-                                       <tr>
-                                           <th>DIMENSI</th>
-                                           <th>CURRENT BUDGET</th>
-                                           <th>CONSUMABLE BUDGET</th>
-                                           <th>CONSUMED BUDGET</th>
-                                           <th>AVAILABLE AMOUNT</th>
-                                           <th>APPROVAL HOLD</th>
-                                           <th>UTILIZATION</th>
-                                           <th>HOLD RATIO</th>
-                                       </tr>
-                                   </thead>
-                                   <tbody id="dimensionMonitoringBody">
-                                       <tr><td colspan="8">Memuat data...</td></tr>
-                                   </tbody>
-                               </table>
-                           </div>
-                           <div class="analysis-table-pagination">
-                               <span id="dimensionTableInfo">Menampilkan 0 data</span>
-                               <div id="dimensionTablePagination" class="pagination-controls" aria-label="Pagination tabel analisis anggaran"></div>
-                           </div>
+                           </article>
                        </section>
-                   </div> <!-- /analysisPane -->
+
+                       <section class="reference-bottom-grid">
+                           <article class="reference-card reference-top5-card">
+                               <div class="reference-card-heading reference-bottom-heading">
+                                   <div class="reference-heading-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                                   <div><h3>Top Commitment Item berdasarkan Penggunaan Anggaran</h3><p>Commitment Item dengan Consumed Budget tertinggi</p></div>
+                                   <div class="reference-top5-controls">
+                                       <label for="topCommitmentLimit">Tampilkan</label>
+                                       <select id="topCommitmentLimit" class="reference-top5-select" aria-label="Jumlah Commitment Item">
+                                           <option value="5" selected>5 Data</option>
+                                           <option value="10">10 data</option>
+                                           <option value="15">15 data</option>
+                                           <option value="20">20 data</option>
+                                       </select>
+                                   </div>
+                               </div>
+                               <div class="reference-chart-body top5-reference-chart">
+                                   <canvas id="top5CommitmentChart"></canvas>
+                                   <div id="top5CommitmentEmpty" class="chart-empty-state" style="display:none;">Data Commitment Item belum tersedia.</div>
+                               </div>
+                           </article>
+
+                           <article class="reference-card reference-monitoring-card">
+                               <div class="reference-card-heading reference-bottom-heading">
+                                   <div class="reference-heading-icon"><i class="bi bi-clipboard-data"></i></div>
+                                   <div><h3>Pemantauan Anggaran</h3><p>Rincian anggaran berdasarkan Unit Entity, Biro, dan Commitment Item</p></div>
+                                   <div class="reference-table-search"><i class="bi bi-search"></i><input type="search" id="dimensionTableSearch" placeholder="Cari..." aria-label="Cari data Pemantauan Anggaran"></div>
+                                   <button type="button" class="reference-download-button" id="downloadMonitoringCsv" aria-label="Unduh Pemantauan Anggaran" title="Unduh data Pemantauan Anggaran"><i class="bi bi-download"></i></button>
+                               </div>
+                               <div class="reference-monitoring-wrap">
+                                   <table class="reference-monitoring-table">
+                                       <thead><tr>
+                                           <th>Unit<br>Entity</th><th>Biro</th><th>Commitment<br>Item</th>
+                                           <th>Current<br>Budget</th><th>Consumable<br>Budget</th><th>Consumed<br>Budget</th>
+                                           <th>Available<br>Amount</th><th>Approval<br>Hold</th><th>Utilization</th>
+                                       </tr></thead>
+                                       <tbody id="dimensionMonitoringBody"><tr><td colspan="9">Memuat data...</td></tr></tbody>
+                                   </table>
+                               </div>
+                               <div class="reference-table-footer">
+                                   <span id="dimensionTableInfo">Memuat data...</span>
+                                   <div id="dimensionTablePagination" class="pagination-controls"></div>
+                               </div>
+                           </article>
+                       </section>
+
+                       <select id="analysisDimension" hidden aria-hidden="true"><option value="entity" selected>Unit Entity</option></select>
+                       <span id="dimensionConsumedTotal" hidden></span>
+                       <span id="dimensionHoldTotal" hidden></span>
+                       <span id="dimensionAverageRate" hidden></span>
+                       <span id="dimensionTableTitle" hidden></span>
+                   </div>
 
                </div>
 
@@ -2575,6 +2684,10 @@ function renderDonut(mode) {
 
     const consumed = Math.max(consumedBudget, 0);
     const remaining = Math.max(denominator - consumed, 0);
+    const hold = mode === "current" ? Math.max(0, approvalHold) : 0;
+    const availableOnly = mode === "current"
+        ? Math.max(0, availableAmount)
+        : remaining;
     const utilization = denominator > 0
         ? (consumed / denominator) * 100
         : 0;
@@ -2585,8 +2698,12 @@ function renderDonut(mode) {
         : "—";
 
     donutConsumed.textContent = formatCompactRupiah(consumed);
-    donutAvailable.textContent = formatCompactRupiah(remaining);
-    donutAvailableLabel.textContent = "Sisa Anggaran";
+    donutAvailable.textContent = formatCompactRupiah(availableOnly);
+    donutAvailableLabel.textContent = "Available Amount";
+    const donutHold = document.getElementById("donutHold");
+    if (donutHold) donutHold.textContent = formatCompactRupiah(hold);
+    const holdLegend = donutHold ? donutHold.closest(".reference-legend-row") : null;
+    if (holdLegend) holdLegend.style.display = mode === "current" ? "flex" : "none";
 
     /* DESTROY PREVIOUS CHART */
     if (donutChart) {
@@ -2612,8 +2729,12 @@ function renderDonut(mode) {
                 "Sisa Anggaran"
             ],
             datasets: [{
-                data: [consumed, remaining],
-                backgroundColor: ["#ed1c24", "#e5e7eb"],
+                data: mode === "current"
+                ? [consumed, availableOnly, hold]
+                : [consumed, remaining],
+                backgroundColor: mode === "current"
+                    ? ["#ed1c24", "#1673df", "#b9c1cb"]
+                    : ["#ed1c24", "#1673df"],
                 borderWidth: 0,
                 hoverOffset: 6,
                 borderRadius: 3
@@ -2658,30 +2779,34 @@ donutAnalysis.addEventListener("change", function() {
 renderDonut(donutAnalysis.value);
 
 /* ==========================================
-   ENTITY UTILIZATION RANKING - ALL ENTITIES
+   ENTITY BUDGET COMPOSITION - STACKED BAR
 ========================================== */
+const compositionSource = Array.isArray(visualizationData.entity_budget_composition)
+    ? visualizationData.entity_budget_composition
+    : (Array.isArray(visualizationData.entity_utilization)
+        ? visualizationData.entity_utilization
+        : []);
 
-const entitySource = Array.isArray(visualizationData.entity_utilization)
-    ? visualizationData.entity_utilization
-    : (Array.isArray(visualizationData.entity) ? visualizationData.entity : []);
-
-const entityItems = entitySource.map(item => {
-    const budget = safeNumber(item.consumable_budget ?? item.budget);
-    const consumed = safeNumber(item.consumed_budget ?? item.consumed ?? item.realization);
+const entityItems = compositionSource.map(item => {
+    const current = safeNumber(item.current_budget);
+    const consumed = safeNumber(item.consumed_budget);
+    const available = safeNumber(item.available_amount);
+    const hold = safeNumber(item.approval_hold);
+    const consumable = safeNumber(item.consumable_budget);
     const rateValue = item.utilization_rate !== undefined && item.utilization_rate !== null
         ? safeNumber(item.utilization_rate)
-        : (budget > 0 ? (consumed / budget) * 100 : null);
+        : (consumable > 0 ? (consumed / consumable) * 100 : null);
 
     return {
         label: String(item.label ?? item.name ?? item.code ?? "Entity"),
-        budget,
+        current,
+        budget: consumable,
         consumed,
-        current: safeNumber(item.current_budget),
-        available: safeNumber(item.available_amount),
-        hold: safeNumber(item.approval_hold),
+        available,
+        hold,
         rate: rateValue
     };
-}).filter(item => item.consumed > 0)
+}).filter(item => item.current > 0 || item.consumed > 0 || item.available > 0 || item.hold > 0)
   .sort((a, b) => b.consumed - a.consumed);
 
 const topEntities = entityItems;
@@ -2692,26 +2817,55 @@ if (topEntities.length > 0) {
     entityCanvas.style.display = "block";
     entityEmpty.style.display = "none";
 
+    const entityChartHeight = Math.max(185, Math.min(240, topEntities.length * 30));
+    entityCanvas.parentElement.style.height = entityChartHeight + "px";
+
     window.entityUtilizationChart = new Chart(entityCanvas, {
         type: "bar",
         data: {
             labels: topEntities.map(item => item.label),
-            datasets: [{
-                label: "Consumed Budget",
-                data: topEntities.map(item => item.consumed),
-                backgroundColor: "#ed1c24",
-                hoverBackgroundColor: "#c91620",
-                borderRadius: 6,
-                borderSkipped: false,
-                barThickness: 23,
-                maxBarThickness: 26
-            }]
+            datasets: [
+                {
+                    label: "Consumed Budget",
+                    data: topEntities.map(item => item.consumed),
+                    backgroundColor: "#ed1c24",
+                    hoverBackgroundColor: "#c91620",
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    stack: "budget",
+                    barThickness: 22,
+                    maxBarThickness: 25
+                },
+                {
+                    label: "Available Amount",
+                    data: topEntities.map(item => item.available),
+                    backgroundColor: "#1673df",
+                    hoverBackgroundColor: "#0f5fc0",
+                    borderRadius: 0,
+                    borderSkipped: false,
+                    stack: "budget",
+                    barThickness: 22,
+                    maxBarThickness: 25
+                },
+                {
+                    label: "Approval Hold",
+                    data: topEntities.map(item => item.hold),
+                    backgroundColor: "#e7eaee",
+                    hoverBackgroundColor: "#d5dae0",
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    stack: "budget",
+                    barThickness: 22,
+                    maxBarThickness: 25
+                }
+            ]
         },
         options: {
             indexAxis: "y",
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 700 },
+            animation: { duration: 650 },
+            interaction: { mode: "index", intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -2719,11 +2873,16 @@ if (topEntities.length > 0) {
                     padding: 12,
                     cornerRadius: 8,
                     callbacks: {
+                        title(context) {
+                            return topEntities[context[0].dataIndex].label;
+                        },
                         label(context) {
-                            const item = topEntities[context.dataIndex];
+                            return context.dataset.label + ": " + formatRupiah(context.raw);
+                        },
+                        afterBody(context) {
+                            const item = topEntities[context[0].dataIndex];
                             return [
-                                "Consumed Budget: " + formatRupiah(item.consumed),
-                                "Consumable Budget: " + formatRupiah(item.budget),
+                                "Current Budget: " + formatRupiah(item.current),
                                 "Utilization: " + (item.rate === null ? "—" : formatPercentage(item.rate))
                             ];
                         }
@@ -2732,6 +2891,7 @@ if (topEntities.length > 0) {
             },
             scales: {
                 x: {
+                    stacked: true,
                     beginAtZero: true,
                     grid: { color: "#f0f1f3" },
                     border: { display: false },
@@ -2741,9 +2901,10 @@ if (topEntities.length > 0) {
                     }
                 },
                 y: {
+                    stacked: true,
                     grid: { display: false },
                     border: { display: false },
-                    ticks: { font: { size: 11, weight: "600" } }
+                    ticks: { font: { size: 10, weight: "600" } }
                 }
             }
         }
@@ -2763,7 +2924,7 @@ if (attentionBody) {
     if (topEntities.length === 0) {
         attentionBody.innerHTML = `
             <tr>
-                <td colspan="6" class="attention-empty">
+                <td colspan="7" class="attention-empty">
                     Data penggunaan anggaran per entity belum tersedia.
                 </td>
             </tr>`;
@@ -2775,7 +2936,8 @@ if (attentionBody) {
                 <td>${formatCompactRupiah(item.budget)}</td>
                 <td>${formatCompactRupiah(item.consumed)}</td>
                 <td>${formatCompactRupiah(item.available)}</td>
-                <td class="${item.rate > 70 ? 'attention-rate' : '' }">${formatPercentage(item.rate)}</td>
+                <td>${formatCompactRupiah(item.hold)}</td>
+                <td class="${item.rate !== null && item.rate >= 80 ? 'attention-rate' : ''}">${formatPercentage(item.rate)}</td>
             </tr>
         `).join("");
     }
@@ -2792,29 +2954,6 @@ function escapeHtml(value) {
 }
 
 
-
-/* ==========================================
-   DASHBOARD TAB NAVIGATION
-========================================== */
-const dashboardTabButtons = document.querySelectorAll(".dashboard-tab-button");
-const dashboardTabPanes = document.querySelectorAll(".dashboard-tab-pane");
-
-dashboardTabButtons.forEach(button => {
-    button.addEventListener("click", () => {
-        const targetId = button.dataset.target;
-        dashboardTabButtons.forEach(item => {
-            const active = item === button;
-            item.classList.toggle("active", active);
-            item.setAttribute("aria-selected", active ? "true" : "false");
-        });
-        dashboardTabPanes.forEach(pane => {
-            pane.hidden = pane.id !== targetId;
-        });
-        if (targetId === "analysisPane") {
-            renderDimensionAnalysis();
-        }
-    });
-});
 
 /* ==========================================
    ANALISIS ANGGARAN - DIMENSION DATA
@@ -2840,9 +2979,11 @@ function renderTop5CommitmentItems() {
     const source = Array.isArray(visualizationData.top5_commitment_items)
         ? visualizationData.top5_commitment_items : [];
 
+    const selectedLimit = Number(document.getElementById("topCommitmentLimit")?.value || 5);
+    const allowedLimit = [5, 10, 15, 20].includes(selectedLimit) ? selectedLimit : 5;
     const items = source.slice()
         .sort((a, b) => safeNumber(b.consumed_budget) - safeNumber(a.consumed_budget))
-        .slice(0, 5);
+        .slice(0, allowedLimit);
 
     const empty = document.getElementById("top5CommitmentEmpty");
     if (top5Chart) {
@@ -2859,6 +3000,7 @@ function renderTop5CommitmentItems() {
     if (empty) empty.style.display = "none";
     top5Canvas.style.display = "block";
 
+    top5Canvas.style.height = "100%";
     top5Chart = new Chart(top5Canvas, {
         type: "bar",
         data: {
@@ -2866,11 +3008,11 @@ function renderTop5CommitmentItems() {
             datasets: [{
                 label: "Consumed Budget",
                 data: items.map(item => safeNumber(item.consumed_budget)),
-                backgroundColor: ["#ed1c24", "#d9363e", "#e34b52", "#e96369", "#ee858a"],
+                backgroundColor: ["#ed1c24", "#1673df", "#3288e8", "#65a5ed", "#9bc5f3"],
                 borderRadius: 6,
                 borderSkipped: false,
-                barThickness: 27,
-                maxBarThickness: 30
+                barThickness: allowedLimit > 10 ? 8 : allowedLimit > 5 ? 12 : 19,
+                maxBarThickness: 20
             }]
         },
         options: {
@@ -2892,8 +3034,8 @@ function renderTop5CommitmentItems() {
                                 item.utilization_rate === undefined
                                 ? "—" : formatPercentage(safeNumber(item.utilization_rate));
                             return [
-                                "Consumed: " + formatRupiah(item.consumed_budget),
-                                "Consumable: " + formatRupiah(item.consumable_budget),
+                                "Terpakai: " + formatRupiah(item.consumed_budget),
+                                "Anggaran Terbuka: " + formatRupiah(item.consumable_budget),
                                 "Utilization: " + rate
                             ];
                         }
@@ -2916,7 +3058,7 @@ function renderTop5CommitmentItems() {
                     border: { display: false },
                     ticks: {
                         color: "#748092",
-                        font: { size: 10, weight: "600" }
+                        font: { size: allowedLimit > 10 ? 7 : allowedLimit > 5 ? 8 : 9, weight: "600" }
                     }
                 }
             }
@@ -2932,67 +3074,69 @@ let currentDimensionSearchTerm = "";
 
 function renderDimensionMonitoringTable(items, label) {
     currentDimensionTableItems = Array.isArray(items) ? items : [];
-    currentDimensionTableLabel = label || "Dimensi";
+    currentDimensionTableLabel = label || "Pemantauan Anggaran";
 
-    const normalizedQuery = currentDimensionSearchTerm.trim().toLocaleLowerCase("id-ID");
-    const filteredItems = normalizedQuery
-        ? currentDimensionTableItems.filter(item => {
-            const searchable = [
-                item.label, item.current_budget, item.consumable_budget,
-                item.consumed_budget, item.available_amount, item.approval_hold,
-                item.utilization_rate, item.approval_hold_ratio
-            ].join(" ").toLocaleLowerCase("id-ID");
-            return searchable.includes(normalizedQuery);
-        })
-        : currentDimensionTableItems;
+    const query = currentDimensionSearchTerm.trim().toLocaleLowerCase("id-ID");
+    const filtered = (query ? currentDimensionTableItems.filter(item => [
+        item.unit_entity, item.biro_code, item.biro_name,
+        item.commitment_item_code, item.commitment_item_name
+    ].join(" ").toLocaleLowerCase("id-ID").includes(query)) : currentDimensionTableItems)
+        .slice()
+        .sort((a, b) => {
+            const rateA = a.utilization_rate == null ? -1 : safeNumber(a.utilization_rate);
+            const rateB = b.utilization_rate == null ? -1 : safeNumber(b.utilization_rate);
 
-    const total = filteredItems.length;
-    const totalPages = Math.max(1, Math.ceil(total / DIMENSION_TABLE_PAGE_SIZE));
+            // Utilization tertinggi ditampilkan terlebih dahulu; data tanpa rasio di bagian bawah.
+            if (rateA !== rateB) return rateB - rateA;
+
+            // Jika utilization sama, prioritaskan nominal Consumed Budget terbesar.
+            return safeNumber(b.consumed_budget) - safeNumber(a.consumed_budget);
+        });
+
+    const total = filtered.length;
+    const pageSize = 5;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
     dimensionTablePage = Math.min(Math.max(1, dimensionTablePage), totalPages);
-
-    const startIndex = (dimensionTablePage - 1) * DIMENSION_TABLE_PAGE_SIZE;
-    const visibleItems = filteredItems.slice(
-        startIndex, startIndex + DIMENSION_TABLE_PAGE_SIZE
-    );
+    const startIndex = (dimensionTablePage - 1) * pageSize;
+    const visible = filtered.slice(startIndex, startIndex + pageSize);
 
     if (!total) {
-        dimensionTableBody.innerHTML =
-            `<tr><td colspan="8" class="attention-empty">${normalizedQuery ? "Tidak ada data yang cocok dengan pencarian." : "Data " + escapeHtml(currentDimensionTableLabel) + " belum tersedia."}</td></tr>`;
+        dimensionTableBody.innerHTML = `<tr><td colspan="9" class="attention-empty">${query ? "Tidak ada data yang cocok." : "Data Pemantauan Anggaran belum tersedia."}</td></tr>`;
     } else {
-        dimensionTableBody.innerHTML = visibleItems.map(item => `
+        dimensionTableBody.innerHTML = visible.map(item => `
             <tr>
-                <td class="dimension-name">${escapeHtml(item.label)}</td>
+                <td class="monitoring-entity">${escapeHtml(item.unit_entity)}</td>
+                <td>${escapeHtml(item.biro_code)}<br><span class="monitoring-subtext">${escapeHtml(item.biro_name)}</span></td>
+                <td><strong>${escapeHtml(item.commitment_item_code)}</strong><br><span class="monitoring-subtext">${escapeHtml(item.commitment_item_name)}</span></td>
                 <td>${formatCompactRupiah(item.current_budget)}</td>
                 <td>${formatCompactRupiah(item.consumable_budget)}</td>
                 <td>${formatCompactRupiah(item.consumed_budget)}</td>
                 <td>${formatCompactRupiah(item.available_amount)}</td>
                 <td>${formatCompactRupiah(item.approval_hold)}</td>
-                <td class="${item.utilization_rate !== null && safeNumber(item.utilization_rate) >= 80 ? "rate-high" : ""}">
-                    ${item.utilization_rate === null ? "—" : formatPercentage(safeNumber(item.utilization_rate))}
-                </td>
-                <td>${item.approval_hold_ratio === null ? "—" : formatPercentage(safeNumber(item.approval_hold_ratio))}</td>
+                <td><span class="monitoring-utilization ${
+                    item.utilization_rate == null ? "" :
+                    safeNumber(item.utilization_rate) < 50 ? "low" :
+                    safeNumber(item.utilization_rate) < 80 ? "medium" : "high"
+                }">${item.utilization_rate == null ? "—" : formatPercentage(safeNumber(item.utilization_rate))}</span></td>
             </tr>
         `).join("");
     }
 
     const info = document.getElementById("dimensionTableInfo");
-    if (info) {
-        info.textContent = total
-            ? `Menampilkan ${startIndex + 1}–${Math.min(startIndex + DIMENSION_TABLE_PAGE_SIZE, total)} dari ${total} data`
-            : "Tidak ada data";
-    }
+    if (info) info.textContent = total
+        ? `Menampilkan ${startIndex + 1}–${Math.min(startIndex + pageSize, total)} dari ${total} data`
+        : "Tidak ada data";
 
     const pagination = document.getElementById("dimensionTablePagination");
     if (!pagination) return;
     pagination.replaceChildren();
-
     if (totalPages <= 1) return;
 
-    const addButton = (labelText, page, active = false, disabled = false) => {
+    const addButton = (text, page, active = false, disabled = false) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "page-button" + (active ? " active" : "");
-        button.textContent = labelText;
+        button.textContent = text;
         button.disabled = disabled;
         button.addEventListener("click", () => {
             dimensionTablePage = page;
@@ -3002,49 +3146,20 @@ function renderDimensionMonitoringTable(items, label) {
     };
 
     addButton("‹", dimensionTablePage - 1, false, dimensionTablePage === 1);
-
-    const visiblePageCount = Math.min(5, totalPages);
-    let firstPage = Math.max(1, dimensionTablePage - Math.floor(visiblePageCount / 2));
-    firstPage = Math.min(firstPage, totalPages - visiblePageCount + 1);
-
-    for (let page = firstPage; page < firstPage + visiblePageCount; page++) {
+    const first = Math.max(1, Math.min(dimensionTablePage - 2, totalPages - 4));
+    for (let page = first; page <= Math.min(totalPages, first + 4); page++) {
         addButton(String(page), page, page === dimensionTablePage);
     }
-
     addButton("›", dimensionTablePage + 1, false, dimensionTablePage === totalPages);
 }
 
 function renderDimensionAnalysis() {
-    if (!dimensionSelect || !dimensionCanvas || !dimensionTableBody) return;
+    if (!dimensionCanvas) return;
 
-    const dimension = dimensionSelect.value;
-    dimensionTablePage = 1;
-    const label = dimensionLabels[dimension] || "Dimensi";
-    const items = Array.isArray(dimensionAnalysis[dimension])
-        ? dimensionAnalysis[dimension] : [];
-
-    // KPI dan tabel mengikuti dimensi yang dipilih.
-    const consumedTotal = items.reduce((sum, item) => sum + safeNumber(item.consumed_budget), 0);
-    const holdTotal = items.reduce((sum, item) => sum + safeNumber(item.approval_hold), 0);
-    const totalConsumable = items.reduce(
-        (sum, item) => sum + safeNumber(item.consumable_budget), 0
-    );
-    const averageRate = totalConsumable > 0
-        ? (consumedTotal / totalConsumable) * 100
-        : null;
-
-    document.getElementById("dimensionConsumedTotal").textContent = formatCompactRupiah(consumedTotal);
-    document.getElementById("dimensionHoldTotal").textContent = formatCompactRupiah(holdTotal);
-    document.getElementById("dimensionAverageRate").textContent =
-        averageRate === null ? "—" : formatPercentage(averageRate);
-
-    document.getElementById("dimensionTableTitle").textContent = "Pemantauan Anggaran Setiap " + label;
-
-    // Grafik kiri: penggunaan seluruh Unit Entity, tidak mengikuti dropdown tabel.
     const entityItemsForChart = (Array.isArray(dimensionAnalysis.entity) ? dimensionAnalysis.entity : [])
         .slice()
-        .filter(item => safeNumber(item.consumed_budget) > 0)
-        .sort((a, b) => safeNumber(b.consumed_budget) - safeNumber(a.consumed_budget));
+        .filter(item => item.utilization_rate !== null && item.utilization_rate !== undefined)
+        .sort((a, b) => safeNumber(b.utilization_rate) - safeNumber(a.utilization_rate));
 
     if (dimensionChart) {
         dimensionChart.destroy();
@@ -3052,81 +3167,71 @@ function renderDimensionAnalysis() {
     }
 
     const entityEmpty = document.getElementById("entityAnalysisEmpty");
-    if (entityItemsForChart.length) {
-        dimensionCanvas.style.display = "block";
-        if (entityEmpty) entityEmpty.style.display = "none";
-
-        // Tinggi canvas mengikuti jumlah entity agar label tetap terbaca.
-        const entityChartHeight = Math.max(320, entityItemsForChart.length * 34);
-        dimensionCanvas.style.height = entityChartHeight + "px";
-        dimensionCanvas.height = entityChartHeight;
-
-        dimensionChart = new Chart(dimensionCanvas, {
-            type: "bar",
-            data: {
-                labels: entityItemsForChart.map(item => String(item.label ?? item.name ?? "Entity")),
-                datasets: [{
-                    label: "Consumed Budget",
-                    data: entityItemsForChart.map(item => safeNumber(item.consumed_budget)),
-                    backgroundColor: "#ed1c24",
-                    hoverBackgroundColor: "#c91620",
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    barThickness: 20,
-                    maxBarThickness: 23
-                }]
-            },
-            options: {
-                indexAxis: "y",
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 450 },
-                layout: { padding: { right: 12, left: 2 } },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: "#292e38",
-                        padding: 11,
-                        cornerRadius: 8,
-                        callbacks: {
-                            label(context) {
-                                const item = entityItemsForChart[context.dataIndex];
-                                return [
-                                    "Consumed: " + formatRupiah(item.consumed_budget),
-                                    "Consumable: " + formatRupiah(item.consumable_budget),
-                                    "Available: " + formatRupiah(item.available_amount),
-                                    "Utilization: " + (item.utilization_rate == null
-                                        ? "—" : formatPercentage(safeNumber(item.utilization_rate)))
-                                ];
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        grid: { color: "#edf0f3" },
-                        border: { display: false },
-                        ticks: {
-                            color: "#8490a0",
-                            font: { size: 10 },
-                            callback(value) { return formatCompactRupiah(value); }
-                        }
-                    },
-                    y: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { color: "#748092", font: { size: 10, weight: "600" } }
-                    }
-                }
-            }
-        });
-    } else {
+    if (!entityItemsForChart.length) {
         dimensionCanvas.style.display = "none";
         if (entityEmpty) entityEmpty.style.display = "flex";
+        return;
     }
 
-    renderDimensionMonitoringTable(items, label);
+    dimensionCanvas.style.display = "block";
+    if (entityEmpty) entityEmpty.style.display = "none";
+    const chartHeight = Math.max(110, Math.min(180, entityItemsForChart.length * 20));
+    dimensionCanvas.style.height = "100%";
+    dimensionCanvas.height = chartHeight;
+
+    dimensionChart = new Chart(dimensionCanvas, {
+        type: "bar",
+        data: {
+            labels: entityItemsForChart.map(item => String(item.label || "Entity")),
+            datasets: [{
+                label: "Tingkat Penggunaan",
+                data: entityItemsForChart.map(item => safeNumber(item.utilization_rate)),
+                backgroundColor: entityItemsForChart.map((item, index) =>
+                    index === 0 ? "#ed1c24" : ["#1673df", "#3288e8", "#65a5ed", "#9bc5f3"][Math.min(index - 1, 3)]
+                ),
+                borderRadius: 5,
+                borderSkipped: false,
+                barThickness: 18,
+                maxBarThickness: 20
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 450 },
+            layout: { padding: { right: 26, left: 2 } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(context) {
+                            const item = entityItemsForChart[context.dataIndex];
+                            return [
+                                "Tingkat Penggunaan: " + formatPercentage(safeNumber(item.utilization_rate)),
+                                "Terpakai: " + formatRupiah(item.consumed_budget),
+                                "Anggaran Terbuka: " + formatRupiah(item.consumable_budget)
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    suggestedMax: Math.max(100, ...entityItemsForChart.map(item => safeNumber(item.utilization_rate))) * 1.08,
+                    grid: { color: "#edf0f3" },
+                    border: { display: false },
+                    ticks: { color: "#8490a0", font: { size: 9 }, callback(value) { return value + "%"; } }
+                },
+                y: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: "#526073", font: { size: 9, weight: "600" } }
+                }
+            }
+        }
+    });
 }
 
 if (dimensionSelect) {
@@ -3139,7 +3244,55 @@ if (dimensionSearch) {
         renderDimensionMonitoringTable(currentDimensionTableItems, currentDimensionTableLabel);
     });
 }
+
+const downloadMonitoringButton = document.getElementById("downloadMonitoringCsv");
+if (downloadMonitoringButton) {
+    downloadMonitoringButton.addEventListener("click", () => {
+        const rows = Array.isArray(visualizationData.budget_monitoring)
+            ? visualizationData.budget_monitoring : [];
+        const headers = [
+            "Unit Entity", "Biro Code", "Biro Name", "Commitment Item Code",
+            "Commitment Item Name", "Current Budget", "Consumable Budget",
+            "Consumed Budget", "Available Amount", "Approval Hold", "Utilization"
+        ];
+        const csvEscape = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+        const csvRows = rows.map(item => [
+            item.unit_entity, item.biro_code, item.biro_name,
+            item.commitment_item_code, item.commitment_item_name,
+            item.current_budget, item.consumable_budget, item.consumed_budget,
+            item.available_amount, item.approval_hold, item.utilization_rate ?? ""
+        ]);
+        const csv = [headers, ...csvRows].map(row => row.map(csvEscape).join(",")).join("\r\n");
+        const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "budget-monitoring.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    });
+}
+const overviewUtilization = safeNumber(summaryData.consumable_budget) > 0
+    ? safeNumber(summaryData.consumed_budget) / safeNumber(summaryData.consumable_budget) * 100
+    : null;
+const overviewUtilizationElement = document.getElementById("overviewBudgetUtilization");
+if (overviewUtilizationElement) {
+    overviewUtilizationElement.textContent = overviewUtilization === null
+        ? "—" : formatPercentage(overviewUtilization);
+}
+
 renderTop5CommitmentItems();
+const topCommitmentLimit = document.getElementById("topCommitmentLimit");
+if (topCommitmentLimit) {
+    topCommitmentLimit.addEventListener("change", renderTop5CommitmentItems);
+}
+renderDimensionAnalysis();
+renderDimensionMonitoringTable(
+    Array.isArray(visualizationData.budget_monitoring) ? visualizationData.budget_monitoring : [],
+    "Pemantauan Anggaran"
+);
 
 
 /* DEBUG */

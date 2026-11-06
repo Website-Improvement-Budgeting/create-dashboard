@@ -1005,12 +1005,13 @@ def get_approval_budget_data(
     budget_scope="all",
     entity_id="all",
     funds_center_id="all",
-    commitment_item_id="all"
+    commitment_item_id="all",
+    biro_id="all"
 ):
     """
     Mengambil ringkasan dan analisis budget Approval.
     Agregasi disediakan untuk Entity, Biro, Funds Center, dan Commitment Item.
-    Seluruh agregasi mengikuti filter tahun, scope, entity, funds center, dan CI.
+    Seluruh agregasi mengikuti filter tahun, scope, entity, funds center, CI, dan biro.
     """
     conn = get_db_connection()
 
@@ -1022,13 +1023,15 @@ def get_approval_budget_data(
                   AND (%s = 'all' OR bm.entity_id::text = %s)
                   AND (%s = 'all' OR bm.funds_center_id::text = %s)
                   AND (%s = 'all' OR bm.commitment_item_id::text = %s)
+                  AND (%s = 'all' OR bm.biro_id::text = %s)
             """
             params = (
                 budget_year,
                 budget_scope, budget_scope,
                 entity_id, entity_id,
                 funds_center_id, funds_center_id,
-                commitment_item_id, commitment_item_id
+                commitment_item_id, commitment_item_id,
+                biro_id, biro_id
             )
 
             # -------------------------------------------------
@@ -1259,7 +1262,7 @@ def get_approval_budget_data(
                 commitment_item_utilization,
                 key=lambda item: float(item.get("consumed_budget") or 0),
                 reverse=True
-            )[:5]
+            )
 
             # -------------------------------------------------
             # 8. DATA VISUALISASI DAN KOMPATIBILITAS FRONTEND LAMA
@@ -1288,11 +1291,91 @@ def get_approval_budget_data(
                 for item in commitment_item_utilization
             ]
 
+            # Dataset khusus untuk stacked bar Ringkasan Budget.
+            # Secara konsep: Current Budget = Consumed + Available + Approval Hold.
+            entity_budget_composition = [
+                {
+                    "label": item["label"],
+                    "current_budget": item["current_budget"],
+                    "consumable_budget": item["consumable_budget"],
+                    "consumed_budget": item["consumed_budget"],
+                    "available_amount": item["available_amount"],
+                    "approval_hold": item["approval_hold"],
+                    "utilization_rate": item["utilization_rate"]
+                }
+                for item in entity_utilization
+            ]
+
+            # -------------------------------------------------
+            # 8. DETAIL BUDGET MONITORING PER ENTITY, BIRO, DAN CI
+            # -------------------------------------------------
+            cursor.execute(f"""
+                SELECT
+                    COALESCE(ue.unit_entity, 'Tidak diketahui') AS unit_entity,
+                    COALESCE(b.biro_code, '-') AS biro_code,
+                    COALESCE(b.biro_name, 'Biro tidak diketahui') AS biro_name,
+                    COALESCE(ci.commitment_item_code::text, '-') AS commitment_item_code,
+                    COALESCE(ci.commitment_item_name, 'Nama belum tersedia') AS commitment_item_name,
+                    COALESCE(SUM(bm.current_budget), 0) AS current_budget,
+                    COALESCE(SUM(bm.consumable_budget), 0) AS consumable_budget,
+                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed_budget,
+                    COALESCE(SUM(bm.available_amount), 0) AS available_amount,
+                    COALESCE(SUM(bm.current_budget - bm.consumable_budget), 0) AS approval_hold
+                FROM public.budget_master bm
+                LEFT JOIN public.unit_entity ue
+                    ON bm.entity_id = ue.entity_id
+                LEFT JOIN public.biro b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+                LEFT JOIN public.commitment_item ci
+                    ON bm.commitment_item_id = ci.commitment_item_id
+                {where_sql}
+                GROUP BY
+                    ue.unit_entity,
+                    b.biro_code,
+                    b.biro_name,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name
+                ORDER BY SUM(bm.consumed_budget) DESC,
+                         ue.unit_entity,
+                         ci.commitment_item_code
+            """, params)
+
+            budget_monitoring = []
+            for row in cursor.fetchall():
+                current, consumable, consumed, available, hold = (
+                    float(row[5] or 0),
+                    float(row[6] or 0),
+                    float(row[7] or 0),
+                    float(row[8] or 0),
+                    float(row[9] or 0)
+                )
+                budget_monitoring.append({
+                    "unit_entity": str(row[0] or "Tidak diketahui"),
+                    "biro_code": str(row[1] or "-"),
+                    "biro_name": str(row[2] or "Biro tidak diketahui"),
+                    "commitment_item_code": str(row[3] or "-"),
+                    "commitment_item_name": str(row[4] or "Nama belum tersedia"),
+                    "current_budget": current,
+                    "consumable_budget": consumable,
+                    "consumed_budget": consumed,
+                    "available_amount": available,
+                    "approval_hold": hold,
+                    "utilization_rate": (
+                        round(consumed / consumable * 100, 2)
+                        if consumable > 0 else None
+                    )
+                })
+
+            # -------------------------------------------------
+            # 9. DATA VISUALISASI DAN KOMPATIBILITAS FRONTEND
+            # -------------------------------------------------
             visualization_data = {
                 # Key lama tetap dipertahankan agar frontend yang sudah ada
                 # tidak langsung rusak.
                 "entity": entity_chart,
                 "entity_utilization": entity_utilization,
+                "entity_budget_composition": entity_budget_composition,
                 "budget_attention": entity_utilization,
                 "funds_center": funds_center_chart,
                 "commitment_item": commitment_item_chart,
@@ -1304,7 +1387,8 @@ def get_approval_budget_data(
                     "funds_center": funds_center_utilization,
                     "commitment_item": commitment_item_utilization
                 },
-                "top5_commitment_items": top5_commitment_items
+                "top5_commitment_items": top5_commitment_items,
+                "budget_monitoring": budget_monitoring
             }
 
         return {
@@ -1613,6 +1697,12 @@ def dashboard():
                 "all"
             )
 
+            # Filter biro
+            selected_biro = request.args.get(
+                "biro_id",
+                "all"
+            )
+
             # Validasi pilihan filter entity
             valid_entities = {
                 str(item["id"])
@@ -1629,6 +1719,11 @@ def dashboard():
             valid_cis = {
                 str(item["id"])
                 for item in options["commitment_items"]
+            }
+
+            valid_biros = {
+                str(item["id"])
+                for item in options["biros"]
             }
 
             if (
@@ -1649,13 +1744,20 @@ def dashboard():
             ):
                 selected_ci = "all"
 
+            if (
+                selected_biro != "all"
+                and selected_biro not in valid_biros
+            ):
+                selected_biro = "all"
+
             # Ambil data dashboard Approval
             dashboard_data = get_approval_budget_data(
                 budget_year=selected_year,
                 budget_scope=selected_scope,
                 entity_id=selected_entity,
                 funds_center_id=selected_fc,
-                commitment_item_id=selected_ci
+                commitment_item_id=selected_ci,
+                biro_id=selected_biro
             )
 
             # Tampilkan dashboard Approval
@@ -1669,6 +1771,7 @@ def dashboard():
                 entity_options=options["entities"],
                 funds_center_options=options["funds_centers"],
                 commitment_item_options=options["commitment_items"],
+                biro_options=options["biros"],
 
                 # Filter yang sedang digunakan
                 selected_year=selected_year,
@@ -1676,6 +1779,7 @@ def dashboard():
                 selected_entity=selected_entity,
                 selected_fc=selected_fc,
                 selected_ci=selected_ci,
+                selected_biro=selected_biro,
 
                 # Data dashboard
                 summary=dashboard_data["summary"],
