@@ -133,16 +133,43 @@
            .btn-reset-filter:hover { color:var(--silog-red); border-color:#f3b9bd; background:var(--silog-red-soft); }
 
         .detail-toolbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex:0 0 auto; }
-        .page-size-control { display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 10px; border:1px solid #dfe5ec; border-radius:8px; background:#fff; color:#7b8492; font-size:11px; white-space:nowrap; }
-        .page-size-control select { height:25px; min-width:48px; padding:0 18px 0 7px; border:1px solid #e4e8ee; border-radius:6px; background:#fff; color:#465267; font:600 11px inherit; outline:none; cursor:pointer; }
-        .page-size-control select:focus { border-color:var(--silog-red); box-shadow:0 0 0 2px rgba(237,28,36,.08); }
+        .page-size-control {
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            height:36px;
+            padding:0 10px;
+            border:1px solid #dfe5ec;
+            border-radius:8px;
+            background:#fff;
+            color:#687386;
+            font-size:11px;
+            font-weight:650;
+            white-space:nowrap;
+        }
+        .page-size-control select {
+            height:25px;
+            min-width:48px;
+            padding:0 20px 0 8px;
+            border:1px solid #dfe5ec;
+            border-radius:6px;
+            background:#fff;
+            color:#48546a;
+            font:600 11px inherit;
+            outline:none;
+            cursor:pointer;
+        }
+        .page-size-control select:focus {
+            border-color:#cbd4df;
+            box-shadow:0 0 0 2px rgba(104,115,134,.08);
+        }
 
 
 
 
            .budget-table-wrapper { width:100%; overflow-x:auto; border-top:1px solid #edf0f3; }
 
-           .budget-table { width:100%; min-width:1100px; margin:0; border-collapse:collapse; table-layout:fixed; }
+           .budget-table { width:100%; min-width:1350px; margin:0; border-collapse:collapse; table-layout:fixed; }
 
            .budget-table thead { background:#f8f9fb; }
 
@@ -150,23 +177,22 @@
 
            .budget-table td { padding:15px 10px; border-bottom:1px solid #edf0f3; color:#48546a; font-size:11px; vertical-align:middle; overflow-wrap:break-word; text-align:left; }
 
-           .budget-table th:nth-child(1), .budget-table td:nth-child(1) { width:9%; }
+           .budget-table th:nth-child(1), .budget-table td:nth-child(1) { width:8%; }
 
-           .budget-table th:nth-child(2), .budget-table td:nth-child(2) { width:12%; }
+           .budget-table th:nth-child(2), .budget-table td:nth-child(2) { width:10%; }
 
-           .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width:9%; }
+           .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width:8%; }
 
-           .budget-table th:nth-child(4), .budget-table td:nth-child(4) { width:22%; }
+           .budget-table th:nth-child(4), .budget-table td:nth-child(4) { width:17%; }
 
            .budget-table th:nth-child(5), .budget-table td:nth-child(5),
-
            .budget-table th:nth-child(6), .budget-table td:nth-child(6),
-
            .budget-table th:nth-child(7), .budget-table td:nth-child(7),
+           .budget-table th:nth-child(8), .budget-table td:nth-child(8),
+           .budget-table th:nth-child(9), .budget-table td:nth-child(9) { width:8%; }
 
-           .budget-table th:nth-child(8), .budget-table td:nth-child(8) { width:9%; }
-
-           .budget-table th:nth-child(9), .budget-table td:nth-child(9) { width:12%; }
+           .budget-table th:nth-child(10), .budget-table td:nth-child(10),
+           .budget-table th:nth-child(11), .budget-table td:nth-child(11) { width:9.5%; }
 
            .budget-table th:first-child, .budget-table td:first-child { padding-left:12px; }
 
@@ -238,7 +264,7 @@
 
            .utilization-fill { display:block; height:100%; background:var(--silog-red); border-radius:inherit; }
 
-           .utilization-fill.over-budget { background:#b81520; }
+           .utilization-fill.over-budget { background:#b820; }
 
            .utilization-value { flex:0 0 43px; min-width:43px; color:#6c7890; font-size:10px; font-weight:700; text-align:left; white-space:nowrap; }
 
@@ -295,7 +321,7 @@
                .detail-search { flex:1 1 280px; width:auto; max-width:none; }
             .detail-toolbar-actions { margin-left:auto; }
 
-               .budget-table { min-width:900px; }
+               .budget-table { min-width:1350px; }
 
                .budget-table-wrapper { overflow-x:auto; }
 
@@ -597,25 +623,16 @@
                                    </th>
 
                                    <th data-filter="ci">
-
-                                       <div class="th-content">COMMITMENT ITEM
-
+                                       <div class="th-content">
+                                           <span>COMMITMENT<br>ITEM</span>
                                            <button type="button" class="filter-trigger" aria-label="Filter Commitment Item" data-filter-trigger="ci"><i class="bi bi-funnel"></i></button>
-
                                        </div>
-
                                        <div class="filter-menu" data-filter-menu="ci">
-
                                            <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari kode atau nama CI..."></label>
-
                                            <div class="filter-options"></div>
-
                                            <div class="filter-menu-actions"><button type="button" data-clear-filter="ci">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="ci">Terapkan</button></div>
-
                                        </div>
-
                                    </th>
-
                                    <th class="text-right">CURRENT<br>BUDGET</th>
 
                                    <th class="text-right">CONSUMABLE<br>BUDGET</th>
@@ -624,7 +641,15 @@
 
                                    <th class="text-right">AVAILABLE<br>BUDGET</th>
 
+                                   <th class="text-right">
+                                       <div class="th-content">APPROVAL<br>HOLD AMOUNT</div>
+                                   </th>
+
                                    <th>UTILIZATION</th>
+
+                                   <th>
+                                       <div class="th-content">BUDGET<br>RELEASE RATE</div>
+                                   </th>
 
                                </tr>
 
@@ -656,9 +681,15 @@
 
                                {% set available_value = item.available | default(0, true) | float %}
 
-                               {# Hitung ulang dari angka nominal agar nilai tidak terpengaruh pembulatan backend #}
+                               {% set approval_hold_value = current_value - consumable_value %}
+
+                               {# Utilization mengukur penyerapan dari anggaran yang sudah dibuka. #}
 
                                {% set utilization_value = (consumed_value / consumable_value * 100 if consumable_value > 0 else 0) %}
+
+                               {# Budget Release Rate mengukur bagian Current Budget yang sudah dibuka. #}
+
+                               {% set release_rate_value = (consumable_value / current_value * 100 if current_value > 0 else 0) %}
 
                                <tr class="budget-data-row"
 
@@ -678,7 +709,11 @@
 
                                    data-available="{{ available_value }}"
 
-                                   data-utilization="{{ utilization_value }}">
+                                   data-approval-hold="{{ approval_hold_value }}"
+
+                                   data-utilization="{{ utilization_value }}"
+
+                                   data-release-rate="{{ release_rate_value }}">
 
                                    <td><span class="entity-name">{{ entity_value }}</span></td>
 
@@ -695,6 +730,12 @@
                                    <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumed_value).replace(",", ".") }}</span></td>
 
                                    <td class="text-right"><span class="amount-value available-value {% if available_value <= 0 %}zero{% endif %} {% if available_value < 0 %}negative{% endif %}">Rp{{ "{:,.0f}".format(available_value).replace(",", ".") }}</span></td>
+
+                                   <td class="text-right">
+                                       <span class="amount-value {% if approval_hold_value <= 0 %}available-value zero{% endif %}">
+                                           Rp{{ "{:,.0f}".format(approval_hold_value).replace(",", ".") }}
+                                       </span>
+                                   </td>
 
                                    <td>
 
@@ -714,13 +755,23 @@
 
                                    </td>
 
+                                   <td>
+                                       {% set release_bar_width = [0, [100, release_rate_value] | min] | max %}
+                                       <div class="utilization-wrapper">
+                                           <div class="utilization-progress" role="progressbar" aria-label="Budget Release Rate {{ ci_code }}" aria-valuenow="{{ release_bar_width }}" aria-valuemin="0" aria-valuemax="100">
+                                               <span class="utilization-fill" style="width:{{ release_bar_width }}%"></span>
+                                           </div>
+                                           <span class="utilization-value">{{ "{:,.2f}".format(release_rate_value).replace(",", "X").replace(".", ",").replace("X", ".") }}%</span>
+                                       </div>
+                                   </td>
+
                                </tr>
 
                                {% endfor %}
 
                                <tr id="emptyTableRow" class="empty-table-row" hidden>
 
-                                   <td colspan="9">
+                                   <td colspan="11">
 
                                        <div class="empty-table-content">
 
@@ -778,7 +829,7 @@ let pageSize = 5;
 
 let currentPage = 1;
 
-let sortKey = "utilization";
+let sortKey = "releaseRate";
 
 let sortDirection = "desc";
 
@@ -998,9 +1049,35 @@ function getFilteredRows() {
 
                result = norm(filterLabels[sortKey](a)).localeCompare(norm(filterLabels[sortKey](b)), "id-ID", {numeric:true});
 
+           } else if (sortKey === "releaseRate") {
+
+               // Gunakan dua angka desimal agar pengurutan konsisten
+               // dengan angka Budget Release Rate yang ditampilkan.
+               const roundToTwo = value =>
+                   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+               const releaseA = roundToTwo(a.dataset.releaseRate);
+               const releaseB = roundToTwo(b.dataset.releaseRate);
+
+               // Prioritas 1: Budget Release Rate tertinggi.
+               result = releaseA - releaseB;
+
+               // Prioritas 2: jika Release Rate sama setelah pembulatan,
+               // dahulukan Budget Utilization tertinggi.
+               if (result === 0) {
+                   const utilizationA = roundToTwo(a.dataset.utilization);
+                   const utilizationB = roundToTwo(b.dataset.utilization);
+                   result = utilizationA - utilizationB;
+               }
+
            } else {
 
-               result = Number(a.dataset[sortKey] || 0) - Number(b.dataset[sortKey] || 0);
+               const datasetKey = {
+                   approvalHold: "approvalHold",
+                   releaseRate: "releaseRate"
+               }[sortKey] || sortKey;
+
+               result = Number(a.dataset[datasetKey] || 0) - Number(b.dataset[datasetKey] || 0);
 
            }
 
@@ -1076,11 +1153,13 @@ function renderTable() {
 
        const visible = new Set(filtered.slice(start, start + pageSize));
 
-
-
-       rows.forEach(row => row.hidden = !visible.has(row));
-
        const empty = document.getElementById("emptyTableRow");
+
+       // Pindahkan baris sesuai hasil sorting agar urutan terlihat di tabel.
+       filtered.forEach(row => body.insertBefore(row, empty));
+
+       // Tampilkan hanya baris yang termasuk halaman aktif.
+       rows.forEach(row => row.hidden = !visible.has(row));
 
        empty.hidden = total !== 0;
 
@@ -1144,7 +1223,7 @@ document.getElementById("resetFilters").addEventListener("click", () => {
 
 document.querySelectorAll(".budget-table thead th").forEach((th, index) => {
 
-       const keyByIndex = ["entity","biro","funds","ci", "current","consumable","consumed","available","utilization"];
+       const keyByIndex = ["entity","biro","funds","ci", "current","consumable","consumed","available","approvalHold","utilization","releaseRate"];
 
        const key = keyByIndex[index];
 

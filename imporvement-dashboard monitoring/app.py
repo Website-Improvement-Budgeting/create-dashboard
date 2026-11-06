@@ -1364,6 +1364,10 @@ def get_approval_budget_data(
                     "utilization_rate": (
                         round(consumed / consumable * 100, 2)
                         if consumable > 0 else None
+                    ),
+                    "budget_release_rate": (
+                        round(consumable / current * 100, 2)
+                        if current > 0 else None
                     )
                 })
 
