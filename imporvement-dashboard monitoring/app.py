@@ -1007,14 +1007,15 @@ def get_approval_budget_data(
     funds_center_id="all",
     commitment_item_id="all"
 ):
-
+    """
+    Mengambil ringkasan dan analisis budget Approval.
+    Agregasi disediakan untuk Entity, Biro, Funds Center, dan Commitment Item.
+    Seluruh agregasi mengikuti filter tahun, scope, entity, funds center, dan CI.
+    """
     conn = get_db_connection()
 
     try:
         with conn.cursor() as cursor:
-
-            # Filter menggunakan parameter SQL,
-            # bukan menggabungkan input pengguna ke query.
             where_sql = """
                 WHERE bm.budget_year = %s
                   AND (%s = 'all' OR bm.budget_scope = %s)
@@ -1022,7 +1023,6 @@ def get_approval_budget_data(
                   AND (%s = 'all' OR bm.funds_center_id::text = %s)
                   AND (%s = 'all' OR bm.commitment_item_id::text = %s)
             """
-
             params = (
                 budget_year,
                 budget_scope, budget_scope,
@@ -1031,7 +1031,9 @@ def get_approval_budget_data(
                 commitment_item_id, commitment_item_id
             )
 
-            # RINGKASAN KPI
+            # -------------------------------------------------
+            # 1. KPI SUMMARY
+            # -------------------------------------------------
             cursor.execute(f"""
                 SELECT
                     COALESCE(SUM(bm.current_budget), 0),
@@ -1039,19 +1041,14 @@ def get_approval_budget_data(
                     COALESCE(SUM(bm.consumed_budget), 0),
                     COALESCE(SUM(bm.available_amount), 0),
                     COALESCE(
-                        SUM(
-                            bm.current_budget - bm.consumable_budget
-                        ), 0
+                        SUM(bm.current_budget - bm.consumable_budget), 0
                     ),
                     COUNT(*)
-
                 FROM public.budget_master bm
-
                 {where_sql}
             """, params)
 
             row = cursor.fetchone()
-
             summary = {
                 "current_budget": float(row[0] or 0),
                 "consumable_budget": float(row[1] or 0),
@@ -1061,7 +1058,9 @@ def get_approval_budget_data(
                 "total_records": row[5] or 0
             }
 
-            # RINGKASAN BERDASARKAN SCOPE
+            # -------------------------------------------------
+            # 2. RINGKASAN BERDASARKAN BUDGET SCOPE
+            # -------------------------------------------------
             cursor.execute(f"""
                 SELECT
                     bm.budget_scope,
@@ -1070,16 +1069,11 @@ def get_approval_budget_data(
                     COALESCE(SUM(bm.consumable_budget), 0),
                     COALESCE(SUM(bm.consumed_budget), 0),
                     COALESCE(SUM(bm.available_amount), 0)
-
                 FROM public.budget_master bm
-
                 {where_sql}
-
                 GROUP BY bm.budget_scope
                 ORDER BY bm.budget_scope
             """, params)
-
-            scope_rows = cursor.fetchall()
 
             scope_summary = [
                 {
@@ -1090,113 +1084,160 @@ def get_approval_budget_data(
                     "consumed": float(r[4] or 0),
                     "available": float(r[5] or 0)
                 }
-                for r in scope_rows
+                for r in cursor.fetchall()
             ]
 
-            # DATA VISUALISASI BUDGET
-            # Seluruh visualisasi mengikuti filter dashboard yang sedang dipilih.
+            # -------------------------------------------------
+            # HELPER: FORMAT HASIL AGREGASI DIMENSI
+            # -------------------------------------------------
+            def serialize_dimension(rows, id_key):
+                result = []
+                for item_id, label, current, consumable, consumed, available, hold in rows:
+                    current = float(current or 0)
+                    consumable = float(consumable or 0)
+                    consumed = float(consumed or 0)
+                    available = float(available or 0)
+                    hold = float(hold or 0)
 
-            # 1. Agregasi anggaran berdasarkan Unit Entity.
-            # Data ini menjadi sumber Entity Utilization Ranking dan
-            # Budget Attention pada frontend.
+                    utilization = (
+                        consumed / consumable * 100
+                        if consumable > 0 else None
+                    )
+                    hold_ratio = (
+                        hold / current * 100
+                        if current > 0 else None
+                    )
+
+                    result.append({
+                        id_key: item_id,
+                        "label": str(label or "Tidak diketahui"),
+                        "current_budget": current,
+                        "consumable_budget": consumable,
+                        "consumed_budget": consumed,
+                        "available_amount": available,
+                        "approval_hold": hold,
+                        "utilization_rate": (
+                            round(utilization, 2)
+                            if utilization is not None else None
+                        ),
+                        "approval_hold_ratio": (
+                            round(hold_ratio, 2)
+                            if hold_ratio is not None else None
+                        )
+                    })
+
+                # Urutan utama menggunakan nominal Consumed Budget terbesar.
+                # Utilization tetap disimpan sebagai indikator pendamping.
+                result.sort(
+                    key=lambda x: x["consumed_budget"],
+                    reverse=True
+                )
+                return result
+
+            # -------------------------------------------------
+            # 3. AGREGASI UNIT ENTITY
+            # -------------------------------------------------
             cursor.execute(f"""
                 SELECT
                     bm.entity_id,
-                    COALESCE(ue.unit_entity, 'Tidak diketahui') AS unit_entity,
-                    COALESCE(SUM(bm.current_budget), 0) AS current_budget,
-                    COALESCE(SUM(bm.consumable_budget), 0) AS consumable_budget,
-                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed_budget,
-                    COALESCE(SUM(bm.available_amount), 0) AS available_amount,
+                    COALESCE(ue.unit_entity, 'Tidak diketahui'),
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0),
                     COALESCE(
                         SUM(bm.current_budget - bm.consumable_budget), 0
-                    ) AS approval_hold
+                    )
                 FROM public.budget_master bm
                 LEFT JOIN public.unit_entity ue
                     ON bm.entity_id = ue.entity_id
                 {where_sql}
                 GROUP BY bm.entity_id, ue.unit_entity
-                ORDER BY
-                    CASE
-                        WHEN SUM(COALESCE(bm.consumable_budget, 0)) > 0
-                        THEN
-                            SUM(COALESCE(bm.consumed_budget, 0)) * 100.0
-                            / NULLIF(
-                                SUM(COALESCE(bm.consumable_budget, 0)), 0
-                            )
-                        ELSE NULL
-                    END DESC NULLS LAST,
-                    consumed_budget DESC
             """, params)
+            entity_utilization = serialize_dimension(
+                cursor.fetchall(), "entity_id"
+            )
 
-            entity_rows = cursor.fetchall()
-            entity_utilization = []
-
-            for row in entity_rows:
-                entity_current = float(row[2] or 0)
-                entity_consumable = float(row[3] or 0)
-                entity_consumed = float(row[4] or 0)
-                entity_available = float(row[5] or 0)
-                entity_hold = float(row[6] or 0)
-
-                utilization_rate = (
-                    (entity_consumed / entity_consumable) * 100
-                    if entity_consumable > 0
-                    else None
-                )
-
-                entity_utilization.append({
-                    "entity_id": row[0],
-                    "label": row[1] or "Tidak diketahui",
-                    "current_budget": entity_current,
-                    "approval_hold": entity_hold,
-                    "consumable_budget": entity_consumable,
-                    "consumed_budget": entity_consumed,
-                    "available_amount": entity_available,
-                    "utilization_rate": (
-                        round(utilization_rate, 2)
-                        if utilization_rate is not None
-                        else None
-                    )
-                })
-
-            # Format lama tetap dipertahankan agar tidak memutus
-            # pemakaian key "entity" pada bagian frontend lain.
-            entity_chart = [
-                {
-                    "label": item["label"],
-                    "value": item["consumed_budget"]
-                }
-                for item in entity_utilization
-            ]
-
-            # 2. Penggunaan berdasarkan Funds Center
-            # Data CI_ONLY yang tidak memiliki Funds Center tetap ditampilkan.
+            # -------------------------------------------------
+            # 4. AGREGASI BIRO
+            # Biro dibedakan berdasarkan biro_id dan entity_id.
+            # -------------------------------------------------
             cursor.execute(f"""
                 SELECT
-                    COALESCE(fc.funds_center_code, 'Tanpa Funds Center') AS funds_center,
-                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed
+                    b.biro_id,
+                    CASE
+                        WHEN b.biro_code IS NOT NULL AND b.biro_name IS NOT NULL
+                            THEN b.biro_code || ' - ' || b.biro_name
+                        WHEN b.biro_code IS NOT NULL THEN b.biro_code
+                        WHEN b.biro_name IS NOT NULL THEN b.biro_name
+                        ELSE 'Biro tidak teridentifikasi'
+                    END,
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0),
+                    COALESCE(
+                        SUM(bm.current_budget - bm.consumable_budget), 0
+                    )
+                FROM public.budget_master bm
+                LEFT JOIN public.biro b
+                    ON bm.biro_id = b.biro_id
+                   AND bm.entity_id = b.entity_id
+                {where_sql}
+                GROUP BY
+                    b.biro_id, b.entity_id, b.biro_code, b.biro_name
+            """, params)
+            biro_utilization = serialize_dimension(
+                cursor.fetchall(), "biro_id"
+            )
+
+            # -------------------------------------------------
+            # 5. AGREGASI FUNDS CENTER
+            # -------------------------------------------------
+            cursor.execute(f"""
+                SELECT
+                    fc.funds_center_id,
+                    COALESCE(fc.funds_center_code, 'Tanpa Funds Center'),
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0),
+                    COALESCE(
+                        SUM(bm.current_budget - bm.consumable_budget), 0
+                    )
                 FROM public.budget_master bm
                 LEFT JOIN public.funds_center fc
                     ON bm.funds_center_id = fc.funds_center_id
                 {where_sql}
                 GROUP BY fc.funds_center_id, fc.funds_center_code
-                ORDER BY consumed DESC
             """, params)
+            funds_center_utilization = serialize_dimension(
+                cursor.fetchall(), "funds_center_id"
+            )
 
-            funds_center_chart = [
-                {
-                    "label": r[0] or "Tidak diketahui",
-                    "value": float(r[1] or 0)
-                }
-                for r in cursor.fetchall()
-            ]
-
-            # 3. Penggunaan berdasarkan Commitment Item
+            # -------------------------------------------------
+            # 6. AGREGASI COMMITMENT ITEM
+            # -------------------------------------------------
             cursor.execute(f"""
                 SELECT
-                    ci.commitment_item_code,
-                    ci.commitment_item_name,
-                    COALESCE(SUM(bm.consumed_budget), 0) AS consumed
+                    ci.commitment_item_id,
+                    CASE
+                        WHEN ci.commitment_item_code IS NOT NULL
+                             AND ci.commitment_item_name IS NOT NULL
+                            THEN ci.commitment_item_code || ' - ' || ci.commitment_item_name
+                        WHEN ci.commitment_item_code IS NOT NULL
+                            THEN ci.commitment_item_code
+                        WHEN ci.commitment_item_name IS NOT NULL
+                            THEN ci.commitment_item_name
+                        ELSE 'Commitment Item tidak teridentifikasi'
+                    END,
+                    COALESCE(SUM(bm.current_budget), 0),
+                    COALESCE(SUM(bm.consumable_budget), 0),
+                    COALESCE(SUM(bm.consumed_budget), 0),
+                    COALESCE(SUM(bm.available_amount), 0),
+                    COALESCE(
+                        SUM(bm.current_budget - bm.consumable_budget), 0
+                    )
                 FROM public.budget_master bm
                 LEFT JOIN public.commitment_item ci
                     ON bm.commitment_item_id = ci.commitment_item_id
@@ -1205,33 +1246,66 @@ def get_approval_budget_data(
                     ci.commitment_item_id,
                     ci.commitment_item_code,
                     ci.commitment_item_name
-                ORDER BY consumed DESC
             """, params)
+            commitment_item_utilization = serialize_dimension(
+                cursor.fetchall(), "commitment_item_id"
+            )
+
+            # -------------------------------------------------
+            # 7. TOP 5 COMMITMENT ITEM BERDASARKAN CONSUMED TERBESAR
+            # -------------------------------------------------
+            # Ranking memakai nominal consumed_budget, bukan utilization_rate.
+            top5_commitment_items = sorted(
+                commitment_item_utilization,
+                key=lambda item: float(item.get("consumed_budget") or 0),
+                reverse=True
+            )[:5]
+
+            # -------------------------------------------------
+            # 8. DATA VISUALISASI DAN KOMPATIBILITAS FRONTEND LAMA
+            # -------------------------------------------------
+            entity_chart = [
+                {
+                    "label": item["label"],
+                    "value": item["consumed_budget"]
+                }
+                for item in entity_utilization
+            ]
+
+            funds_center_chart = [
+                {
+                    "label": item["label"],
+                    "value": item["consumed_budget"]
+                }
+                for item in funds_center_utilization
+            ]
 
             commitment_item_chart = [
                 {
-                    "label": (
-                        f"{r[0]} - {r[1]}"
-                        if r[0] and r[1]
-                        else str(r[0] or r[1] or "Tidak diketahui")
-                    ),
-                    "value": float(r[2] or 0)
+                    "label": item["label"],
+                    "value": item["consumed_budget"]
                 }
-                for r in cursor.fetchall()
+                for item in commitment_item_utilization
             ]
 
             visualization_data = {
-                # Key entity lama dipertahankan untuk kompatibilitas.
+                # Key lama tetap dipertahankan agar frontend yang sudah ada
+                # tidak langsung rusak.
                 "entity": entity_chart,
-
-                # Data lengkap untuk visualisasi baru.
                 "entity_utilization": entity_utilization,
                 "budget_attention": entity_utilization,
-
                 "funds_center": funds_center_chart,
-                "commitment_item": commitment_item_chart
-            }
+                "commitment_item": commitment_item_chart,
 
+                # Dataset analisis untuk tab Analisis Anggaran.
+                "dimension_analysis": {
+                    "entity": entity_utilization,
+                    "biro": biro_utilization,
+                    "funds_center": funds_center_utilization,
+                    "commitment_item": commitment_item_utilization
+                },
+                "top5_commitment_items": top5_commitment_items
+            }
 
         return {
             "summary": summary,

@@ -67,17 +67,28 @@
         .btn-reset-filter:hover { color:var(--silog-red); border-color:#f3b9bd; background:var(--silog-red-soft); }
 
         .budget-table-wrapper { width:100%; overflow-x:auto; border-top:1px solid #edf0f3; }
-        .budget-table { width:100%; min-width:1450px; margin:0; border-collapse:collapse; }
+        .budget-table { width:100%; min-width:1100px; margin:0; border-collapse:collapse; table-layout:fixed; }
         .budget-table thead { background:#f8f9fb; }
-        .budget-table th { position:relative; padding:14px 12px; border-bottom:1px solid #e7e9ee; color:#858c9b; font-size:10px; font-weight:700; letter-spacing:.32px; text-transform:uppercase; white-space:nowrap; vertical-align:middle; }
-        .budget-table td { padding:17px 12px; border-bottom:1px solid #edf0f3; color:#48546a; font-size:12px; vertical-align:middle; }
-        .budget-table th:first-child, .budget-table td:first-child { padding-left:22px; }
-        .budget-table th:last-child, .budget-table td:last-child { padding-right:22px; }
+        .budget-table th { position:relative; padding:13px 8px; border-bottom:1px solid #e7e9ee; color:#858c9b; font-size:10px; font-weight:700; letter-spacing:.25px; text-transform:uppercase; white-space:normal; line-height:1.35; vertical-align:middle; text-align:center; }
+        .budget-table td { padding:15px 10px; border-bottom:1px solid #edf0f3; color:#48546a; font-size:11px; vertical-align:middle; overflow-wrap:break-word; text-align:left; }
+        .budget-table th:nth-child(1), .budget-table td:nth-child(1) { width:9%; }
+        .budget-table th:nth-child(2), .budget-table td:nth-child(2) { width:12%; }
+        .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width:9%; }
+        .budget-table th:nth-child(4), .budget-table td:nth-child(4) { width:22%; }
+        .budget-table th:nth-child(5), .budget-table td:nth-child(5),
+        .budget-table th:nth-child(6), .budget-table td:nth-child(6),
+        .budget-table th:nth-child(7), .budget-table td:nth-child(7),
+        .budget-table th:nth-child(8), .budget-table td:nth-child(8) { width:9%; }
+        .budget-table th:nth-child(9), .budget-table td:nth-child(9) { width:12%; }
+        .budget-table th:first-child, .budget-table td:first-child { padding-left:12px; }
+        .budget-table th:last-child, .budget-table td:last-child { padding-right:12px; }
         .budget-table tbody tr:hover { background:#fafbfc; }
         .budget-table tbody tr:last-child td { border-bottom:0; }
-        .text-right { text-align:right; }
-        .th-content { display:flex; align-items:center; gap:7px; }
-        .th-content.right { justify-content:flex-end; }
+        .text-right { text-align:right !important; }
+        .th-content { display:flex; align-items:center; justify-content:center; gap:4px; text-align:center; }
+        .th-content.right { justify-content:center; }
+        .budget-table th.text-right { text-align:center !important; }
+        .budget-table th .filter-trigger { flex:0 0 18px; width:18px; height:18px; }
         .filter-trigger { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0; border:0; border-radius:5px; background:transparent; color:#a1a8b3; cursor:pointer; }
         .filter-trigger:hover, .filter-trigger.active { background:var(--silog-red-soft); color:var(--silog-red); }
         .filter-trigger i { font-size:12px; }
@@ -95,17 +106,17 @@
         .filter-menu-actions button { padding:5px 9px; border:1px solid #e3e7ed; border-radius:6px; background:#fff; color:#6e7785; font-size:10px; font-weight:650; }
         .filter-menu-actions .apply-column-filter { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
         .filter-menu-actions .apply-column-filter:hover { background:var(--silog-red-dark); }
-        .code-value { display:block; color:#364257; font-size:12px; font-weight:700; line-height:1.4; }
-        .name-value { display:block; margin-top:4px; color:#909bab; font-size:10px; font-weight:500; line-height:1.45; text-transform:uppercase; overflow-wrap:anywhere; }
-        .entity-name { color:#526073; font-size:12px; font-weight:600; }
-        .amount-value { color:#48546a; font-size:11px; font-weight:550; white-space:nowrap; }
-        .available-value { color:#16825d; font-weight:700; }
-        .available-value.negative { color:#d72736; }
-        .utilization-wrapper { display:flex; align-items:center; gap:9px; min-width:125px; }
-        .utilization-progress { flex:1; min-width:55px; height:7px; background:#e8ebef; border-radius:10px; overflow:hidden; }
+        .code-value { display:block; color:#364257; font-size:11px; font-weight:700; line-height:1.4; overflow-wrap:normal; }
+        .name-value { display:block; margin-top:4px; color:#909bab; font-size:10px; font-weight:500; line-height:1.4; text-transform:uppercase; overflow-wrap:break-word; }
+        .entity-name { color:#526073; font-size:11px; font-weight:650; }
+        .amount-value { color:#48546a; font-size:10px; font-weight:600; white-space:nowrap; }
+        .available-value { color:#16825d; font-weight:750; }
+        .available-value.zero, .available-value.negative { color:#d72736; }
+        .utilization-wrapper { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; }
+        .utilization-progress { flex:0 1 64px; width:64px; min-width:48px; max-width:64px; height:7px; background:#e8ebef; border-radius:10px; overflow:hidden; }
         .utilization-fill { display:block; height:100%; background:var(--silog-red); border-radius:inherit; }
         .utilization-fill.over-budget { background:#b81520; }
-        .utilization-value { min-width:45px; color:#6c7890; font-size:10px; font-weight:650; text-align:right; white-space:nowrap; }
+        .utilization-value { flex:0 0 43px; min-width:43px; color:#6c7890; font-size:10px; font-weight:700; text-align:left; white-space:nowrap; }
         .utilization-value.over-budget { color:#c51e2d; }
         .empty-table-row td { padding:52px 20px; text-align:center; }
         .empty-table-content { display:flex; flex-direction:column; align-items:center; gap:10px; color:#969eaa; }
@@ -121,9 +132,19 @@
         .page-button.active { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
         .page-button:disabled { opacity:.4; cursor:not-allowed; }
 
+        @media (max-width:1100px) {
+            .budget-table th, .budget-table td { padding-left:5px; padding-right:5px; }
+            .amount-value { font-size:9px; }
+            .utilization-wrapper { gap:4px; }
+            .utilization-progress { flex-basis:58px; max-width:58px; }
+            .utilization-value { flex-basis:42px; min-width:42px; }
+            .utilization-value { min-width:43px; font-size:8.5px; }
+        }
         @media (max-width:900px) {
             .detail-toolbar { flex-wrap:wrap; }
             .detail-search { flex:1 1 280px; width:auto; max-width:none; }
+            .budget-table { min-width:900px; }
+            .budget-table-wrapper { overflow-x:auto; }
         }
         @media (max-width:650px) {
             .budget-detail-page .dashboard-content { padding-top:23px; }
@@ -237,7 +258,8 @@
                         <thead>
                             <tr>
                                 <th data-filter="entity">
-                                    <div class="th-content">UNIT ENTITY
+                                    <div class="th-content">
+                                        <span>UNIT<br>ENTITY</span>
                                         <button type="button" class="filter-trigger" aria-label="Filter Unit Entity" data-filter-trigger="entity"><i class="bi bi-funnel"></i></button>
                                     </div>
                                     <div class="filter-menu" data-filter-menu="entity">
@@ -267,7 +289,8 @@
                                     </div>
                                 </th>
                                 <th data-filter="ci">
-                                    <div class="th-content">COMMITMENT ITEM
+                                    <div class="th-content">
+                                        <span>COMMITMENT<br>ITEM</span>
                                         <button type="button" class="filter-trigger" aria-label="Filter Commitment Item" data-filter-trigger="ci"><i class="bi bi-funnel"></i></button>
                                     </div>
                                     <div class="filter-menu" data-filter-menu="ci">
@@ -276,10 +299,10 @@
                                         <div class="filter-menu-actions"><button type="button" data-clear-filter="ci">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="ci">Terapkan</button></div>
                                     </div>
                                 </th>
-                                <th class="text-right">CURRENT BUDGET</th>
-                                <th class="text-right">CONSUMABLE</th>
-                                <th class="text-right">CONSUMED</th>
-                                <th class="text-right">AVAILABLE</th>
+                                <th class="text-right">CURRENT<br>BUDGET</th>
+                                <th class="text-right">CONSUMABLE<br>BUDGET</th>
+                                <th class="text-right">CONSUMED<br>BUDGET</th>
+                                <th class="text-right">AVAILABLE<br>BUDGET</th>
                                 <th>UTILIZATION</th>
                             </tr>
                         </thead>
@@ -296,7 +319,8 @@
                             {% set consumable_value = item.consumable | default(0, true) | float %}
                             {% set consumed_value = item.consumed | default(0, true) | float %}
                             {% set available_value = item.available | default(0, true) | float %}
-                            {% set utilization_value = item.utilization | default((consumed_value / consumable_value * 100 if consumable_value else 0), true) | float %}
+                            {# Hitung ulang dari angka nominal agar nilai tidak terpengaruh pembulatan backend #}
+                            {% set utilization_value = (consumed_value / consumable_value * 100 if consumable_value > 0 else 0) %}
                             <tr class="budget-data-row"
                                 data-entity="{{ entity_value }}"
                                 data-biro="{{ biro_code }} {{ biro_name }}"
@@ -314,14 +338,14 @@
                                 <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(current_value).replace(",", ".") }}</span></td>
                                 <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumable_value).replace(",", ".") }}</span></td>
                                 <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumed_value).replace(",", ".") }}</span></td>
-                                <td class="text-right"><span class="amount-value available-value {% if available_value < 0 %}negative{% endif %}">Rp{{ "{:,.0f}".format(available_value).replace(",", ".") }}</span></td>
+                                <td class="text-right"><span class="amount-value available-value {% if available_value <= 0 %}zero{% endif %} {% if available_value < 0 %}negative{% endif %}">Rp{{ "{:,.0f}".format(available_value).replace(",", ".") }}</span></td>
                                 <td>
                                     {% set bar_width = [0, [100, utilization_value] | min] | max %}
                                     <div class="utilization-wrapper">
                                         <div class="utilization-progress" role="progressbar" aria-label="Utilization {{ ci_code }}" aria-valuenow="{{ bar_width }}" aria-valuemin="0" aria-valuemax="100">
                                             <span class="utilization-fill {% if utilization_value > 100 %}over-budget{% endif %}" style="width:{{ bar_width }}%"></span>
                                         </div>
-                                        <span class="utilization-value {% if utilization_value > 100 %}over-budget{% endif %}">{{ "{:,.1f}".format(utilization_value).replace(".", ",") }}%</span>
+                                        <span class="utilization-value {% if utilization_value > 100 %}over-budget{% endif %}">{{ "{:,.2f}".format(utilization_value).replace(",", "X").replace(".", ",").replace("X", ".") }}%</span>
                                     </div>
                                 </td>
                             </tr>
