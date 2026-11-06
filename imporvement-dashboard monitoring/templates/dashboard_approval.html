@@ -560,7 +560,23 @@
 
            }
 
-           /* VISUAL HEADER */
+   
+        /* KPI utama: Consumed Budget menjadi fokus ringkasan */
+        .approval-kpi-consumed {
+            border-color: #f2c6c9;
+            background: linear-gradient(135deg, #fff 0%, #fff8f8 100%);
+            box-shadow: 0 5px 18px rgba(237, 28, 36, .07);
+        }
+        .approval-kpi-consumed .approval-kpi-icon {
+            background: var(--silog-red);
+            color: #fff;
+        }
+        .approval-kpi-consumed .approval-kpi-value {
+            color: var(--silog-red-dark);
+            font-size: clamp(19px, 1.55vw, 25px);
+        }
+
+        /* VISUAL HEADER */
 
            .visual-header {
 
@@ -1169,7 +1185,461 @@
         }
 
 
-</style>
+
+        /* DASHBOARD TABS */
+        .dashboard-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 5px;
+            margin-bottom: 18px;
+            width: fit-content;
+            max-width: 100%;
+            border: 1px solid var(--silog-border);
+            border-radius: 11px;
+            background: #fff;
+        }
+        .dashboard-tab-button {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            background: transparent;
+            color: #737d8b;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+        .dashboard-tab-button.active {
+            background: var(--silog-red);
+            color: #fff;
+            box-shadow: 0 3px 8px rgba(237,28,36,.16);
+        }
+        .dashboard-tab-pane[hidden] { display: none !important; }
+        .analysis-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .analysis-dimension-control {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 220px;
+        }
+        .analysis-dimension-control label {
+            color: #7f8998;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .035em;
+        }
+        .analysis-dimension-control select {
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--silog-border);
+            border-radius: 9px;
+            background: #fff;
+            color: #394250;
+            font: inherit;
+            font-size: 13px;
+        }
+        .analysis-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0,1fr));
+            gap: 14px;
+            margin-bottom: 17px;
+        }
+        .analysis-kpi {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-height: 112px;
+            padding: 18px 19px;
+            border: 1px solid var(--silog-border);
+            border-radius: 13px;
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(31,45,61,.035);
+            overflow: hidden;
+        }
+        .analysis-kpi::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: var(--kpi-accent);
+        }
+        .analysis-kpi-icon {
+            display: flex;
+            flex: 0 0 42px;
+            width: 42px;
+            height: 42px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 11px;
+            color: var(--kpi-accent);
+            background: var(--kpi-tint);
+            font-size: 19px;
+        }
+        .analysis-kpi-content { min-width: 0; }
+        .analysis-kpi-content span {
+            display: block;
+            color: #788394;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 6px;
+        }
+        .analysis-kpi-content strong {
+            display: block;
+            color: #293241;
+            font-size: clamp(19px,1.65vw,24px);
+            line-height: 1.2;
+            font-weight: 750;
+            letter-spacing: -.025em;
+            font-variant-numeric: tabular-nums;
+        }
+        .analysis-kpi-content small {
+            display: block;
+            margin-top: 5px;
+            color: #98a1ad;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+        .analysis-kpi-blue { --kpi-accent:#4776a8; --kpi-tint:#edf3f9; }
+        .analysis-kpi-amber { --kpi-accent:#c28b35; --kpi-tint:#fbf4e8; }
+        .analysis-kpi-teal { --kpi-accent:#32958c; --kpi-tint:#eaf6f4; }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr);
+            gap: 15px;
+            align-items: stretch;
+            margin-bottom: 15px;
+        }
+        .analysis-card {
+            min-width: 0;
+            padding: 19px 20px;
+            border: 1px solid var(--silog-border);
+            border-radius: 13px;
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(31,45,61,.035);
+        }
+        .analysis-card .chart-header h4 {
+            margin: 0 0 5px;
+            color: #303947;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -.01em;
+        }
+        .analysis-card .chart-header p {
+            margin: 0;
+            color: #8993a2;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .analysis-chart-wrap {
+            position: relative;
+            height: 340px;
+            margin-top: 12px;
+        }
+        .analysis-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .analysis-table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+        }
+        .analysis-table th {
+            padding: 11px 10px;
+            background: #f7f9fb;
+            border-bottom: 1px solid var(--silog-border);
+            color: #788394;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: left;
+            letter-spacing: .025em;
+            white-space: nowrap;
+        }
+        .analysis-table td {
+            padding: 11px 10px;
+            border-bottom: 1px solid #edf0f3;
+            color: #4b5666;
+            font-size: 11px;
+            line-height: 1.45;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .analysis-table tbody tr:hover { background: #fafbfd; }
+        .analysis-table tbody tr:last-child td { border-bottom: 0; }
+        .analysis-table .dimension-name { color: #303947; font-weight: 650; }
+        .analysis-table .rate-high { color: #bd8735; font-weight: 750; }
+        .analysis-note { display: none !important; }
+        @media (max-width: 850px) {
+            .analysis-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 650px) {
+            .analysis-kpi-grid { grid-template-columns: 1fr; }
+            .dashboard-tabs { width: 100%; }
+            .dashboard-tab-button { flex: 1; padding: 10px 8px; }
+            .analysis-kpi { min-height: 96px; }
+        }
+
+
+        /* ANALYSIS TAB TYPOGRAPHY: follow the same font as the main dashboard */
+        #analysisPane,
+        #analysisPane * {
+            font-family: inherit;
+        }
+        #analysisPane .analysis-card,
+        #analysisPane .analysis-table,
+        #analysisPane .analysis-table th,
+        #analysisPane .analysis-table td,
+        #analysisPane .analysis-note,
+        #analysisPane select,
+        #analysisPane button {
+            font-family: inherit;
+        }
+
+    
+        .analysis-table-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 13px 16px;
+            border-top: 1px solid var(--silog-border, #e7eaf0);
+            color: var(--silog-muted, #8791a1);
+            font-size: 12px;
+        }
+        .analysis-table-pagination .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .analysis-table-pagination .page-button {
+            min-width: 32px;
+            height: 32px;
+            border: 1px solid #e6e9ef;
+            border-radius: 7px;
+            background: #fff;
+            color: #687386;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .analysis-table-pagination .page-button.active {
+            background: #ed1c24;
+            border-color: #ed1c24;
+            color: #fff;
+        }
+        .analysis-table-pagination .page-button:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+        @media (max-width: 600px) {
+            .analysis-table-pagination {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+
+        /* ANALISIS ANGGARAN — diselaraskan dengan Ringkasan Budget */
+        #analysisPane { color: var(--silog-text); }
+        #analysisPane .analysis-header {
+            align-items: flex-start; margin-bottom: 14px;
+        }
+        #analysisPane .analysis-dimension-control {
+            min-width: 210px; padding: 12px 14px; gap: 6px;
+            border: 1px solid var(--silog-border); border-radius: 12px;
+            background: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.02);
+        }
+        #analysisPane .analysis-dimension-control label {
+            color: #858f9c; font-size: 10px; letter-spacing: 0;
+        }
+        #analysisPane .analysis-dimension-control select {
+            width: 100%; height: 36px; padding: 6px 28px 6px 10px;
+            border: 1px solid #dfe5ec; border-radius: 8px;
+            background: #fff; color: #394250; font-size: 11px;
+            font-weight: 600; outline: none;
+        }
+        #analysisPane .analysis-dimension-control select:focus {
+            border-color: var(--silog-red);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.07);
+        }
+        #analysisPane .analysis-kpi-grid {
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 13px; margin-bottom: 18px;
+        }
+        #analysisPane .analysis-kpi {
+            min-height: 88px; padding: 14px 16px; gap: 12px;
+            border: 1px solid var(--silog-border); border-radius: 12px;
+            background: #fff; box-shadow: 0 5px 18px rgba(0,0,0,.025);
+        }
+        #analysisPane .analysis-kpi::before { display: none; }
+        #analysisPane .analysis-kpi-icon {
+            flex: 0 0 42px; width: 42px; height: 42px;
+            border-radius: 10px; background: var(--silog-red-soft);
+            color: var(--silog-red); font-size: 20px;
+        }
+        #analysisPane .analysis-kpi-content span {
+            margin-bottom: 5px; color: #828b98; font-size: 10px; font-weight: 650;
+        }
+        #analysisPane .analysis-kpi-content strong {
+            color: var(--silog-text); font-size: clamp(17px,1.3vw,21px);
+            font-weight: 750; letter-spacing: -.4px;
+        }
+        #analysisPane .analysis-kpi-content small {
+            margin-top: 4px; color: var(--silog-muted); font-size: 10px;
+        }
+        #analysisPane .analysis-kpi-blue,
+        #analysisPane .analysis-kpi-amber,
+        #analysisPane .analysis-kpi-teal {
+            --kpi-accent: var(--silog-red); --kpi-tint: var(--silog-red-soft);
+        }
+        #analysisPane .analysis-grid {
+            grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr);
+            gap: 14px; margin-bottom: 14px;
+        }
+        #analysisPane .analysis-card {
+            padding: 18px 20px; border: 1px solid var(--silog-border);
+            border-radius: 13px; background: #fff;
+            box-shadow: 0 5px 20px rgba(0,0,0,.025);
+        }
+        #analysisPane .analysis-card .chart-header { margin-bottom: 12px; }
+        #analysisPane .analysis-card .chart-header h4 {
+            color: #333b47; font-size: 14px; font-weight: 750;
+        }
+        #analysisPane .analysis-card .chart-header p {
+            color: #929aa7; font-size: 10px;
+        }
+        #analysisPane .analysis-chart-wrap { height: 320px; margin-top: 8px; }
+        #analysisPane .analysis-table-wrap {
+            border: 1px solid #edf0f3; border-radius: 9px;
+        }
+        #analysisPane .analysis-table th {
+            padding: 10px 11px; background: #fafbfc;
+            color: #8993a2; font-size: 10px;
+        }
+        #analysisPane .analysis-table td {
+            padding: 11px; color: #465164; font-size: 11px;
+        }
+        #analysisPane .analysis-table tbody tr:hover { background: #fff7f7; }
+        #analysisPane .analysis-table .dimension-name {
+            color: var(--silog-text); font-weight: 700;
+        }
+        #analysisPane .analysis-table .rate-high {
+            color: var(--silog-red); font-weight: 750;
+        }
+        #analysisPane .analysis-table-pagination {
+            padding: 12px 2px 0; border-top: 0; font-size: 11px;
+        }
+        #analysisPane .analysis-table-pagination .page-button.active {
+            background: var(--silog-red); border-color: var(--silog-red);
+        }
+        #analysisPane .analysis-insight {
+            display: flex; align-items: flex-start; gap: 9px;
+            margin: 0 0 14px; padding: 11px 13px;
+            border: 1px solid #f4d7d9; border-radius: 10px;
+            background: #fff8f8; color: #6f5355; font-size: 11px; line-height: 1.5;
+        }
+        #analysisPane .analysis-insight i {
+            margin-top: 1px; color: var(--silog-red); font-size: 14px;
+        }
+
+        #analysisPane .analysis-chart-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: stretch;
+            gap: 16px;
+        }
+        #analysisPane .analysis-chart-grid .analysis-card {
+            min-width: 0;
+            padding: 19px 20px;
+        }
+        #analysisPane .analysis-chart-wrap {
+            height: 330px;
+            min-width: 0;
+            overflow: hidden;
+        }
+        #analysisPane .entity-analysis-chart-wrap {
+            height: 360px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #analysisPane .top5-chart-wrap {
+            height: 300px;
+        }
+        #analysisPane .analysis-table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0 0 12px;
+        }
+        #analysisPane .analysis-table-search {
+            position: relative;
+            width: min(360px, 100%);
+        }
+        #analysisPane .analysis-table-search > i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #929aa7;
+            font-size: 13px;
+            pointer-events: none;
+        }
+        #analysisPane .analysis-table-search input {
+            width: 100%;
+            height: 38px;
+            padding: 8px 12px 8px 35px;
+            border: 1px solid #dfe5ec;
+            border-radius: 9px;
+            outline: none;
+            background: #fff;
+            color: #394250;
+            font: inherit;
+            font-size: 11px;
+        }
+        #analysisPane .analysis-table-search input:focus {
+            border-color: var(--silog-red);
+            box-shadow: 0 0 0 3px rgba(237,28,36,.07);
+        }
+        #analysisPane .analysis-search-hint {
+            color: #929aa7;
+            font-size: 10px;
+        }
+        #analysisPane .analysis-table-wrap {
+            border: 1px solid #edf0f3;
+            border-radius: 9px;
+        }
+        @media (max-width: 950px) {
+            #analysisPane .analysis-chart-grid { grid-template-columns: 1fr; }
+            #analysisPane .entity-analysis-chart-wrap { height: 340px; }
+        }
+        @media (max-width: 600px) {
+            #analysisPane .analysis-table-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            #analysisPane .analysis-table-search { width: 100%; }
+        }
+
+        @media (max-width: 950px) {
+            #analysisPane .analysis-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 650px) {
+            #analysisPane .analysis-kpi-grid { grid-template-columns: 1fr; }
+            #analysisPane .analysis-dimension-control { width: 100%; }
+            #analysisPane .analysis-chart-wrap { height: 300px; }
+        }
+
+    </style>
 
 </head>
 
@@ -1377,6 +1847,21 @@
                    {% endwith %}
 
 
+                   <div class="dashboard-tabs" role="tablist" aria-label="Bagian dashboard">
+                       <button type="button" class="dashboard-tab-button active"
+                               id="overviewTab" role="tab" aria-selected="true"
+                               aria-controls="overviewPane" data-target="overviewPane">
+                           <i class="bi bi-grid-1x2"></i> Ringkasan Budget
+                       </button>
+                       <button type="button" class="dashboard-tab-button"
+                               id="analysisTab" role="tab" aria-selected="false"
+                               aria-controls="analysisPane" data-target="analysisPane">
+                           <i class="bi bi-bar-chart-line"></i> Analisis Anggaran
+                       </button>
+                   </div>
+
+                   <div id="overviewPane" class="dashboard-tab-pane" role="tabpanel"
+                        aria-labelledby="overviewTab">
                    <!-- HEADER + FILTER -->
 
                    <div class="summary-header">
@@ -1521,7 +2006,7 @@
 
                        </div>
 
-                       <div class="approval-kpi">
+                       <div class="approval-kpi approval-kpi-consumed">
 
                            <div class="approval-kpi-icon">
 
@@ -1707,11 +2192,11 @@
 
                                    <div>
 
-                                       <h4>Peringkat Pengunaan Anggaran</h4>
+                                       <h4>Peringkat Penggunaan Anggaran</h4>
 
                                        <p>
 
-                                           Ranking seluruh Unit Entity berdasarkan persentase penyerapan anggaran
+                                           Unit Entity diurutkan berdasarkan nominal Consumed Budget terbesar
 
                                        </p>
 
@@ -1757,7 +2242,7 @@
                     <div class="chart-header">
                         <div>
                             <h4>Pemantauan Anggaran</h4>
-                            <p>Kondisi anggaran seluruh Unit Entity</p>
+                            <p>Diurutkan berdasarkan nominal Consumed Budget terbesar</p>
                         </div>
                     </div>
                     <div class="attention-table-wrap">
@@ -1778,7 +2263,130 @@
                         </table>
                     </div>
                 </section>
+                   </div> <!-- /overviewPane -->
 
+                   <div id="analysisPane" class="dashboard-tab-pane" role="tabpanel"
+                        aria-labelledby="analysisTab" hidden>
+                       <div class="analysis-header">
+                           <div>
+                               <h1 class="section-title">
+                                   <i class="bi bi-graph-up-arrow section-title-icon"></i>
+                                   Analisis Anggaran
+                               </h1>
+                               <p class="section-caption">
+                                   Analisis penyerapan, ketersediaan, dan Approval Hold berdasarkan dimensi anggaran
+                               </p>
+                           </div>
+                           <div class="analysis-dimension-control">
+                               <label for="analysisDimension">DIMENSI</label>
+                               <select id="analysisDimension">
+                                   <option value="entity">Unit Entity</option>
+                                   <option value="biro">Biro</option>
+                                   <option value="funds_center">Funds Center</option>
+                                   <option value="commitment_item">Commitment Item</option>
+                               </select>
+                           </div>
+                       </div>
+
+                        <div class="analysis-kpi-grid">
+                           <div class="analysis-kpi analysis-kpi-blue">
+                               <div class="analysis-kpi-icon"><i class="bi bi-wallet2"></i></div>
+                               <div class="analysis-kpi-content">
+                                   <span>Total Consumed Budget</span>
+                                   <strong id="dimensionConsumedTotal">Rp0</strong>
+                               </div>
+                           </div>
+                           <div class="analysis-kpi analysis-kpi-amber">
+                               <div class="analysis-kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+                               <div class="analysis-kpi-content">
+                                   <span>Total Approval Hold</span>
+                                   <strong id="dimensionHoldTotal">Rp0</strong>
+                               </div>
+                           </div>
+                           <div class="analysis-kpi analysis-kpi-teal">
+                               <div class="analysis-kpi-icon"><i class="bi bi-speedometer2"></i></div>
+                               <div class="analysis-kpi-content">
+                                   <span>Utilization Anggaran</span>
+                                   <strong id="dimensionAverageRate">—</strong>
+                               </div>
+                           </div>
+                       </div>
+
+                       <div class="analysis-grid analysis-chart-grid">
+                           <section class="analysis-card">
+                               <div class="chart-header">
+                                   <div>
+                                       <h4>Penggunaan Setiap Unit Entity</h4>
+                                       <p>Urutan berdasarkan nominal Consumed Budget terbesar</p>
+                                   </div>
+                               </div>
+                               <div class="analysis-chart-wrap entity-analysis-chart-wrap">
+                                   <canvas id="dimensionUtilizationChart"></canvas>
+                                   <div id="entityAnalysisEmpty" class="chart-empty-state" style="display:none;">
+                                       <span class="chart-empty-symbol">—</span>
+                                       <span class="chart-empty-message">Data penggunaan anggaran per Unit Entity belum tersedia.</span>
+                                   </div>
+                               </div>
+                           </section>
+
+                           <section class="analysis-card">
+                               <div class="chart-header">
+                                   <div>
+                                       <h4>Top 5 Commitment Item</h4>
+                                       <p>5 Commitment Item dengan nominal Consumed Budget terbesar</p>
+                                   </div>
+                               </div>
+                               <div class="analysis-chart-wrap top5-chart-wrap">
+                                   <canvas id="top5CommitmentChart"></canvas>
+                                   <div id="top5CommitmentEmpty" class="chart-empty-state" style="display:none;">
+                                       <span class="chart-empty-symbol">—</span>
+                                       <span class="chart-empty-message">Data Commitment Item belum tersedia.</span>
+                                   </div>
+                               </div>
+                           </section>
+                       </div>
+
+                       <section class="analysis-card" style="margin-bottom:14px;">
+                           <div class="chart-header">
+                               <div>
+                                   <h4 id="dimensionTableTitle">Pemantauan Anggaran Setiap Unit Entity</h4>
+                                   <p>Rincian anggaran</p>
+                               </div>
+                           </div>
+                           <div class="analysis-table-toolbar">
+                               <div class="analysis-table-search">
+                                   <i class="bi bi-search"></i>
+                                   <input type="search" id="dimensionTableSearch"
+                                          placeholder="Cari dimensi atau nama anggaran..."
+                                          aria-label="Cari data tabel analisis anggaran">
+                               </div>
+                               <span class="analysis-search-hint">Cari berdasarkan nama dimensi</span>
+                           </div>
+                           <div class="analysis-table-wrap">
+                               <table class="analysis-table">
+                                   <thead>
+                                       <tr>
+                                           <th>DIMENSI</th>
+                                           <th>CURRENT BUDGET</th>
+                                           <th>CONSUMABLE BUDGET</th>
+                                           <th>CONSUMED BUDGET</th>
+                                           <th>AVAILABLE AMOUNT</th>
+                                           <th>APPROVAL HOLD</th>
+                                           <th>UTILIZATION</th>
+                                           <th>HOLD RATIO</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody id="dimensionMonitoringBody">
+                                       <tr><td colspan="8">Memuat data...</td></tr>
+                                   </tbody>
+                               </table>
+                           </div>
+                           <div class="analysis-table-pagination">
+                               <span id="dimensionTableInfo">Menampilkan 0 data</span>
+                               <div id="dimensionTablePagination" class="pagination-controls" aria-label="Pagination tabel analisis anggaran"></div>
+                           </div>
+                       </section>
+                   </div> <!-- /analysisPane -->
 
                </div>
 
@@ -2073,8 +2681,8 @@ const entityItems = entitySource.map(item => {
         hold: safeNumber(item.approval_hold),
         rate: rateValue
     };
-}).filter(item => item.budget > 0 && item.rate !== null && Number.isFinite(item.rate))
-  .sort((a, b) => b.rate - a.rate);
+}).filter(item => item.consumed > 0)
+  .sort((a, b) => b.consumed - a.consumed);
 
 const topEntities = entityItems;
 const entityCanvas = document.getElementById("entityUtilizationChart");
@@ -2084,16 +2692,13 @@ if (topEntities.length > 0) {
     entityCanvas.style.display = "block";
     entityEmpty.style.display = "none";
 
-    const maxRate = Math.max(...topEntities.map(item => item.rate));
-    const axisMax = Math.max(100, Math.ceil(maxRate / 10) * 10);
-
     window.entityUtilizationChart = new Chart(entityCanvas, {
         type: "bar",
         data: {
             labels: topEntities.map(item => item.label),
             datasets: [{
-                label: "Utilization Rate",
-                data: topEntities.map(item => item.rate),
+                label: "Consumed Budget",
+                data: topEntities.map(item => item.consumed),
                 backgroundColor: "#ed1c24",
                 hoverBackgroundColor: "#c91620",
                 borderRadius: 6,
@@ -2117,9 +2722,9 @@ if (topEntities.length > 0) {
                         label(context) {
                             const item = topEntities[context.dataIndex];
                             return [
-                                "Utilization: " + formatPercentage(item.rate),
-                                "Consumed: " + formatRupiah(item.consumed),
-                                "Consumable: " + formatRupiah(item.budget)
+                                "Consumed Budget: " + formatRupiah(item.consumed),
+                                "Consumable Budget: " + formatRupiah(item.budget),
+                                "Utilization: " + (item.rate === null ? "—" : formatPercentage(item.rate))
                             ];
                         }
                     }
@@ -2128,12 +2733,11 @@ if (topEntities.length > 0) {
             scales: {
                 x: {
                     beginAtZero: true,
-                    max: axisMax,
                     grid: { color: "#f0f1f3" },
                     border: { display: false },
                     ticks: {
                         font: { size: 10 },
-                        callback(value) { return value + "%"; }
+                        callback(value) { return formatCompactRupiah(value); }
                     }
                 },
                 y: {
@@ -2160,7 +2764,7 @@ if (attentionBody) {
         attentionBody.innerHTML = `
             <tr>
                 <td colspan="6" class="attention-empty">
-                    Data utilisasi per entity belum tersedia.
+                    Data penggunaan anggaran per entity belum tersedia.
                 </td>
             </tr>`;
     } else {
@@ -2186,6 +2790,356 @@ function escapeHtml(value) {
         "'": "&#039;"
     })[char]);
 }
+
+
+
+/* ==========================================
+   DASHBOARD TAB NAVIGATION
+========================================== */
+const dashboardTabButtons = document.querySelectorAll(".dashboard-tab-button");
+const dashboardTabPanes = document.querySelectorAll(".dashboard-tab-pane");
+
+dashboardTabButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        const targetId = button.dataset.target;
+        dashboardTabButtons.forEach(item => {
+            const active = item === button;
+            item.classList.toggle("active", active);
+            item.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        dashboardTabPanes.forEach(pane => {
+            pane.hidden = pane.id !== targetId;
+        });
+        if (targetId === "analysisPane") {
+            renderDimensionAnalysis();
+        }
+    });
+});
+
+/* ==========================================
+   ANALISIS ANGGARAN - DIMENSION DATA
+========================================== */
+const dimensionAnalysis = visualizationData.dimension_analysis || {};
+const dimensionSelect = document.getElementById("analysisDimension");
+const dimensionCanvas = document.getElementById("dimensionUtilizationChart");
+const top5Canvas = document.getElementById("top5CommitmentChart");
+const dimensionSearch = document.getElementById("dimensionTableSearch");
+let top5Chart = null;
+const dimensionTableBody = document.getElementById("dimensionMonitoringBody");
+const top5Body = document.getElementById("top5CommitmentBody");
+let dimensionChart = null;
+
+const dimensionLabels = {
+    entity: "Unit Entity",
+    biro: "Biro",
+    funds_center: "Funds Center",
+    commitment_item: "Commitment Item"
+};
+
+function renderTop5CommitmentItems() {
+    const source = Array.isArray(visualizationData.top5_commitment_items)
+        ? visualizationData.top5_commitment_items : [];
+
+    const items = source.slice()
+        .sort((a, b) => safeNumber(b.consumed_budget) - safeNumber(a.consumed_budget))
+        .slice(0, 5);
+
+    const empty = document.getElementById("top5CommitmentEmpty");
+    if (top5Chart) {
+        top5Chart.destroy();
+        top5Chart = null;
+    }
+
+    if (!items.length) {
+        top5Canvas.style.display = "none";
+        if (empty) empty.style.display = "flex";
+        return;
+    }
+
+    if (empty) empty.style.display = "none";
+    top5Canvas.style.display = "block";
+
+    top5Chart = new Chart(top5Canvas, {
+        type: "bar",
+        data: {
+            labels: items.map(item => String(item.label ?? item.name ?? "Commitment Item")),
+            datasets: [{
+                label: "Consumed Budget",
+                data: items.map(item => safeNumber(item.consumed_budget)),
+                backgroundColor: ["#ed1c24", "#d9363e", "#e34b52", "#e96369", "#ee858a"],
+                borderRadius: 6,
+                borderSkipped: false,
+                barThickness: 27,
+                maxBarThickness: 30
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 450 },
+            layout: { padding: { right: 12, left: 2 } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: "#292e38",
+                    padding: 11,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label(context) {
+                            const item = items[context.dataIndex];
+                            const rate = item.utilization_rate === null ||
+                                item.utilization_rate === undefined
+                                ? "—" : formatPercentage(safeNumber(item.utilization_rate));
+                            return [
+                                "Consumed: " + formatRupiah(item.consumed_budget),
+                                "Consumable: " + formatRupiah(item.consumable_budget),
+                                "Utilization: " + rate
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: { color: "#edf0f3" },
+                    border: { display: false },
+                    ticks: {
+                        color: "#8490a0",
+                        font: { size: 10 },
+                        callback(value) { return formatCompactRupiah(value); }
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: {
+                        color: "#748092",
+                        font: { size: 10, weight: "600" }
+                    }
+                }
+            }
+        }
+    });
+}
+
+const DIMENSION_TABLE_PAGE_SIZE = 5;
+let dimensionTablePage = 1;
+let currentDimensionTableItems = [];
+let currentDimensionTableLabel = "Dimensi";
+let currentDimensionSearchTerm = "";
+
+function renderDimensionMonitoringTable(items, label) {
+    currentDimensionTableItems = Array.isArray(items) ? items : [];
+    currentDimensionTableLabel = label || "Dimensi";
+
+    const normalizedQuery = currentDimensionSearchTerm.trim().toLocaleLowerCase("id-ID");
+    const filteredItems = normalizedQuery
+        ? currentDimensionTableItems.filter(item => {
+            const searchable = [
+                item.label, item.current_budget, item.consumable_budget,
+                item.consumed_budget, item.available_amount, item.approval_hold,
+                item.utilization_rate, item.approval_hold_ratio
+            ].join(" ").toLocaleLowerCase("id-ID");
+            return searchable.includes(normalizedQuery);
+        })
+        : currentDimensionTableItems;
+
+    const total = filteredItems.length;
+    const totalPages = Math.max(1, Math.ceil(total / DIMENSION_TABLE_PAGE_SIZE));
+    dimensionTablePage = Math.min(Math.max(1, dimensionTablePage), totalPages);
+
+    const startIndex = (dimensionTablePage - 1) * DIMENSION_TABLE_PAGE_SIZE;
+    const visibleItems = filteredItems.slice(
+        startIndex, startIndex + DIMENSION_TABLE_PAGE_SIZE
+    );
+
+    if (!total) {
+        dimensionTableBody.innerHTML =
+            `<tr><td colspan="8" class="attention-empty">${normalizedQuery ? "Tidak ada data yang cocok dengan pencarian." : "Data " + escapeHtml(currentDimensionTableLabel) + " belum tersedia."}</td></tr>`;
+    } else {
+        dimensionTableBody.innerHTML = visibleItems.map(item => `
+            <tr>
+                <td class="dimension-name">${escapeHtml(item.label)}</td>
+                <td>${formatCompactRupiah(item.current_budget)}</td>
+                <td>${formatCompactRupiah(item.consumable_budget)}</td>
+                <td>${formatCompactRupiah(item.consumed_budget)}</td>
+                <td>${formatCompactRupiah(item.available_amount)}</td>
+                <td>${formatCompactRupiah(item.approval_hold)}</td>
+                <td class="${item.utilization_rate !== null && safeNumber(item.utilization_rate) >= 80 ? "rate-high" : ""}">
+                    ${item.utilization_rate === null ? "—" : formatPercentage(safeNumber(item.utilization_rate))}
+                </td>
+                <td>${item.approval_hold_ratio === null ? "—" : formatPercentage(safeNumber(item.approval_hold_ratio))}</td>
+            </tr>
+        `).join("");
+    }
+
+    const info = document.getElementById("dimensionTableInfo");
+    if (info) {
+        info.textContent = total
+            ? `Menampilkan ${startIndex + 1}–${Math.min(startIndex + DIMENSION_TABLE_PAGE_SIZE, total)} dari ${total} data`
+            : "Tidak ada data";
+    }
+
+    const pagination = document.getElementById("dimensionTablePagination");
+    if (!pagination) return;
+    pagination.replaceChildren();
+
+    if (totalPages <= 1) return;
+
+    const addButton = (labelText, page, active = false, disabled = false) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "page-button" + (active ? " active" : "");
+        button.textContent = labelText;
+        button.disabled = disabled;
+        button.addEventListener("click", () => {
+            dimensionTablePage = page;
+            renderDimensionMonitoringTable(currentDimensionTableItems, currentDimensionTableLabel);
+        });
+        pagination.appendChild(button);
+    };
+
+    addButton("‹", dimensionTablePage - 1, false, dimensionTablePage === 1);
+
+    const visiblePageCount = Math.min(5, totalPages);
+    let firstPage = Math.max(1, dimensionTablePage - Math.floor(visiblePageCount / 2));
+    firstPage = Math.min(firstPage, totalPages - visiblePageCount + 1);
+
+    for (let page = firstPage; page < firstPage + visiblePageCount; page++) {
+        addButton(String(page), page, page === dimensionTablePage);
+    }
+
+    addButton("›", dimensionTablePage + 1, false, dimensionTablePage === totalPages);
+}
+
+function renderDimensionAnalysis() {
+    if (!dimensionSelect || !dimensionCanvas || !dimensionTableBody) return;
+
+    const dimension = dimensionSelect.value;
+    dimensionTablePage = 1;
+    const label = dimensionLabels[dimension] || "Dimensi";
+    const items = Array.isArray(dimensionAnalysis[dimension])
+        ? dimensionAnalysis[dimension] : [];
+
+    // KPI dan tabel mengikuti dimensi yang dipilih.
+    const consumedTotal = items.reduce((sum, item) => sum + safeNumber(item.consumed_budget), 0);
+    const holdTotal = items.reduce((sum, item) => sum + safeNumber(item.approval_hold), 0);
+    const totalConsumable = items.reduce(
+        (sum, item) => sum + safeNumber(item.consumable_budget), 0
+    );
+    const averageRate = totalConsumable > 0
+        ? (consumedTotal / totalConsumable) * 100
+        : null;
+
+    document.getElementById("dimensionConsumedTotal").textContent = formatCompactRupiah(consumedTotal);
+    document.getElementById("dimensionHoldTotal").textContent = formatCompactRupiah(holdTotal);
+    document.getElementById("dimensionAverageRate").textContent =
+        averageRate === null ? "—" : formatPercentage(averageRate);
+
+    document.getElementById("dimensionTableTitle").textContent = "Pemantauan Anggaran Setiap " + label;
+
+    // Grafik kiri: penggunaan seluruh Unit Entity, tidak mengikuti dropdown tabel.
+    const entityItemsForChart = (Array.isArray(dimensionAnalysis.entity) ? dimensionAnalysis.entity : [])
+        .slice()
+        .filter(item => safeNumber(item.consumed_budget) > 0)
+        .sort((a, b) => safeNumber(b.consumed_budget) - safeNumber(a.consumed_budget));
+
+    if (dimensionChart) {
+        dimensionChart.destroy();
+        dimensionChart = null;
+    }
+
+    const entityEmpty = document.getElementById("entityAnalysisEmpty");
+    if (entityItemsForChart.length) {
+        dimensionCanvas.style.display = "block";
+        if (entityEmpty) entityEmpty.style.display = "none";
+
+        // Tinggi canvas mengikuti jumlah entity agar label tetap terbaca.
+        const entityChartHeight = Math.max(320, entityItemsForChart.length * 34);
+        dimensionCanvas.style.height = entityChartHeight + "px";
+        dimensionCanvas.height = entityChartHeight;
+
+        dimensionChart = new Chart(dimensionCanvas, {
+            type: "bar",
+            data: {
+                labels: entityItemsForChart.map(item => String(item.label ?? item.name ?? "Entity")),
+                datasets: [{
+                    label: "Consumed Budget",
+                    data: entityItemsForChart.map(item => safeNumber(item.consumed_budget)),
+                    backgroundColor: "#ed1c24",
+                    hoverBackgroundColor: "#c91620",
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 20,
+                    maxBarThickness: 23
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 450 },
+                layout: { padding: { right: 12, left: 2 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "#292e38",
+                        padding: 11,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label(context) {
+                                const item = entityItemsForChart[context.dataIndex];
+                                return [
+                                    "Consumed: " + formatRupiah(item.consumed_budget),
+                                    "Consumable: " + formatRupiah(item.consumable_budget),
+                                    "Available: " + formatRupiah(item.available_amount),
+                                    "Utilization: " + (item.utilization_rate == null
+                                        ? "—" : formatPercentage(safeNumber(item.utilization_rate)))
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: "#edf0f3" },
+                        border: { display: false },
+                        ticks: {
+                            color: "#8490a0",
+                            font: { size: 10 },
+                            callback(value) { return formatCompactRupiah(value); }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: "#748092", font: { size: 10, weight: "600" } }
+                    }
+                }
+            }
+        });
+    } else {
+        dimensionCanvas.style.display = "none";
+        if (entityEmpty) entityEmpty.style.display = "flex";
+    }
+
+    renderDimensionMonitoringTable(items, label);
+}
+
+if (dimensionSelect) {
+    dimensionSelect.addEventListener("change", renderDimensionAnalysis);
+}
+if (dimensionSearch) {
+    dimensionSearch.addEventListener("input", function () {
+        currentDimensionSearchTerm = this.value || "";
+        dimensionTablePage = 1;
+        renderDimensionMonitoringTable(currentDimensionTableItems, currentDimensionTableLabel);
+    });
+}
+renderTop5CommitmentItems();
 
 
 /* DEBUG */
