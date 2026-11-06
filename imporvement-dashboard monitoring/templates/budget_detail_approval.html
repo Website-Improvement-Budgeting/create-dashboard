@@ -1,578 +1,1179 @@
 <!DOCTYPE html>
+
 <html lang="id">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Detail Approval | SILOG</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+       <meta charset="UTF-8">
 
-    <style>
-        .budget-detail-page {
-            --silog-red: #ed1c24;
-            --silog-red-dark: #c91620;
-            --silog-red-soft: #fff1f2;
-            --silog-text: #292e38;
-            --silog-muted: #8b94a1;
-            --silog-border: #e5e9ef;
-            --silog-background: #f5f6f8;
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: var(--silog-background);
-            color: var(--silog-text);
-        }
-        .budget-detail-page *, .budget-detail-page *::before, .budget-detail-page *::after { box-sizing: border-box; }
-        .budget-detail-page button, .budget-detail-page input { font-family: inherit; }
-        .budget-detail-page .topbar { display:flex; align-items:center; justify-content:flex-end; }
-        .budget-detail-page .dashboard-content { padding-top:30px; padding-bottom:45px; }
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .user-dropdown-toggle {
-            display:flex; align-items:center; gap:11px; padding:8px 12px;
-            background:transparent; border:0; border-radius:10px; color:var(--silog-text);
-            text-align:left; cursor:pointer; transition:background .2s ease;
-        }
-        .user-dropdown-toggle:hover, .user-dropdown-toggle[aria-expanded="true"] { background:#f5f5f5; }
-        .user-dropdown-toggle .user-info { text-align:left; }
-        .user-dropdown-toggle .user-info strong { display:block; color:var(--silog-text); font-size:13px; font-weight:650; }
-        .user-dropdown-toggle .user-info small { display:block; color:var(--silog-muted); font-size:11px; }
-        .dropdown-chevron { margin-left:5px; color:var(--silog-muted); font-size:12px; transition:transform .2s ease; }
-        .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron { transform:rotate(180deg); }
-        .user-dropdown-menu { min-width:215px; padding:8px; background:#fff; border:1px solid var(--silog-border); border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.09); }
-        .user-dropdown-menu .dropdown-header { padding:9px 12px; color:var(--silog-muted); font-size:11px; }
-        .user-dropdown-menu .dropdown-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; color:#40434b; font-size:12px; }
-        .user-dropdown-menu .user-logout-item { color:var(--silog-red); font-weight:650; }
+       <title>Budget Detail Approval | SILOG</title>
 
-        .detail-page-header { margin-bottom:22px; }
-        .section-title { display:flex; align-items:center; gap:10px; margin:0; color:var(--silog-text); font-size:23px; font-weight:750; line-height:1.3; letter-spacing:-.4px; }
-        .section-title-icon { color:var(--silog-red); font-size:21px; }
-        .section-caption { margin:6px 0 0; color:var(--silog-muted); font-size:12px; line-height:1.5; }
 
-        .detail-card { width:100%; background:#fff; border:1px solid var(--silog-border); border-radius:15px; box-shadow:0 6px 22px rgba(0,0,0,.03); overflow:visible; }
-        .detail-card-header { padding:22px 24px 18px; }
-        .detail-heading-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-        .detail-card-heading h2 { margin:0; color:#31333b; font-size:22px; font-weight:700; line-height:1.3; letter-spacing:-.4px; }
-        .detail-record-count { display:inline-flex; align-items:center; gap:7px; flex-shrink:0; padding:8px 12px; background:var(--silog-red-soft); border-radius:8px; color:#d91d27; font-size:12px; font-weight:650; white-space:nowrap; }
-        .detail-header-divider { height:1px; margin:19px 0; background:#f0f1f4; }
 
-        .detail-toolbar { display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%; }
-        .detail-search { display:flex; align-items:center; gap:10px; flex:0 1 430px; width:430px; max-width:430px; min-width:220px; height:39px; margin:0; padding:0 13px; background:#fff; border:1px solid #e4e6eb; border-radius:9px; transition:border-color .2s, box-shadow .2s; }
-        .detail-search:focus-within { border-color:var(--silog-red); box-shadow:0 0 0 3px rgba(237,28,36,.08); }
-        .detail-search i { flex-shrink:0; color:#9a9da7; font-size:15px; }
-        .detail-search input { flex:1; width:100%; min-width:0; height:100%; margin:0; padding:0; background:transparent; border:0; outline:0; color:#30323a; font-size:12px; }
-        .detail-search input::placeholder { color:#a0a4ae; }
-        .btn-reset-filter { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:36px; padding:0 13px; background:#fff; border:1px solid #dfe5ec; border-radius:8px; color:#687386; font-size:11px; font-weight:650; white-space:nowrap; }
-        .btn-reset-filter:hover { color:var(--silog-red); border-color:#f3b9bd; background:var(--silog-red-soft); }
+       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
-        .budget-table-wrapper { width:100%; overflow-x:auto; border-top:1px solid #edf0f3; }
-        .budget-table { width:100%; min-width:1100px; margin:0; border-collapse:collapse; table-layout:fixed; }
-        .budget-table thead { background:#f8f9fb; }
-        .budget-table th { position:relative; padding:13px 8px; border-bottom:1px solid #e7e9ee; color:#858c9b; font-size:10px; font-weight:700; letter-spacing:.25px; text-transform:uppercase; white-space:normal; line-height:1.35; vertical-align:middle; text-align:center; }
-        .budget-table td { padding:15px 10px; border-bottom:1px solid #edf0f3; color:#48546a; font-size:11px; vertical-align:middle; overflow-wrap:break-word; text-align:left; }
-        .budget-table th:nth-child(1), .budget-table td:nth-child(1) { width:9%; }
-        .budget-table th:nth-child(2), .budget-table td:nth-child(2) { width:12%; }
-        .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width:9%; }
-        .budget-table th:nth-child(4), .budget-table td:nth-child(4) { width:22%; }
-        .budget-table th:nth-child(5), .budget-table td:nth-child(5),
-        .budget-table th:nth-child(6), .budget-table td:nth-child(6),
-        .budget-table th:nth-child(7), .budget-table td:nth-child(7),
-        .budget-table th:nth-child(8), .budget-table td:nth-child(8) { width:9%; }
-        .budget-table th:nth-child(9), .budget-table td:nth-child(9) { width:12%; }
-        .budget-table th:first-child, .budget-table td:first-child { padding-left:12px; }
-        .budget-table th:last-child, .budget-table td:last-child { padding-right:12px; }
-        .budget-table tbody tr:hover { background:#fafbfc; }
-        .budget-table tbody tr:last-child td { border-bottom:0; }
-        .text-right { text-align:right !important; }
-        .th-content { display:flex; align-items:center; justify-content:center; gap:4px; text-align:center; }
-        .th-content.right { justify-content:center; }
-        .budget-table th.text-right { text-align:center !important; }
-        .budget-table th .filter-trigger { flex:0 0 18px; width:18px; height:18px; }
-        .filter-trigger { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0; border:0; border-radius:5px; background:transparent; color:#a1a8b3; cursor:pointer; }
-        .filter-trigger:hover, .filter-trigger.active { background:var(--silog-red-soft); color:var(--silog-red); }
-        .filter-trigger i { font-size:12px; }
-        .filter-menu { display:none; position:absolute; z-index:30; top:calc(100% - 2px); left:10px; width:255px; padding:12px; background:#fff; border:1px solid #e3e7ed; border-radius:11px; box-shadow:0 12px 30px rgba(28,39,60,.14); text-transform:none; white-space:normal; }
-        .filter-menu.open { display:block; }
-        .filter-menu.align-right { left:auto; right:10px; }
-        .filter-search { display:flex; align-items:center; gap:7px; height:33px; padding:0 9px; border:1px solid #e4e7ec; border-radius:7px; }
-        .filter-search i { color:#9aa2ae; font-size:12px; }
-        .filter-search input { width:100%; min-width:0; border:0; outline:0; color:#3f4856; font-size:11px; }
-        .filter-options { max-height:190px; overflow:auto; margin:9px 0; }
-        .filter-option { display:flex; align-items:flex-start; gap:8px; padding:6px 3px; color:#505b6b; font-size:11px; font-weight:500; cursor:pointer; }
-        .filter-option input { margin-top:2px; accent-color:var(--silog-red); }
-        .filter-option span { overflow-wrap:anywhere; }
-        .filter-menu-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top:9px; border-top:1px solid #edf0f3; }
-        .filter-menu-actions button { padding:5px 9px; border:1px solid #e3e7ed; border-radius:6px; background:#fff; color:#6e7785; font-size:10px; font-weight:650; }
-        .filter-menu-actions .apply-column-filter { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
-        .filter-menu-actions .apply-column-filter:hover { background:var(--silog-red-dark); }
-        .code-value { display:block; color:#364257; font-size:11px; font-weight:700; line-height:1.4; overflow-wrap:normal; }
-        .name-value { display:block; margin-top:4px; color:#909bab; font-size:10px; font-weight:500; line-height:1.4; text-transform:uppercase; overflow-wrap:break-word; }
-        .entity-name { color:#526073; font-size:11px; font-weight:650; }
-        .amount-value { color:#48546a; font-size:10px; font-weight:600; white-space:nowrap; }
-        .available-value { color:#16825d; font-weight:750; }
-        .available-value.zero, .available-value.negative { color:#d72736; }
-        .utilization-wrapper { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; }
-        .utilization-progress { flex:0 1 64px; width:64px; min-width:48px; max-width:64px; height:7px; background:#e8ebef; border-radius:10px; overflow:hidden; }
-        .utilization-fill { display:block; height:100%; background:var(--silog-red); border-radius:inherit; }
-        .utilization-fill.over-budget { background:#b81520; }
-        .utilization-value { flex:0 0 43px; min-width:43px; color:#6c7890; font-size:10px; font-weight:700; text-align:left; white-space:nowrap; }
-        .utilization-value.over-budget { color:#c51e2d; }
-        .empty-table-row td { padding:52px 20px; text-align:center; }
-        .empty-table-content { display:flex; flex-direction:column; align-items:center; gap:10px; color:#969eaa; }
-        .empty-table-content i { font-size:26px; }
-        .empty-table-content strong { color:#626b79; font-size:13px; }
-        .empty-table-content span { font-size:12px; }
+       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-        .detail-card-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 24px; border-top:1px solid #eceef1; }
-        .table-information { color:#8c909a; font-size:12px; }
-        .pagination-controls { display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
-        .page-button { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 9px; background:#fff; border:1px solid #e7e8ed; border-radius:8px; color:#707783; font-size:12px; font-weight:600; cursor:pointer; }
-        .page-button:hover:not(:disabled) { background:#fff0f1; border-color:#ffd3d7; color:var(--silog-red); }
-        .page-button.active { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
-        .page-button:disabled { opacity:.4; cursor:not-allowed; }
+       <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-        @media (max-width:1100px) {
-            .budget-table th, .budget-table td { padding-left:5px; padding-right:5px; }
-            .amount-value { font-size:9px; }
-            .utilization-wrapper { gap:4px; }
-            .utilization-progress { flex-basis:58px; max-width:58px; }
-            .utilization-value { flex-basis:42px; min-width:42px; }
-            .utilization-value { min-width:43px; font-size:8.5px; }
-        }
-        @media (max-width:900px) {
-            .detail-toolbar { flex-wrap:wrap; }
-            .detail-search { flex:1 1 280px; width:auto; max-width:none; }
-            .budget-table { min-width:900px; }
-            .budget-table-wrapper { overflow-x:auto; }
-        }
-        @media (max-width:650px) {
-            .budget-detail-page .dashboard-content { padding-top:23px; }
-            .section-title { font-size:21px; }
-            .detail-card-header { padding:19px 18px; }
-            .detail-heading-row { align-items:flex-start; gap:10px; }
-            .detail-card-heading h2 { font-size:18px; }
-            .detail-toolbar { flex-direction:column; align-items:stretch; }
-            .detail-search { flex:none; width:100%; max-width:100%; }
-            .detail-card-footer { flex-direction:column; align-items:flex-start; padding:18px; }
-            .pagination-controls { align-self:flex-end; }
-            .user-dropdown-toggle { padding:6px; }
-        }
-    </style>
+       <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+
+
+       <style>
+
+           .budget-detail-page {
+
+               --silog-red: #ed1c24;
+
+               --silog-red-dark: #c91620;
+
+               --silog-red-soft: #fff1f2;
+
+               --silog-text: #292e38;
+
+               --silog-muted: #8b94a1;
+
+               --silog-border: #e5e9ef;
+
+               --silog-background: #f5f6f8;
+
+               margin: 0;
+
+               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+               background: var(--silog-background);
+
+               color: var(--silog-text);
+
+           }
+
+           .budget-detail-page *, .budget-detail-page *::before, .budget-detail-page *::after { box-sizing: border-box; }
+
+           .budget-detail-page button, .budget-detail-page input { font-family: inherit; }
+
+           .budget-detail-page .topbar { display:flex; align-items:center; justify-content:flex-end; }
+
+           .budget-detail-page .dashboard-content { padding-top:30px; padding-bottom:45px; }
+
+
+
+           .user-dropdown-toggle {
+
+               display:flex; align-items:center; gap:11px; padding:8px 12px;
+
+               background:transparent; border:0; border-radius:10px; color:var(--silog-text);
+
+               text-align:left; cursor:pointer; transition:background .2s ease;
+
+           }
+
+           .user-dropdown-toggle:hover, .user-dropdown-toggle[aria-expanded="true"] { background:#f5f5f5; }
+
+           .user-dropdown-toggle .user-info { text-align:left; }
+
+           .user-dropdown-toggle .user-info strong { display:block; color:var(--silog-text); font-size:13px; font-weight:650; }
+
+           .user-dropdown-toggle .user-info small { display:block; color:var(--silog-muted); font-size:11px; }
+
+           .dropdown-chevron { margin-left:5px; color:var(--silog-muted); font-size:12px; transition:transform .2s ease; }
+
+           .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron { transform:rotate(180deg); }
+
+           .user-dropdown-menu { min-width:215px; padding:8px; background:#fff; border:1px solid var(--silog-border); border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.09); }
+
+           .user-dropdown-menu .dropdown-header { padding:9px 12px; color:var(--silog-muted); font-size:11px; }
+
+           .user-dropdown-menu .dropdown-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; color:#40434b; font-size:12px; }
+
+           .user-dropdown-menu .user-logout-item { color:var(--silog-red); font-weight:650; }
+
+
+
+           .detail-page-header { margin-bottom:22px; }
+
+           .section-title { display:flex; align-items:center; gap:10px; margin:0; color:var(--silog-text); font-size:23px; font-weight:750; line-height:1.3; letter-spacing:-.4px; }
+
+           .section-title-icon { color:var(--silog-red); font-size:21px; }
+
+           .section-caption { margin:6px 0 0; color:var(--silog-muted); font-size:12px; line-height:1.5; }
+
+
+
+           .detail-card { width:100%; background:#fff; border:1px solid var(--silog-border); border-radius:15px; box-shadow:0 6px 22px rgba(0,0,0,.03); overflow:visible; }
+
+           .detail-card-header { padding:22px 24px 18px; }
+
+           .detail-heading-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+
+           .detail-card-heading h2 { margin:0; color:#31333b; font-size:22px; font-weight:700; line-height:1.3; letter-spacing:-.4px; }
+
+           .detail-record-count { display:inline-flex; align-items:center; gap:7px; flex-shrink:0; padding:8px 12px; background:var(--silog-red-soft); border-radius:8px; color:#d91d27; font-size:12px; font-weight:650; white-space:nowrap; }
+
+           .detail-header-divider { height:1px; margin:19px 0; background:#f0f1f4; }
+
+
+
+           .detail-toolbar { display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%; }
+
+           .detail-search { display:flex; align-items:center; gap:10px; flex:0 1 430px; width:430px; max-width:430px; min-width:220px; height:39px; margin:0; padding:0 13px; background:#fff; border:1px solid #e4e6eb; border-radius:9px; transition:border-color .2s, box-shadow .2s; }
+
+           .detail-search:focus-within { border-color:var(--silog-red); box-shadow:0 0 0 3px rgba(237,28,36,.08); }
+
+           .detail-search i { flex-shrink:0; color:#9a9da7; font-size:15px; }
+
+           .detail-search input { flex:1; width:100%; min-width:0; height:100%; margin:0; padding:0; background:transparent; border:0; outline:0; color:#30323a; font-size:12px; }
+
+           .detail-search input::placeholder { color:#a0a4ae; }
+
+           .btn-reset-filter { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:36px; padding:0 13px; background:#fff; border:1px solid #dfe5ec; border-radius:8px; color:#687386; font-size:11px; font-weight:650; white-space:nowrap; }
+
+           .btn-reset-filter:hover { color:var(--silog-red); border-color:#f3b9bd; background:var(--silog-red-soft); }
+
+        .detail-toolbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex:0 0 auto; }
+        .page-size-control { display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 10px; border:1px solid #dfe5ec; border-radius:8px; background:#fff; color:#7b8492; font-size:11px; white-space:nowrap; }
+        .page-size-control select { height:25px; min-width:48px; padding:0 18px 0 7px; border:1px solid #e4e8ee; border-radius:6px; background:#fff; color:#465267; font:600 11px inherit; outline:none; cursor:pointer; }
+        .page-size-control select:focus { border-color:var(--silog-red); box-shadow:0 0 0 2px rgba(237,28,36,.08); }
+
+
+
+
+           .budget-table-wrapper { width:100%; overflow-x:auto; border-top:1px solid #edf0f3; }
+
+           .budget-table { width:100%; min-width:1100px; margin:0; border-collapse:collapse; table-layout:fixed; }
+
+           .budget-table thead { background:#f8f9fb; }
+
+           .budget-table th { position:relative; padding:13px 8px; border-bottom:1px solid #e7e9ee; color:#858c9b; font-size:10px; font-weight:700; letter-spacing:.25px; text-transform:uppercase; white-space:normal; line-height:1.35; vertical-align:middle; text-align:center; }
+
+           .budget-table td { padding:15px 10px; border-bottom:1px solid #edf0f3; color:#48546a; font-size:11px; vertical-align:middle; overflow-wrap:break-word; text-align:left; }
+
+           .budget-table th:nth-child(1), .budget-table td:nth-child(1) { width:9%; }
+
+           .budget-table th:nth-child(2), .budget-table td:nth-child(2) { width:12%; }
+
+           .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width:9%; }
+
+           .budget-table th:nth-child(4), .budget-table td:nth-child(4) { width:22%; }
+
+           .budget-table th:nth-child(5), .budget-table td:nth-child(5),
+
+           .budget-table th:nth-child(6), .budget-table td:nth-child(6),
+
+           .budget-table th:nth-child(7), .budget-table td:nth-child(7),
+
+           .budget-table th:nth-child(8), .budget-table td:nth-child(8) { width:9%; }
+
+           .budget-table th:nth-child(9), .budget-table td:nth-child(9) { width:12%; }
+
+           .budget-table th:first-child, .budget-table td:first-child { padding-left:12px; }
+
+           .budget-table th:last-child, .budget-table td:last-child { padding-right:12px; }
+
+           .budget-table tbody tr:hover { background:#fafbfc; }
+
+           .budget-table tbody tr:last-child td { border-bottom:0; }
+
+           .text-right { text-align:right !important; }
+
+           .th-content { display:flex; align-items:center; justify-content:center; gap:4px; text-align:center; }
+
+           .th-content.right { justify-content:center; }
+
+           .budget-table th.text-right { text-align:center !important; }
+
+           .budget-table th .filter-trigger { flex:0 0 18px; width:18px; height:18px; }
+
+           .filter-trigger { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0; border:0; border-radius:5px; background:transparent; color:#a1a8b3; cursor:pointer; }
+
+           .filter-trigger:hover, .filter-trigger.active { background:var(--silog-red-soft); color:var(--silog-red); }
+
+           .filter-trigger i { font-size:12px; }
+
+           .filter-menu { display:none; position:absolute; z-index:30; top:calc(100% - 2px); left:10px; width:255px; padding:12px; background:#fff; border:1px solid #e3e7ed; border-radius:11px; box-shadow:0 12px 30px rgba(28,39,60,.14); text-transform:none; white-space:normal; }
+
+           .filter-menu.open { display:block; }
+
+           .filter-menu.align-right { left:auto; right:10px; }
+
+           .filter-search { display:flex; align-items:center; gap:7px; height:33px; padding:0 9px; border:1px solid #e4e7ec; border-radius:7px; }
+
+           .filter-search i { color:#9aa2ae; font-size:12px; }
+
+           .filter-search input { width:100%; min-width:0; border:0; outline:0; color:#3f4856; font-size:11px; }
+
+           .filter-options { max-height:190px; overflow:auto; margin:9px 0; }
+
+           .filter-option { display:flex; align-items:flex-start; gap:8px; padding:6px 3px; color:#505b6b; font-size:11px; font-weight:500; cursor:pointer; }
+
+           .filter-option input { margin-top:2px; accent-color:var(--silog-red); }
+
+           .filter-option span { overflow-wrap:anywhere; }
+
+           .filter-menu-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top:9px; border-top:1px solid #edf0f3; }
+
+           .filter-menu-actions button { padding:5px 9px; border:1px solid #e3e7ed; border-radius:6px; background:#fff; color:#6e7785; font-size:10px; font-weight:650; }
+
+           .filter-menu-actions .apply-column-filter { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
+
+           .filter-menu-actions .apply-column-filter:hover { background:var(--silog-red-dark); }
+
+           .code-value { display:block; color:#364257; font-size:11px; font-weight:700; line-height:1.4; overflow-wrap:normal; }
+
+           .name-value { display:block; margin-top:4px; color:#909bab; font-size:10px; font-weight:500; line-height:1.4; text-transform:uppercase; overflow-wrap:break-word; }
+
+           .entity-name { color:#526073; font-size:11px; font-weight:650; }
+
+           .amount-value { color:#48546a; font-size:10px; font-weight:600; white-space:nowrap; }
+
+           .available-value { color:#16825d; font-weight:750; }
+
+           .available-value.zero, .available-value.negative { color:#d72736; }
+
+           .utilization-wrapper { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; }
+
+           .utilization-progress { flex:0 1 64px; width:64px; min-width:48px; max-width:64px; height:7px; background:#e8ebef; border-radius:10px; overflow:hidden; }
+
+           .utilization-fill { display:block; height:100%; background:var(--silog-red); border-radius:inherit; }
+
+           .utilization-fill.over-budget { background:#b81520; }
+
+           .utilization-value { flex:0 0 43px; min-width:43px; color:#6c7890; font-size:10px; font-weight:700; text-align:left; white-space:nowrap; }
+
+           .utilization-value.over-budget { color:#c51e2d; }
+
+           .empty-table-row td { padding:52px 20px; text-align:center; }
+
+           .empty-table-content { display:flex; flex-direction:column; align-items:center; gap:10px; color:#969eaa; }
+
+           .empty-table-content i { font-size:26px; }
+
+           .empty-table-content strong { color:#626b79; font-size:13px; }
+
+           .empty-table-content span { font-size:12px; }
+
+
+
+           .detail-card-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 24px; border-top:1px solid #eceef1; }
+
+           .table-information { color:#8c909a; font-size:12px; }
+
+           .pagination-controls { display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
+
+           .page-button { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 9px; background:#fff; border:1px solid #e7e8ed; border-radius:8px; color:#707783; font-size:12px; font-weight:600; cursor:pointer; }
+
+           .page-button:hover:not(:disabled) { background:#fff0f1; border-color:#ffd3d7; color:var(--silog-red); }
+
+           .page-button.active { background:var(--silog-red); border-color:var(--silog-red); color:#fff; }
+
+           .page-button:disabled { opacity:.4; cursor:not-allowed; }
+
+
+
+           @media (max-width:1100px) {
+
+               .budget-table th, .budget-table td { padding-left:5px; padding-right:5px; }
+
+               .amount-value { font-size:9px; }
+
+               .utilization-wrapper { gap:4px; }
+
+               .utilization-progress { flex-basis:58px; max-width:58px; }
+
+               .utilization-value { flex-basis:42px; min-width:42px; }
+
+               .utilization-value { min-width:43px; font-size:8.5px; }
+
+           }
+
+           @media (max-width:900px) {
+
+               .detail-toolbar { flex-wrap:wrap; }
+
+               .detail-search { flex:1 1 280px; width:auto; max-width:none; }
+            .detail-toolbar-actions { margin-left:auto; }
+
+               .budget-table { min-width:900px; }
+
+               .budget-table-wrapper { overflow-x:auto; }
+
+           }
+
+           @media (max-width:650px) {
+
+               .budget-detail-page .dashboard-content { padding-top:23px; }
+
+               .section-title { font-size:21px; }
+
+               .detail-card-header { padding:19px 18px; }
+
+               .detail-heading-row { align-items:flex-start; gap:10px; }
+
+               .detail-card-heading h2 { font-size:18px; }
+
+               .detail-toolbar { flex-direction:column; align-items:stretch; }
+
+               .detail-search { flex:none; width:100%; max-width:100%; }
+           .detail-toolbar-actions { width:100%; justify-content:space-between; }
+
+               .detail-card-footer { flex-direction:column; align-items:flex-start; padding:18px; }
+
+               .pagination-controls { align-self:flex-end; }
+
+               .user-dropdown-toggle { padding:6px; }
+
+           }
+
+       </style>
+
 </head>
 
+
+
 <body class="budget-detail-page">
+
 <div class="dashboard-layout">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-icon">S</div>
-            <div><strong>SILOG</strong><small>Budget Monitoring &amp; Approval</small></div>
-        </div>
 
-        <p class="sidebar-label">MENU UTAMA</p>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('profil_approval') }}" class="nav-item">
-                <i class="bi bi-person-circle"></i> Profil
-            </a>
-            <a href="{{ url_for('dashboard') }}" class="nav-item">
-                <i class="bi bi-grid-1x2"></i> Dashboard
-            </a>
-            <a href="{{ url_for('budget_detail_approval') }}" class="nav-item active" aria-current="page">
-                <i class="bi bi-wallet2"></i> Budget Detail
-            </a>
-            <a href="#" class="nav-item">
-                <i class="bi bi-file-earmark-check"></i> Manajemen Approval
-            </a>
-            <a href="#" class="nav-item">
-                <i class="bi bi-arrow-left-right"></i> Komparasi Data Budgetting vs Tren
-            </a>
-        </nav>
+       <aside class="sidebar">
 
-        <div class="sidebar-bottom">
-            <form action="{{ url_for('logout') }}" method="POST">
-                <button type="submit" class="logout-button">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
+           <div class="sidebar-brand">
 
-    <main class="main-content">
-        <header class="topbar">
-            <div class="dropdown">
-                <button type="button" class="user-profile user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun pengguna">
-                    <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
-                    <div class="user-info">
-                        <strong>{{ username | default('Approval') | title }}</strong>
-                        <small>Approval Budget</small>
-                    </div>
-                    <i class="bi bi-chevron-down dropdown-chevron"></i>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
-                    <div class="dropdown-header">Akun Approval</div>
-                    <a href="{{ url_for('profil_approval') }}" class="dropdown-item"><i class="bi bi-person-circle"></i> Profil</a>
-                    <div class="dropdown-divider"></div>
-                    <form action="{{ url_for('logout') }}" method="POST">
-                        <button type="submit" class="dropdown-item user-logout-item"><i class="bi bi-box-arrow-right"></i> Logout</button>
-                    </form>
-                </div>
-            </div>
-        </header>
+               <div class="brand-icon">S</div>
 
-        <section class="dashboard-content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
-                    </div>
-                {% endfor %}
-            {% endwith %}
+               <div><strong>SILOG</strong><small>Budget Monitoring &amp; Approval</small></div>
 
-            <div class="detail-page-header">
-                <h1 class="section-title"><i class="bi bi-wallet2 section-title-icon"></i> Budget Detail</h1>
-                <p class="section-caption">Rincian anggaran berdasarkan Unit Entity, Biro, Funds Center, dan Commitment Item</p>
-            </div>
+           </div>
 
-            <div class="detail-card">
-                <div class="detail-card-header">
-                    <div class="detail-heading-row">
-                        <div class="detail-card-heading"><h2>Rincian Anggaran</h2></div>
-                        <span class="detail-record-count"><i class="bi bi-list-ul"></i><span id="totalRecordCount">{{ budget_details | length }}</span> Baris Data</span>
-                    </div>
-                    <div class="detail-header-divider"></div>
 
-                    <div class="detail-toolbar">
-                        <label class="detail-search" for="globalSearch">
-                            <i class="bi bi-search"></i>
-                            <input type="search" id="globalSearch" placeholder="Cari Unit Entity, Biro, Funds Center, atau Commitment Item..." autocomplete="off">
-                        </label>
-                        <button type="button" class="btn-reset-filter" id="resetFilters">
-                            <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
-                        </button>
-                    </div>
-                </div>
 
-                <div class="budget-table-wrapper">
-                    <table class="budget-table" id="approvalBudgetTable">
-                        <thead>
-                            <tr>
-                                <th data-filter="entity">
-                                    <div class="th-content">
-                                        <span>UNIT<br>ENTITY</span>
-                                        <button type="button" class="filter-trigger" aria-label="Filter Unit Entity" data-filter-trigger="entity"><i class="bi bi-funnel"></i></button>
-                                    </div>
-                                    <div class="filter-menu" data-filter-menu="entity">
-                                        <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari Unit Entity..."></label>
-                                        <div class="filter-options"></div>
-                                        <div class="filter-menu-actions"><button type="button" data-clear-filter="entity">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="entity">Terapkan</button></div>
-                                    </div>
-                                </th>
-                                <th data-filter="biro">
-                                    <div class="th-content">BIRO
-                                        <button type="button" class="filter-trigger" aria-label="Filter Biro" data-filter-trigger="biro"><i class="bi bi-funnel"></i></button>
-                                    </div>
-                                    <div class="filter-menu" data-filter-menu="biro">
-                                        <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari kode atau nama biro..."></label>
-                                        <div class="filter-options"></div>
-                                        <div class="filter-menu-actions"><button type="button" data-clear-filter="biro">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="biro">Terapkan</button></div>
-                                    </div>
-                                </th>
-                                <th data-filter="funds">
-                                    <div class="th-content">FUNDS CENTER
-                                        <button type="button" class="filter-trigger" aria-label="Filter Funds Center" data-filter-trigger="funds"><i class="bi bi-funnel"></i></button>
-                                    </div>
-                                    <div class="filter-menu" data-filter-menu="funds">
-                                        <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari Funds Center..."></label>
-                                        <div class="filter-options"></div>
-                                        <div class="filter-menu-actions"><button type="button" data-clear-filter="funds">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="funds">Terapkan</button></div>
-                                    </div>
-                                </th>
-                                <th data-filter="ci">
-                                    <div class="th-content">
-                                        <span>COMMITMENT<br>ITEM</span>
-                                        <button type="button" class="filter-trigger" aria-label="Filter Commitment Item" data-filter-trigger="ci"><i class="bi bi-funnel"></i></button>
-                                    </div>
-                                    <div class="filter-menu" data-filter-menu="ci">
-                                        <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari kode atau nama CI..."></label>
-                                        <div class="filter-options"></div>
-                                        <div class="filter-menu-actions"><button type="button" data-clear-filter="ci">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="ci">Terapkan</button></div>
-                                    </div>
-                                </th>
-                                <th class="text-right">CURRENT<br>BUDGET</th>
-                                <th class="text-right">CONSUMABLE<br>BUDGET</th>
-                                <th class="text-right">CONSUMED<br>BUDGET</th>
-                                <th class="text-right">AVAILABLE<br>BUDGET</th>
-                                <th>UTILIZATION</th>
-                            </tr>
-                        </thead>
-                        <tbody id="approvalBudgetBody">
-                            {% for item in budget_details %}
-                            {% set entity_value = item.entity | default('—', true) %}
-                            {% set biro_code = item.biro_code | default('—', true) %}
-                            {% set biro_name = item.biro_name | default('', true) %}
-                            {% set fc_code = item.funds_center | default('—', true) %}
-                            {% set fc_name = '' %}
-                            {% set ci_code = item.commitment_item | default('—', true) %}
-                            {% set ci_name = item.commitment_name | default('', true) %}
-                            {% set current_value = item.current | default(0, true) | float %}
-                            {% set consumable_value = item.consumable | default(0, true) | float %}
-                            {% set consumed_value = item.consumed | default(0, true) | float %}
-                            {% set available_value = item.available | default(0, true) | float %}
-                            {# Hitung ulang dari angka nominal agar nilai tidak terpengaruh pembulatan backend #}
-                            {% set utilization_value = (consumed_value / consumable_value * 100 if consumable_value > 0 else 0) %}
-                            <tr class="budget-data-row"
-                                data-entity="{{ entity_value }}"
-                                data-biro="{{ biro_code }} {{ biro_name }}"
-                                data-funds="{{ fc_code }} {{ fc_name }}"
-                                data-ci="{{ ci_code }} {{ ci_name }}"
-                                data-current="{{ current_value }}"
-                                data-consumable="{{ consumable_value }}"
-                                data-consumed="{{ consumed_value }}"
-                                data-available="{{ available_value }}"
-                                data-utilization="{{ utilization_value }}">
-                                <td><span class="entity-name">{{ entity_value }}</span></td>
-                                <td><span class="code-value">{{ biro_code }}</span><span class="name-value">{{ biro_name if biro_name else '—' }}</span></td>
-                                <td><span class="code-value">{{ fc_code }}</span>{% if fc_name %}<span class="name-value">{{ fc_name }}</span>{% endif %}</td>
-                                <td><span class="code-value">{{ ci_code }}</span><span class="name-value">{{ ci_name if ci_name else '—' }}</span></td>
-                                <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(current_value).replace(",", ".") }}</span></td>
-                                <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumable_value).replace(",", ".") }}</span></td>
-                                <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumed_value).replace(",", ".") }}</span></td>
-                                <td class="text-right"><span class="amount-value available-value {% if available_value <= 0 %}zero{% endif %} {% if available_value < 0 %}negative{% endif %}">Rp{{ "{:,.0f}".format(available_value).replace(",", ".") }}</span></td>
-                                <td>
-                                    {% set bar_width = [0, [100, utilization_value] | min] | max %}
-                                    <div class="utilization-wrapper">
-                                        <div class="utilization-progress" role="progressbar" aria-label="Utilization {{ ci_code }}" aria-valuenow="{{ bar_width }}" aria-valuemin="0" aria-valuemax="100">
-                                            <span class="utilization-fill {% if utilization_value > 100 %}over-budget{% endif %}" style="width:{{ bar_width }}%"></span>
-                                        </div>
-                                        <span class="utilization-value {% if utilization_value > 100 %}over-budget{% endif %}">{{ "{:,.2f}".format(utilization_value).replace(",", "X").replace(".", ",").replace("X", ".") }}%</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            <tr id="emptyTableRow" class="empty-table-row" hidden>
-                                <td colspan="9">
-                                    <div class="empty-table-content">
-                                        <i class="bi bi-inbox"></i>
-                                        <strong id="emptyTableTitle">Data tidak ditemukan</strong>
-                                        <span id="emptyTableMessage">Coba ubah kata kunci atau pilihan filter.</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+           <p class="sidebar-label">MENU UTAMA</p>
 
-                <div class="detail-card-footer">
-                    <div class="table-information" id="tableInformation" aria-live="polite">Memuat data...</div>
-                    <nav class="pagination-controls" id="paginationControls" aria-label="Navigasi halaman Budget Detail"></nav>
-                </div>
-            </div>
-        </section>
-    </main>
+           <nav class="sidebar-nav">
+
+               <a href="{{ url_for('profil_approval') }}" class="nav-item">
+
+                   <i class="bi bi-person-circle"></i> Profil
+
+               </a>
+
+               <a href="{{ url_for('dashboard') }}" class="nav-item">
+
+                   <i class="bi bi-grid-1x2"></i> Dashboard
+
+               </a>
+
+               <a href="{{ url_for('budget_detail_approval') }}" class="nav-item active" aria-current="page">
+
+                   <i class="bi bi-wallet2"></i> Budget Detail
+
+               </a>
+
+               <a href="#" class="nav-item">
+
+                   <i class="bi bi-file-earmark-check"></i> Manajemen Approval
+
+               </a>
+
+               <a href="#" class="nav-item">
+
+                   <i class="bi bi-arrow-left-right"></i> Komparasi Data Budgetting vs Tren
+
+               </a>
+
+           </nav>
+
+
+
+           <div class="sidebar-bottom">
+
+               <form action="{{ url_for('logout') }}" method="POST">
+
+                   <button type="submit" class="logout-button">
+
+                       <i class="bi bi-box-arrow-right"></i> Logout
+
+                   </button>
+
+               </form>
+
+           </div>
+
+       </aside>
+
+
+
+       <main class="main-content">
+
+           <header class="topbar">
+
+               <div class="dropdown">
+
+                   <button type="button" class="user-profile user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun pengguna">
+
+                       <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+
+                       <div class="user-info">
+
+                           <strong>{{ username | default('Approval') | title }}</strong>
+
+                           <small>Approval Budget</small>
+
+                       </div>
+
+                       <i class="bi bi-chevron-down dropdown-chevron"></i>
+
+                   </button>
+
+                   <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+
+                       <div class="dropdown-header">Akun Approval</div>
+
+                       <a href="{{ url_for('profil_approval') }}" class="dropdown-item"><i class="bi bi-person-circle"></i> Profil</a>
+
+                       <div class="dropdown-divider"></div>
+
+                       <form action="{{ url_for('logout') }}" method="POST">
+
+                           <button type="submit" class="dropdown-item user-logout-item"><i class="bi bi-box-arrow-right"></i> Logout</button>
+
+                       </form>
+
+                   </div>
+
+               </div>
+
+           </header>
+
+
+
+           <section class="dashboard-content">
+
+               {% with messages = get_flashed_messages(with_categories=true) %}
+
+                   {% for category, message in messages %}
+
+                       <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+
+                           {{ message }}
+
+                           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+
+                       </div>
+
+                   {% endfor %}
+
+               {% endwith %}
+
+
+
+               <div class="detail-page-header">
+
+                   <h1 class="section-title"><i class="bi bi-wallet2 section-title-icon"></i> Budget Detail</h1>
+
+                   <p class="section-caption">Rincian anggaran berdasarkan Unit Entity, Biro, Funds Center, dan Commitment Item</p>
+
+               </div>
+
+
+
+               <div class="detail-card">
+
+                   <div class="detail-card-header">
+
+                       <div class="detail-heading-row">
+
+                           <div class="detail-card-heading"><h2>Rincian Anggaran</h2></div>
+
+                           <span class="detail-record-count"><i class="bi bi-list-ul"></i><span id="totalRecordCount">{{ budget_details | length }}</span> Baris Data</span>
+
+                       </div>
+
+                       <div class="detail-header-divider"></div>
+
+
+
+                       <div class="detail-toolbar">
+
+                           <label class="detail-search" for="globalSearch">
+
+                               <i class="bi bi-search"></i>
+
+                               <input type="search" id="globalSearch" placeholder="Cari Unit Entity, Biro, Funds Center, atau Commitment Item..." autocomplete="off">
+
+                           </label>
+                           <div class="detail-toolbar-actions">
+                               <label class="page-size-control" for="pageSizeSelect">
+                                   <span>Tampilkan</span>
+                                   <select id="pageSizeSelect" aria-label="Jumlah data per halaman">
+                                       <option value="5" selected>5</option>
+                                       <option value="10">10</option>
+                                       <option value="20">20</option>
+                                       <option value="30">30</option>
+                                       <option value="40">40</option>
+                                       <option value="50">50</option>
+                                   </select>
+                                   <span>Data</span>
+                               </label>
+                               <button type="button" class="btn-reset-filter" id="resetFilters">
+                                   <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
+                               </button>
+                           </div>
+
+
+                       </div>
+
+                   </div>
+
+
+
+                   <div class="budget-table-wrapper">
+
+                       <table class="budget-table" id="approvalBudgetTable">
+
+                           <thead>
+
+                               <tr>
+
+                                   <th data-filter="entity">
+
+                                       <div class="th-content">UNIT ENTITY
+
+                                           <button type="button" class="filter-trigger" aria-label="Filter Unit Entity" data-filter-trigger="entity"><i class="bi bi-funnel"></i></button>
+
+                                       </div>
+
+                                       <div class="filter-menu" data-filter-menu="entity">
+
+                                           <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari Unit Entity..."></label>
+
+                                           <div class="filter-options"></div>
+
+                                           <div class="filter-menu-actions"><button type="button" data-clear-filter="entity">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="entity">Terapkan</button></div>
+
+                                       </div>
+
+                                   </th>
+
+                                   <th data-filter="biro">
+
+                                       <div class="th-content">BIRO
+
+                                           <button type="button" class="filter-trigger" aria-label="Filter Biro" data-filter-trigger="biro"><i class="bi bi-funnel"></i></button>
+
+                                       </div>
+
+                                       <div class="filter-menu" data-filter-menu="biro">
+
+                                           <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari kode atau nama biro..."></label>
+
+                                           <div class="filter-options"></div>
+
+                                           <div class="filter-menu-actions"><button type="button" data-clear-filter="biro">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="biro">Terapkan</button></div>
+
+                                       </div>
+
+                                   </th>
+
+                                   <th data-filter="funds">
+
+                                       <div class="th-content">FUNDS CENTER
+
+                                           <button type="button" class="filter-trigger" aria-label="Filter Funds Center" data-filter-trigger="funds"><i class="bi bi-funnel"></i></button>
+
+                                       </div>
+
+                                       <div class="filter-menu" data-filter-menu="funds">
+
+                                           <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari Funds Center..."></label>
+
+                                           <div class="filter-options"></div>
+
+                                           <div class="filter-menu-actions"><button type="button" data-clear-filter="funds">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="funds">Terapkan</button></div>
+
+                                       </div>
+
+                                   </th>
+
+                                   <th data-filter="ci">
+
+                                       <div class="th-content">COMMITMENT ITEM
+
+                                           <button type="button" class="filter-trigger" aria-label="Filter Commitment Item" data-filter-trigger="ci"><i class="bi bi-funnel"></i></button>
+
+                                       </div>
+
+                                       <div class="filter-menu" data-filter-menu="ci">
+
+                                           <label class="filter-search"><i class="bi bi-search"></i><input type="search" placeholder="Cari kode atau nama CI..."></label>
+
+                                           <div class="filter-options"></div>
+
+                                           <div class="filter-menu-actions"><button type="button" data-clear-filter="ci">Clear</button><button type="button" class="apply-column-filter" data-apply-filter="ci">Terapkan</button></div>
+
+                                       </div>
+
+                                   </th>
+
+                                   <th class="text-right">CURRENT<br>BUDGET</th>
+
+                                   <th class="text-right">CONSUMABLE<br>BUDGET</th>
+
+                                   <th class="text-right">CONSUMED<br>BUDGET</th>
+
+                                   <th class="text-right">AVAILABLE<br>BUDGET</th>
+
+                                   <th>UTILIZATION</th>
+
+                               </tr>
+
+                           </thead>
+
+                           <tbody id="approvalBudgetBody">
+
+                               {% for item in budget_details %}
+
+                               {% set entity_value = item.entity | default('—', true) %}
+
+                               {% set biro_code = item.biro_code | default('—', true) %}
+
+                               {% set biro_name = item.biro_name | default('', true) %}
+
+                               {% set fc_code = item.funds_center | default('—', true) %}
+
+                               {% set fc_name = '' %}
+
+                               {% set ci_code = item.commitment_item | default('—', true) %}
+
+                               {% set ci_name = item.commitment_name | default('', true) %}
+
+                               {% set current_value = item.current | default(0, true) | float %}
+
+                               {% set consumable_value = item.consumable | default(0, true) | float %}
+
+                               {% set consumed_value = item.consumed | default(0, true) | float %}
+
+                               {% set available_value = item.available | default(0, true) | float %}
+
+                               {# Hitung ulang dari angka nominal agar nilai tidak terpengaruh pembulatan backend #}
+
+                               {% set utilization_value = (consumed_value / consumable_value * 100 if consumable_value > 0 else 0) %}
+
+                               <tr class="budget-data-row"
+
+                                   data-entity="{{ entity_value }}"
+
+                                   data-biro="{{ biro_code }} {{ biro_name }}"
+
+                                   data-funds="{{ fc_code }} {{ fc_name }}"
+
+                                   data-ci="{{ ci_code }} {{ ci_name }}"
+
+                                   data-current="{{ current_value }}"
+
+                                   data-consumable="{{ consumable_value }}"
+
+                                   data-consumed="{{ consumed_value }}"
+
+                                   data-available="{{ available_value }}"
+
+                                   data-utilization="{{ utilization_value }}">
+
+                                   <td><span class="entity-name">{{ entity_value }}</span></td>
+
+                                   <td><span class="code-value">{{ biro_code }}</span><span class="name-value">{{ biro_name if biro_name else '—' }}</span></td>
+
+                                   <td><span class="code-value">{{ fc_code }}</span>{% if fc_name %}<span class="name-value">{{ fc_name }}</span>{% endif %}</td>
+
+                                   <td><span class="code-value">{{ ci_code }}</span><span class="name-value">{{ ci_name if ci_name else '—' }}</span></td>
+
+                                   <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(current_value).replace(",", ".") }}</span></td>
+
+                                   <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumable_value).replace(",", ".") }}</span></td>
+
+                                   <td class="text-right"><span class="amount-value">Rp{{ "{:,.0f}".format(consumed_value).replace(",", ".") }}</span></td>
+
+                                   <td class="text-right"><span class="amount-value available-value {% if available_value <= 0 %}zero{% endif %} {% if available_value < 0 %}negative{% endif %}">Rp{{ "{:,.0f}".format(available_value).replace(",", ".") }}</span></td>
+
+                                   <td>
+
+                                       {% set bar_width = [0, [100, utilization_value] | min] | max %}
+
+                                       <div class="utilization-wrapper">
+
+                                           <div class="utilization-progress" role="progressbar" aria-label="Utilization {{ ci_code }}" aria-valuenow="{{ bar_width }}" aria-valuemin="0" aria-valuemax="100">
+
+                                               <span class="utilization-fill {% if utilization_value > 100 %}over-budget{% endif %}" style="width:{{ bar_width }}%"></span>
+
+                                           </div>
+
+                                           <span class="utilization-value {% if utilization_value > 100 %}over-budget{% endif %}">{{ "{:,.2f}".format(utilization_value).replace(",", "X").replace(".", ",").replace("X", ".") }}%</span>
+
+                                       </div>
+
+                                   </td>
+
+                               </tr>
+
+                               {% endfor %}
+
+                               <tr id="emptyTableRow" class="empty-table-row" hidden>
+
+                                   <td colspan="9">
+
+                                       <div class="empty-table-content">
+
+                                           <i class="bi bi-inbox"></i>
+
+                                           <strong id="emptyTableTitle">Data tidak ditemukan</strong>
+
+                                           <span id="emptyTableMessage">Coba ubah kata kunci atau pilihan filter.</span>
+
+                                       </div>
+
+                                   </td>
+
+                               </tr>
+
+                           </tbody>
+
+                       </table>
+
+                   </div>
+
+
+
+                   <div class="detail-card-footer">
+
+                       <div class="table-information" id="tableInformation" aria-live="polite">Memuat data...</div>
+
+                       <nav class="pagination-controls" id="paginationControls" aria-label="Navigasi halaman Budget Detail"></nav>
+
+                   </div>
+
+               </div>
+
+           </section>
+
+       </main>
+
 </div>
 
+
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+
 "use strict";
 
+
+
 const body = document.getElementById("approvalBudgetBody");
+
 const rows = Array.from(body.querySelectorAll(".budget-data-row"));
-const pageSize = 5;
+
+let pageSize = 5;
+
 let currentPage = 1;
+
 let sortKey = "utilization";
+
 let sortDirection = "desc";
+
 const searchInput = document.getElementById("globalSearch");
+
 const activeFilters = { entity: new Set(), biro: new Set(), funds: new Set(), ci: new Set() };
+
 const pendingFilters = { entity: new Set(), biro: new Set(), funds: new Set(), ci: new Set() };
 
+
+
 const filterLabels = {
-    entity: row => row.dataset.entity || "—",
-    biro: row => row.dataset.biro || "—",
-    funds: row => row.dataset.funds || "—",
-    ci: row => row.dataset.ci || "—"
+
+       entity: row => row.dataset.entity || "—",
+
+       biro: row => row.dataset.biro || "—",
+
+       funds: row => row.dataset.funds || "—",
+
+       ci: row => row.dataset.ci || "—"
+
 };
 
-function norm(value) {
-    return String(value ?? "").toLocaleLowerCase("id-ID").trim();
-}
-function uniqueValues(key) {
-    return [...new Set(rows.map(row => filterLabels[key](row).trim()))]
-        .filter(Boolean).sort((a,b) => a.localeCompare(b, "id-ID", {numeric:true}));
-}
-function buildFilterOptions(key) {
-    const menu = document.querySelector(`[data-filter-menu="${key}"]`);
-    const container = menu.querySelector(".filter-options");
-    container.replaceChildren();
 
-    uniqueValues(key).forEach((value, index) => {
-        const label = document.createElement("label");
-        label.className = "filter-option";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = value;
-        checkbox.checked = pendingFilters[key].has(value);
-        const text = document.createElement("span");
-        text.textContent = value;
-        checkbox.addEventListener("change", () => {
-            if (checkbox.checked) pendingFilters[key].add(value);
-            else pendingFilters[key].delete(value);
-        });
-        label.append(checkbox, text);
-        container.appendChild(label);
-    });
+
+function norm(value) {
+
+       return String(value ?? "").toLocaleLowerCase("id-ID").trim();
+
 }
+
+function uniqueValues(key) {
+
+       return [...new Set(rows.map(row => filterLabels[key](row).trim()))]
+
+           .filter(Boolean).sort((a,b) => a.localeCompare(b, "id-ID", {numeric:true}));
+
+}
+
+function buildFilterOptions(key) {
+
+       const menu = document.querySelector(`[data-filter-menu="${key}"]`);
+
+       const container = menu.querySelector(".filter-options");
+
+       container.replaceChildren();
+
+
+
+       uniqueValues(key).forEach((value, index) => {
+
+           const label = document.createElement("label");
+
+           label.className = "filter-option";
+
+           const checkbox = document.createElement("input");
+
+           checkbox.type = "checkbox";
+
+           checkbox.value = value;
+
+           checkbox.checked = pendingFilters[key].has(value);
+
+           const text = document.createElement("span");
+
+           text.textContent = value;
+
+           checkbox.addEventListener("change", () => {
+
+               if (checkbox.checked) pendingFilters[key].add(value);
+
+               else pendingFilters[key].delete(value);
+
+           });
+
+           label.append(checkbox, text);
+
+           container.appendChild(label);
+
+       });
+
+}
+
 ["entity","biro","funds","ci"].forEach(buildFilterOptions);
 
+
+
 document.querySelectorAll("[data-filter-trigger]").forEach(button => {
-    button.addEventListener("click", event => {
-        event.stopPropagation();
-        const key = button.dataset.filterTrigger;
-        const menu = document.querySelector(`[data-filter-menu="${key}"]`);
-        const willOpen = !menu.classList.contains("open");
-        document.querySelectorAll(".filter-menu").forEach(item => item.classList.remove("open"));
-        if (willOpen) {
-            pendingFilters[key] = new Set(activeFilters[key]);
-            buildFilterOptions(key);
-            menu.classList.add("open");
-            button.classList.add("active");
-            menu.querySelector(".filter-search input").value = "";
-            menu.querySelectorAll(".filter-option").forEach(option => option.hidden = false);
-        } else {
-            button.classList.remove("active");
-        }
-    });
+
+       button.addEventListener("click", event => {
+
+           event.stopPropagation();
+
+           const key = button.dataset.filterTrigger;
+
+           const menu = document.querySelector(`[data-filter-menu="${key}"]`);
+
+           const willOpen = !menu.classList.contains("open");
+
+           document.querySelectorAll(".filter-menu").forEach(item => item.classList.remove("open"));
+
+           if (willOpen) {
+
+               pendingFilters[key] = new Set(activeFilters[key]);
+
+               buildFilterOptions(key);
+
+               menu.classList.add("open");
+
+               button.classList.add("active");
+
+               menu.querySelector(".filter-search input").value = "";
+
+               menu.querySelectorAll(".filter-option").forEach(option => option.hidden = false);
+
+           } else {
+
+               button.classList.remove("active");
+
+           }
+
+       });
+
 });
+
 document.addEventListener("click", event => {
-    if (!event.target.closest(".filter-menu") && !event.target.closest("[data-filter-trigger]")) {
-        document.querySelectorAll(".filter-menu").forEach(menu => menu.classList.remove("open"));
-        document.querySelectorAll(".filter-trigger").forEach(button => button.classList.remove("active"));
-    }
+
+       if (!event.target.closest(".filter-menu") && !event.target.closest("[data-filter-trigger]")) {
+
+           document.querySelectorAll(".filter-menu").forEach(menu => menu.classList.remove("open"));
+
+           document.querySelectorAll(".filter-trigger").forEach(button => button.classList.remove("active"));
+
+       }
+
 });
+
 document.querySelectorAll(".filter-search input").forEach(input => {
-    input.addEventListener("input", () => {
-        const keyword = norm(input.value);
-        input.closest(".filter-menu").querySelectorAll(".filter-option").forEach(option => {
-            option.hidden = !norm(option.textContent).includes(keyword);
-        });
-    });
+
+       input.addEventListener("input", () => {
+
+           const keyword = norm(input.value);
+
+           input.closest(".filter-menu").querySelectorAll(".filter-option").forEach(option => {
+
+               option.hidden = !norm(option.textContent).includes(keyword);
+
+           });
+
+       });
+
 });
+
 document.querySelectorAll("[data-clear-filter]").forEach(button => {
-    button.addEventListener("click", () => {
-        const key = button.dataset.clearFilter;
-        pendingFilters[key].clear();
-        buildFilterOptions(key);
-    });
+
+       button.addEventListener("click", () => {
+
+           const key = button.dataset.clearFilter;
+
+           pendingFilters[key].clear();
+
+           buildFilterOptions(key);
+
+       });
+
 });
+
 document.querySelectorAll("[data-apply-filter]").forEach(button => {
-    button.addEventListener("click", () => {
-        const key = button.dataset.applyFilter;
-        activeFilters[key] = new Set(pendingFilters[key]);
-        document.querySelector(`[data-filter-menu="${key}"]`).classList.remove("open");
-        document.querySelector(`[data-filter-trigger="${key}"]`).classList.toggle("active", activeFilters[key].size > 0);
-        currentPage = 1;
-        renderTable();
-    });
+
+       button.addEventListener("click", () => {
+
+           const key = button.dataset.applyFilter;
+
+           activeFilters[key] = new Set(pendingFilters[key]);
+
+           document.querySelector(`[data-filter-menu="${key}"]`).classList.remove("open");
+
+           document.querySelector(`[data-filter-trigger="${key}"]`).classList.toggle("active", activeFilters[key].size > 0);
+
+           currentPage = 1;
+
+           renderTable();
+
+       });
+
 });
+
+
 
 function getFilteredRows() {
-    const keyword = norm(searchInput.value);
-    return rows.filter(row => {
-        const searchable = [
-            row.dataset.entity, row.dataset.biro, row.dataset.funds, row.dataset.ci
-        ].map(norm).join(" ");
-        if (keyword && !searchable.includes(keyword)) return false;
-        for (const key of Object.keys(activeFilters)) {
-            if (activeFilters[key].size && !activeFilters[key].has(filterLabels[key](row).trim())) return false;
-        }
-        return true;
-    }).sort((a,b) => {
-        let result;
-        if (["entity","biro","funds","ci"].includes(sortKey)) {
-            result = norm(filterLabels[sortKey](a)).localeCompare(norm(filterLabels[sortKey](b)), "id-ID", {numeric:true});
-        } else {
-            result = Number(a.dataset[sortKey] || 0) - Number(b.dataset[sortKey] || 0);
-        }
-        return sortDirection === "asc" ? result : -result;
-    });
+
+       const keyword = norm(searchInput.value);
+
+       return rows.filter(row => {
+
+           const searchable = [
+
+               row.dataset.entity, row.dataset.biro, row.dataset.funds, row.dataset.ci
+
+           ].map(norm).join(" ");
+
+           if (keyword && !searchable.includes(keyword)) return false;
+
+           for (const key of Object.keys(activeFilters)) {
+
+               if (activeFilters[key].size && !activeFilters[key].has(filterLabels[key](row).trim())) return false;
+
+           }
+
+           return true;
+
+       }).sort((a,b) => {
+
+           let result;
+
+           if (["entity","biro","funds","ci"].includes(sortKey)) {
+
+               result = norm(filterLabels[sortKey](a)).localeCompare(norm(filterLabels[sortKey](b)), "id-ID", {numeric:true});
+
+           } else {
+
+               result = Number(a.dataset[sortKey] || 0) - Number(b.dataset[sortKey] || 0);
+
+           }
+
+           return sortDirection === "asc" ? result : -result;
+
+       });
+
 }
+
 function makePageButton(label, page, options = {}) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "page-button" + (options.active ? " active" : "");
-    button.textContent = label;
-    button.disabled = Boolean(options.disabled);
-    button.addEventListener("click", () => {
-        if (button.disabled || page === currentPage) return;
-        currentPage = page;
-        renderTable();
-    });
-    return button;
+
+       const button = document.createElement("button");
+
+       button.type = "button";
+
+       button.className = "page-button" + (options.active ? " active" : "");
+
+       button.textContent = label;
+
+       button.disabled = Boolean(options.disabled);
+
+       button.addEventListener("click", () => {
+
+           if (button.disabled || page === currentPage) return;
+
+           currentPage = page;
+
+           renderTable();
+
+       });
+
+       return button;
+
 }
+
 function renderPagination(totalPages) {
-    const nav = document.getElementById("paginationControls");
-    nav.replaceChildren();
-    if (totalPages <= 1) return;
-    nav.appendChild(makePageButton("‹", currentPage - 1, {disabled: currentPage === 1}));
-    const count = Math.min(5, totalPages);
-    let start = Math.max(1, currentPage - Math.floor(count / 2));
-    start = Math.min(start, totalPages - count + 1);
-    for (let page = start; page < start + count; page++) {
-        nav.appendChild(makePageButton(String(page), page, {active: page === currentPage}));
-    }
-    nav.appendChild(makePageButton("›", currentPage + 1, {disabled: currentPage === totalPages}));
+
+       const nav = document.getElementById("paginationControls");
+
+       nav.replaceChildren();
+
+       if (totalPages <= 1) return;
+
+       nav.appendChild(makePageButton("‹", currentPage - 1, {disabled: currentPage === 1}));
+
+       const count = Math.min(5, totalPages);
+
+       let start = Math.max(1, currentPage - Math.floor(count / 2));
+
+       start = Math.min(start, totalPages - count + 1);
+
+       for (let page = start; page < start + count; page++) {
+
+           nav.appendChild(makePageButton(String(page), page, {active: page === currentPage}));
+
+       }
+
+       nav.appendChild(makePageButton("›", currentPage + 1, {disabled: currentPage === totalPages}));
+
 }
+
 function renderTable() {
-    const filtered = getFilteredRows();
-    const total = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    currentPage = Math.min(Math.max(1, currentPage), totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const visible = new Set(filtered.slice(start, start + pageSize));
 
-    rows.forEach(row => row.hidden = !visible.has(row));
-    const empty = document.getElementById("emptyTableRow");
-    empty.hidden = total !== 0;
-    document.getElementById("totalRecordCount").textContent = total.toLocaleString("id-ID");
+       const filtered = getFilteredRows();
 
-    const info = document.getElementById("tableInformation");
-    if (!total) {
-        info.textContent = "Tidak ada data yang ditampilkan";
-    } else {
-        info.textContent = `Menampilkan ${start + 1}–${Math.min(start + pageSize, total)} dari ${total.toLocaleString("id-ID")} data`;
-    }
-    renderPagination(totalPages);
+       const total = filtered.length;
+
+       const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+       currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+       const start = (currentPage - 1) * pageSize;
+
+       const visible = new Set(filtered.slice(start, start + pageSize));
+
+
+
+       rows.forEach(row => row.hidden = !visible.has(row));
+
+       const empty = document.getElementById("emptyTableRow");
+
+       empty.hidden = total !== 0;
+
+       document.getElementById("totalRecordCount").textContent = total.toLocaleString("id-ID");
+
+
+
+       const info = document.getElementById("tableInformation");
+
+       if (!total) {
+
+           info.textContent = "Tidak ada data yang ditampilkan";
+
+       } else {
+
+           info.textContent = `Menampilkan ${start + 1}–${Math.min(start + pageSize, total)} dari ${total.toLocaleString("id-ID")} data`;
+
+       }
+
+       renderPagination(totalPages);
+
 }
+
 searchInput.addEventListener("input", () => { currentPage = 1; renderTable(); });
 
-document.getElementById("resetFilters").addEventListener("click", () => {
-    searchInput.value = "";
-    Object.keys(activeFilters).forEach(key => {
-        activeFilters[key].clear();
-        pendingFilters[key].clear();
-        document.querySelector(`[data-filter-trigger="${key}"]`).classList.remove("active");
-        buildFilterOptions(key);
-    });
-    document.querySelectorAll(".filter-menu").forEach(menu => menu.classList.remove("open"));
+const pageSizeSelect = document.getElementById("pageSizeSelect");
+pageSizeSelect.addEventListener("change", () => {
+    pageSize = Number(pageSizeSelect.value) || 5;
     currentPage = 1;
     renderTable();
 });
 
-document.querySelectorAll(".budget-table thead th").forEach((th, index) => {
-    const keyByIndex = ["entity","biro","funds","ci", "current","consumable","consumed","available","utilization"];
-    const key = keyByIndex[index];
-    const title = th.querySelector(".th-content");
-    if (!title || ["entity","biro","funds","ci"].includes(key)) return;
-    title.style.cursor = "pointer";
-    title.title = "Klik untuk mengurutkan";
-    title.addEventListener("click", () => {
-        if (sortKey === key) sortDirection = sortDirection === "asc" ? "desc" : "asc";
-        else { sortKey = key; sortDirection = "desc"; }
-        currentPage = 1;
-        renderTable();
-    });
+
+
+
+document.getElementById("resetFilters").addEventListener("click", () => {
+
+       searchInput.value = "";
+
+       Object.keys(activeFilters).forEach(key => {
+
+           activeFilters[key].clear();
+
+           pendingFilters[key].clear();
+
+           document.querySelector(`[data-filter-trigger="${key}"]`).classList.remove("active");
+
+           buildFilterOptions(key);
+
+       });
+
+       document.querySelectorAll(".filter-menu").forEach(menu => menu.classList.remove("open"));
+
+       currentPage = 1;
+
+       renderTable();
+
 });
+
+
+
+document.querySelectorAll(".budget-table thead th").forEach((th, index) => {
+
+       const keyByIndex = ["entity","biro","funds","ci", "current","consumable","consumed","available","utilization"];
+
+       const key = keyByIndex[index];
+
+       const title = th.querySelector(".th-content");
+
+       if (!title || ["entity","biro","funds","ci"].includes(key)) return;
+
+       title.style.cursor = "pointer";
+
+       title.title = "Klik untuk mengurutkan";
+
+       title.addEventListener("click", () => {
+
+           if (sortKey === key) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+
+           else { sortKey = key; sortDirection = "desc"; }
+
+           currentPage = 1;
+
+           renderTable();
+
+       });
+
+});
+
 renderTable();
+
 </script>
+
 </body>
+
 </html>
