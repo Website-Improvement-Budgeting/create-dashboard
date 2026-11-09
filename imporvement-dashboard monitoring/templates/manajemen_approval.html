@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ approval_csrf_token }}">
+<title>Manajemen Approval | SILOG</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+:root{--red:#ed1c24;--red-dark:#cf171e;--bg:#f3f4f6;--line:#e7e8ed;--muted:#858b96;--ink:#252525}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.ma-layout{min-height:100vh;display:flex}
+.ma-main{flex:1;min-width:0}
+.ma-topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 34px}
+.ma-user{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit}
+.ma-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#fff0f1;color:var(--red);font-size:18px}
+.ma-user small{display:block;color:var(--muted);font-size:11px}
+.ma-content{max-width:1600px;margin:auto;padding:34px 38px 48px}
+.ma-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:22px}
+.ma-heading h1{font-size:25px;font-weight:750;margin:0;display:flex;align-items:center;gap:11px}
+.ma-heading h1 i{color:var(--red)}
+.ma-heading p{font-size:12px;color:var(--muted);margin:7px 0 0}
+.ma-refresh{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:650;color:#444}
+.ma-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.ma-kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:17px 18px;box-shadow:0 2px 8px rgba(20,20,20,.025)}
+.ma-kpi .label{font-size:11px;color:var(--muted);font-weight:650}
+.ma-kpi .value{font-size:26px;font-weight:750;margin-top:7px;letter-spacing:-.5px}
+.ma-kpi .sub{font-size:10px;color:var(--muted);margin-top:3px}
+.ma-panel{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ma-panel-head{padding:19px 21px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ma-panel-head h2{font-size:15px;font-weight:750;margin:0}
+.ma-panel-head p{font-size:11px;color:var(--muted);margin:4px 0 0}
+.ma-filters{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.ma-search-wrap{flex:1;max-width:420px;min-width:220px}
+.ma-status-filter{width:min(100%,660px);display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 3px 12px rgba(20,30,50,.035)}
+.ma-status-filter label{font-size:12px;color:#8791a1;font-weight:750;margin:0}
+.ma-status-controls{display:grid;grid-template-columns:minmax(180px,1fr) 180px 105px;gap:12px;align-items:center}
+.ma-status-controls .ma-control{height:50px;border-radius:13px;padding:0 18px;font-size:14px;font-weight:600;color:#394252}
+.ma-status-controls .ma-btn{height:50px;border-radius:13px;font-size:14px}
+.ma-reset-btn{height:50px;border:1px solid #dfe4ec;background:#fff;color:#697586;border-radius:13px;padding:0 16px;font-size:14px;font-weight:650}
+.ma-reset-btn:hover{background:#f8f9fb;border-color:#cfd6e0}
+.ma-control{height:39px;border:1px solid #dfe2e8;border-radius:8px;padding:0 11px;font-size:12px;background:#fff;width:100%;outline:none}
+.ma-control:focus{border-color:#ed777b;box-shadow:0 0 0 3px #ed1c2412}
+.ma-btn{height:39px;border:0;border-radius:8px;padding:0 15px;background:var(--red);color:#fff;font-size:12px;font-weight:700}
+.ma-btn:hover{background:var(--red-dark)}
+.ma-table-wrap{overflow:auto}
+.ma-table{width:100%;border-collapse:collapse;min-width:1050px}
+.ma-table th{background:#fafafa;color:#737985;font-size:10px;letter-spacing:.35px;text-transform:uppercase;font-weight:750;padding:13px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+.ma-table td{padding:14px;border-bottom:1px solid #f0f1f4;font-size:11px;vertical-align:middle}
+.ma-table tr:hover td{background:#fffafa}
+.ma-id{font-weight:750;color:#30333a}
+.ma-muted{color:var(--muted);font-size:10px;margin-top:4px}
+.ma-money{font-weight:750;white-space:nowrap}
+.ma-pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.p-pending{background:#fff4df;color:#9b6500}.p-approved{background:#e8f6ef;color:#18764e}.p-rejected{background:#ffedef;color:#bd2935}
+.p-insufficient{background:#ffedef;color:#bd2935}.p-sufficient{background:#e8f6ef;color:#18764e}.p-review{background:#eef1f5;color:#626b78}
+.ma-detail-btn{border:1px solid #f0b7ba;background:#fff;color:var(--red-dark);border-radius:7px;padding:7px 11px;font-size:10px;font-weight:750}
+.ma-detail-btn:hover{background:#fff0f1}
+.ma-footer{padding:13px 19px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px}
+.ma-pages{display:flex;gap:6px}
+.ma-page-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 10px;font-size:11px}
+.ma-page-btn:disabled{opacity:.4}
+.ma-empty,.ma-loading{padding:42px 15px;text-align:center;color:var(--muted);font-size:12px}
+.ma-modal-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:5px}
+.ma-modal-value{font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.ma-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px 20px}
+.ma-detail-section{border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.ma-detail-section h3{font-size:12px;font-weight:750;margin:0 0 15px}
+.ma-detail-section h3 i{color:var(--red);margin-right:6px}
+.ma-detail-item{min-width:0}
+.ma-alert{padding:11px 13px;border-radius:9px;background:#fff5e7;color:#855800;font-size:11px;line-height:1.5}
+@media(max-width:1000px){.ma-content{padding:26px 22px}.ma-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-filters{align-items:stretch;flex-direction:column}.ma-search-wrap{max-width:none}.ma-status-filter{width:100%}.ma-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.ma-content{padding:22px 14px}.ma-heading{flex-direction:column}.ma-kpis{gap:9px}.ma-kpi{padding:13px}.ma-kpi .value{font-size:21px}.ma-status-controls{grid-template-columns:1fr}.ma-status-controls .ma-btn,.ma-reset-btn{width:100%}.ma-detail-grid{grid-template-columns:1fr}.ma-topbar{padding:0 16px}}
+
+/* === VISUAL ALIGNMENT: PROFIL / RIWAYAT PENGAJUAN === */
+.ma-topbar{
+  height:80px;
+  padding:0 34px;
+  justify-content:flex-end;
+}
+.ma-topbar .dropdown{position:relative}
+.ma-topbar .user-profile{
+  display:flex;align-items:center;gap:11px;border:0;background:transparent;
+  padding:8px 10px;border-radius:12px;color:#252a34;text-align:left;
+}
+.ma-topbar .user-profile:hover{background:#f8f8fa}
+.ma-topbar .user-avatar{
+  width:40px;height:40px;flex:0 0 40px;border-radius:50%;
+  display:grid;place-items:center;background:#fff0f1;color:var(--red);font-size:18px;
+}
+.ma-topbar .user-info strong{display:block;font-size:12px;font-weight:800;line-height:1.35}
+.ma-topbar .user-info small{display:block;color:#8992a1;font-size:10px;margin-top:2px}
+.ma-topbar .dropdown-chevron{font-size:11px;color:#8992a1;margin-left:5px}
+.ma-topbar .user-dropdown-menu{
+  min-width:220px;padding:9px;border:1px solid #e7eaf0;border-radius:13px;
+  box-shadow:0 12px 30px rgba(25,35,55,.12);margin-top:8px;
+}
+.ma-topbar .user-dropdown-menu .dropdown-header{font-size:11px;color:#8992a1;font-weight:700;padding:9px 10px}
+.ma-topbar .user-dropdown-menu .dropdown-item{font-size:12px;padding:10px;border-radius:8px}
+.ma-topbar .user-dropdown-menu .dropdown-item i{margin-right:8px}
+.ma-topbar .user-dropdown-menu .dropdown-item.logout{color:var(--red);font-weight:700}
+.ma-content{padding:30px 38px 48px}
+.ma-heading{margin-bottom:20px}
+.ma-kpi{
+  min-height:102px;padding:17px 18px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;border-radius:14px;
+}
+.ma-kpi-copy{min-width:0}
+.ma-kpi .label{font-size:11px;color:#8791a1;font-weight:750;letter-spacing:.1px}
+.ma-kpi .value{font-size:27px;font-weight:780;margin-top:6px;line-height:1.1;letter-spacing:-.5px}
+.ma-kpi .sub{font-size:10px;color:#8b93a1;margin-top:6px}
+.ma-kpi-icon{
+  width:44px;height:44px;flex:0 0 44px;border-radius:13px;
+  display:grid;place-items:center;font-size:19px;
+}
+.ma-kpi-icon.total{background:#fff0f1;color:#ed1c24}
+.ma-kpi-icon.pending{background:#fff6e7;color:#c88918}
+.ma-kpi-icon.approved{background:#eaf7f1;color:#16845e}
+.ma-kpi-icon.rejected{background:#f1f3f6;color:#8791a1}
+.ma-panel{border-radius:15px}
+.ma-panel-head{padding:19px 22px}
+.ma-panel-head h2{font-size:17px}
+.ma-panel-head p{font-size:11px}
+.ma-filters{padding:18px 22px;gap:20px}
+.ma-search-wrap{max-width:420px}
+.ma-search-wrap .ma-control{height:46px;border-radius:10px;padding:0 14px;font-size:12px}
+.ma-status-filter{width:min(100%,660px);padding:14px 16px;border-radius:16px;gap:9px}
+.ma-status-filter label{font-size:11px}
+.ma-status-controls{grid-template-columns:minmax(180px,1fr) 150px 90px;gap:10px}
+.ma-status-controls .ma-control{height:46px;border:1px solid #dfe4ec;border-radius:12px;
+  background-color:#fff;box-shadow:none;appearance:none;-webkit-appearance:none;
+  padding:0 38px 0 15px;font-size:13px;font-weight:600;color:#394252;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+.ma-status-controls .ma-control:focus{border-color:#ed777b;box-shadow:0 0 0 3px #ed1c2412}
+.ma-status-controls .ma-btn{height:46px;border-radius:12px;font-size:13px}
+.ma-reset-btn{height:46px;border-radius:12px;font-size:13px}
+.ma-table th{padding:14px 13px;font-size:10px}
+.ma-table td{padding:15px 13px}
+.ma-empty,.ma-loading{padding:66px 15px;min-height:160px}
+.ma-empty i{color:#b9c2d0}
+.ma-footer{padding:15px 20px}
+@media(max-width:1000px){
+ .ma-content{padding:26px 22px}
+ .ma-filters{align-items:stretch;flex-direction:column}
+ .ma-search-wrap{max-width:none}
+ .ma-status-filter{width:100%}
+}
+@media(max-width:600px){
+ .ma-content{padding:22px 14px}
+ .ma-topbar{padding:0 12px}
+ .ma-status-controls{grid-template-columns:1fr}
+ .ma-status-controls .ma-btn,.ma-reset-btn{width:100%}
+ .ma-detail-grid{grid-template-columns:1fr}
+}
+
+
+
+/* Filter toolbar disamakan dengan halaman Riwayat Pengajuan */
+.ma-filters.ma-history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.ma-history-search{display:flex;align-items:center;gap:10px;flex:0 1 430px;min-width:0;max-width:430px;height:39px;padding:0 13px;border:1px solid #e4e6eb;border-radius:9px;background:#fff}
+.ma-history-search:focus-within{border-color:var(--red);box-shadow:0 0 0 3px rgba(237,28,36,.08)}
+.ma-history-search>i{color:#9a9da7;font-size:15px}
+.ma-history-search .ma-search-input{width:100%;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;box-shadow:none;color:#30323a;font-size:12px}
+.ma-history-search .ma-search-input::placeholder{color:#a0a4ae}
+.ma-history-filterbar{display:flex;align-items:flex-end;gap:11px;flex-shrink:0;margin-left:auto;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px rgba(0,0,0,.02)}
+.ma-history-filtergroup{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ma-history-filtergroup label{margin:0;color:#858f9c;font-size:10px;font-weight:700}
+.ma-history-select{width:175px;height:36px;padding:6px 27px 6px 10px;border:1px solid #dfe5ec;border-radius:8px;background:#fff;color:#394250;font-size:11px;font-weight:600}
+.ma-history-apply,.ma-history-reset{height:36px;border-radius:8px;font-size:11px}
+.ma-history-apply{padding:0 15px}.ma-history-reset{padding:0 13px}
+.ma-pages{display:flex;align-items:center;gap:7px}
+.ma-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 10px;border:1px solid #e3e8ee;border-radius:8px;background:#fff;color:#556171;font-size:11px}
+.ma-page-btn:hover:not(:disabled){color:var(--red);border-color:#efbec2}
+.ma-page-btn.active{background:#fff0f1;border-color:#ffd3d7;color:var(--red);font-weight:750}
+.ma-page-btn:disabled{pointer-events:none;opacity:.4}
+.ma-page-ellipsis{display:inline-flex;align-items:center;justify-content:center;min-width:18px;color:#8992a1;font-size:12px}
+@media(max-width:1150px){.ma-filters.ma-history-toolbar{flex-wrap:wrap}.ma-history-search{flex:1 1 260px;max-width:none}.ma-history-filterbar{margin-left:auto}}
+@media(max-width:1000px){.ma-filters.ma-history-toolbar{align-items:stretch;flex-direction:column}.ma-history-search{width:100%;max-width:none;flex:none}.ma-history-filterbar{width:max-content;max-width:100%;margin-left:auto}}
+@media(max-width:600px){.ma-history-filterbar{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:10px}.ma-history-filtergroup{grid-column:1/-1}.ma-history-select{width:100%}.ma-history-apply,.ma-history-reset{width:100%}.ma-footer{flex-direction:column;align-items:flex-start;gap:12px}.ma-pages{align-self:flex-end;flex-wrap:wrap}}
+
+
+/* === PENYEMPURNAAN FILTER STATUS: MENGIKUTI REFERENSI KEDUA === */
+.ma-filters.ma-history-toolbar .ma-history-filterbar{
+  display:flex;
+  align-items:flex-end;
+  gap:11px;
+  padding:12px 14px;
+  border:1px solid #e3e8f0;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 3px 12px rgba(20,30,50,.025);
+}
+.ma-filters.ma-history-toolbar .ma-history-filtergroup{
+  gap:6px;
+}
+.ma-filters.ma-history-toolbar .ma-history-filtergroup label{
+  color:#8791a1;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:750;
+}
+.ma-filters.ma-history-toolbar select.ma-history-select{
+  display:block;
+  width:175px;
+  min-width:175px;
+  height:36px;
+  padding:6px 27px 6px 10px;
+  border:1px solid #dce3ed;
+  border-radius:13px;
+  background-color:#fff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%233f4b5e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  background-size:14px;
+  appearance:none;
+  -webkit-appearance:none;
+  box-shadow:none;
+  color:#394252;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:600;
+  line-height:1.2;
+}
+.ma-filters.ma-history-toolbar select.ma-history-select:focus{
+  border-color:#d5dce7;
+  outline:0;
+  box-shadow:0 0 0 3px rgba(237,28,36,.055);
+}
+.ma-filters.ma-history-toolbar .ma-history-apply{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:auto;
+  min-width:0;
+  height:36px;
+  padding:0 15px;
+  border:1px solid var(--red);
+  border-radius:13px;
+  background:var(--red);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+}
+.ma-filters.ma-history-toolbar .ma-history-reset{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:auto;
+  min-width:0;
+  height:36px;
+  padding:0 13px;
+  border:1px solid #dce3ed;
+  border-radius:13px;
+  background:#fff;
+  color:#697586;
+  font-size:11px;
+  font-weight:650;
+}
+.ma-filters.ma-history-toolbar .ma-history-reset:hover{
+  background:#f8f9fb;
+  border-color:#cfd8e5;
+}
+@media(max-width:1000px){
+  .ma-filters.ma-history-toolbar .ma-history-filterbar{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+@media(max-width:650px){
+  .ma-filters.ma-history-toolbar .ma-history-filterbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:10px;
+    padding:12px 14px;
+  }
+  .ma-filters.ma-history-toolbar .ma-history-filtergroup{
+    grid-column:1/-1;
+  }
+  .ma-filters.ma-history-toolbar select.ma-history-select{
+    width:100%;
+    min-width:0;
+  }
+  .ma-filters.ma-history-toolbar .ma-history-apply,
+  .ma-filters.ma-history-toolbar .ma-history-reset{
+    width:100%;
+    min-width:0;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="dashboard-layout">
+<aside class="sidebar">
+  <div class="sidebar-brand"><div class="brand-icon">S</div><div><strong>SILOG</strong><small>Budget Monitoring &amp; Approval</small></div></div>
+  <p class="sidebar-label">MENU UTAMA</p>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('profil_approval') }}" class="nav-item"><i class="bi bi-person-circle"></i>Profil</a>
+    <a href="{{ url_for('dashboard') }}" class="nav-item"><i class="bi bi-grid-1x2"></i>Dashboard Budgetting</a>
+    <a href="{{ url_for('budget_detail_approval') }}" class="nav-item"><i class="bi bi-wallet2"></i>Budget Detail</a>
+    <a href="{{ url_for('manajemen_approval') }}" class="nav-item active" aria-current="page"><i class="bi bi-clipboard-check"></i>Manajemen Approval</a>
+    <a href="/komparasi-data" class="nav-item"><i class="bi bi-arrow-left-right"></i>Komparasi Data Budgetting &amp; Data Tren</a>
+  </nav>
+  <div class="sidebar-bottom"><form method="POST" action="{{ url_for('logout') }}"><button type="submit" class="logout-button"><i class="bi bi-box-arrow-right"></i>Logout</button></form></div>
+</aside>
+<main class="main-content ma-main">
+<header class="topbar ma-topbar">
+  <div class="dropdown">
+    <button type="button" class="user-profile user-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun pengguna">
+      <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+      <div class="user-info">
+        <strong>{{ username|upper }}</strong>
+        <small>Approval</small>
+      </div>
+      <i class="bi bi-chevron-down dropdown-chevron"></i>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+      <div class="dropdown-header">Akun Approval</div>
+      <a href="{{ url_for('profil_approval') }}" class="dropdown-item"><i class="bi bi-person-circle"></i>Profil</a>
+      <div class="dropdown-divider"></div>
+      <form method="POST" action="{{ url_for('logout') }}">
+        <button type="submit" class="dropdown-item logout"><i class="bi bi-box-arrow-right"></i>Logout</button>
+      </form>
+    </div>
+  </div>
+</header>
+<section class="ma-content">
+  <div class="ma-heading">
+    <div><h1><i class="bi bi-clipboard-check"></i>Manajemen Approval</h1><p>Kelola & tinjau pengajuan tambahan anggaran dari seluruh Unit Entity & Biro</p></div>
+    <button class="ma-refresh" id="refreshBtn"><i class="bi bi-arrow-clockwise me-1"></i> Refresh Data</button>
+  </div>
+  <div class="ma-kpis">
+    <div class="ma-kpi">
+      <div class="ma-kpi-copy"><div class="label">TOTAL PENGAJUAN</div><div class="value" id="kpiTotal">—</div><div class="sub">Seluruh pengajuan tercatat</div></div>
+      <div class="ma-kpi-icon total"><i class="bi bi-files"></i></div>
+    </div>
+    <div class="ma-kpi">
+      <div class="ma-kpi-copy"><div class="label">MENUNGGU APPROVAL</div><div class="value" id="kpiPending" style="color:#bd7b00">—</div><div class="sub">Menunggu keputusan</div></div>
+      <div class="ma-kpi-icon pending"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+    <div class="ma-kpi">
+      <div class="ma-kpi-copy"><div class="label">DISETUJUI</div><div class="value" id="kpiApproved" style="color:#18805d">—</div><div class="sub">Pengajuan disetujui</div></div>
+      <div class="ma-kpi-icon approved"><i class="bi bi-check-circle"></i></div>
+    </div>
+    <div class="ma-kpi">
+      <div class="ma-kpi-copy"><div class="label">DITOLAK</div><div class="value" id="kpiRejected" style="color:#d92c3a">—</div><div class="sub">Pengajuan ditolak</div></div>
+      <div class="ma-kpi-icon rejected"><i class="bi bi-x-circle"></i></div>
+    </div>
+  </div>
+  <div class="ma-panel">
+    <div class="ma-panel-head"><div><h2>Daftar Pengajuan Budget</h2><p>Seluruh pengajuan tambahan anggaran dari Pengusul</p></div><span class="ma-pill p-pending" id="pendingTag">Memuat...</span></div>
+    <div class="ma-filters ma-history-toolbar">
+      <label class="ma-search-wrap ma-history-search" for="searchInput">
+        <i class="bi bi-search"></i>
+        <input class="ma-search-input" id="searchInput" type="search"
+               placeholder="Cari Request ID, PIC, Pengusul, Commitment Item..." autocomplete="off">
+      </label>
+      <div class="ma-history-filterbar">
+        <div class="ma-history-filtergroup">
+          <label for="statusFilter">Status Pengajuan</label>
+          <select class="ma-control ma-history-select" id="statusFilter">
+            <option value="ALL">Semua Status</option>
+            <option value="Pending">Menunggu Approval</option>
+            <option value="Approved">Disetujui</option>
+            <option value="Rejected">Ditolak</option>
+          </select>
+        </div>
+        <button class="ma-btn ma-history-apply" id="applyFilter" type="button"><i class="bi bi-funnel"></i> Terapkan</button>
+        <button class="ma-reset-btn ma-history-reset" id="resetFilter" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="ma-table-wrap">
+      <table class="ma-table">
+        <thead><tr><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Request Status</th><th>Aksi</th></tr></thead>
+        <tbody id="requestRows"><tr><td colspan="9" class="ma-loading"><i class="bi bi-arrow-repeat me-1"></i>Memuat pengajuan...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="ma-footer">
+      <span id="pageInfo">—</span>
+      <div class="ma-pages" id="paginationControls" aria-label="Navigasi halaman"></div>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><div><h5 class="modal-title fw-bold">Detail Pengajuan <span id="detailRequestId"></span></h5><div class="text-secondary small">Informasi pengusul, mapping, dan kondisi anggaran saat ini</div></div><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="detailBody"><div class="ma-loading">Memuat detail...</div></div>
+  <div class="modal-footer"><button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button></div>
+ </div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+let currentPage = 1, totalPages = 1;
+const money = v => v === null || v === undefined || v === '' ? '—' : new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v));
+const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const statusClass = s => s==='Pending'?'p-pending':s==='Approved'?'p-approved':s==='Rejected'?'p-rejected':'p-review';
+const budgetClass = s => s==='Insufficient'?'p-insufficient':s==='Sufficient'?'p-sufficient':'p-review';
+async function loadSummary(){
+ const r=await fetch('/api/approval/summary'); const d=await r.json(); if(!r.ok) throw Error(d.error||'Gagal memuat ringkasan');
+ document.getElementById('kpiTotal').textContent=d.total_requests;
+ document.getElementById('kpiPending').textContent=d.pending;
+ document.getElementById('kpiApproved').textContent=d.approved;
+ document.getElementById('kpiRejected').textContent=d.rejected;
+ document.getElementById('pendingTag').textContent=d.pending+' Pending';
+}
+async function loadRequests(){
+ const params=new URLSearchParams({page:currentPage,per_page:10,status:document.getElementById('statusFilter').value,q:document.getElementById('searchInput').value.trim()});
+ const body=document.getElementById('requestRows'); body.innerHTML='<tr><td colspan="9" class="ma-loading">Memuat pengajuan...</td></tr>';
+ const r=await fetch('/api/approval/requests?'+params); const d=await r.json();
+ if(!r.ok){body.innerHTML=`<tr><td colspan="9" class="ma-empty">${esc(d.error||'Gagal memuat data')}</td></tr>`;return;}
+ totalPages=Math.max(1,d.pagination.pages);
+ if(!d.items.length){body.innerHTML='<tr><td colspan="9" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
+ else body.innerHTML=d.items.map(x=>`<tr>
+ <td><div class="ma-id">REQ-${String(x.request_id).padStart(6,'0')}</div><div class="ma-muted">${esc(x.request_date?.slice(0,10))}</div></td>
+ <td><strong>${esc(x.requester_username)}</strong><div class="ma-muted">${esc(x.pic)}</div></td>
+ <td>${esc(x.unit_entity)}<div class="ma-muted">${esc(x.biro_name)}</div></td>
+ <td>${esc(x.commitment_item_code)}<div class="ma-muted">${esc(x.commitment_item_name)}</div></td>
+ <td class="ma-money">${money(x.request_amount)}</td><td class="ma-money">${money(x.shortage_amount)}</td>
+ <td><span class="ma-pill ${budgetClass(x.budget_status)}">${esc(x.budget_status)}</span></td>
+ <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
+ <td><button class="ma-detail-btn" onclick="openDetail(${x.request_id})"><i class="bi bi-eye me-1"></i>Detail</button></td>
+ </tr>`).join('');
+ const totalItems = Number(d.pagination.total || 0);
+ const perPage = Number(d.pagination.per_page || 10);
+ const firstItem = totalItems ? ((currentPage - 1) * perPage) + 1 : 0;
+ const lastItem = Math.min(currentPage * perPage, totalItems);
+ document.getElementById('pageInfo').textContent = `Menampilkan ${firstItem}–${lastItem} dari ${totalItems} data`;
+ renderPagination();
+}
+function renderPagination(){
+ const container=document.getElementById('paginationControls');
+ if(!container) return;
+ let html=`<button class="ma-page-btn" type="button" data-page="${currentPage-1}" aria-label="Halaman sebelumnya" ${currentPage<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+ let pages=[];
+ if(totalPages<=5) pages=Array.from({length:totalPages},(_,i)=>i+1);
+ else if(currentPage<=3) pages=[1,2,3,4,5];
+ else if(currentPage>=totalPages-2) pages=[totalPages-4,totalPages-3,totalPages-2,totalPages-1,totalPages];
+ else pages=[currentPage-2,currentPage-1,currentPage,currentPage+1,currentPage+2];
+ if(pages[0]>1) html+='<span class="ma-page-ellipsis">…</span>';
+ pages.forEach(page=>{html+=`<button class="ma-page-btn ${page===currentPage?'active':''}" type="button" data-page="${page}" ${page===currentPage?'aria-current="page"':''}>${page}</button>`;});
+ if(pages[pages.length-1]<totalPages) html+='<span class="ma-page-ellipsis">…</span>';
+ html+=`<button class="ma-page-btn" type="button" data-page="${currentPage+1}" aria-label="Halaman berikutnya" ${currentPage>=totalPages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+ container.innerHTML=html;
+ container.querySelectorAll('button[data-page]').forEach(button=>button.addEventListener('click',()=>{
+   const next=Number(button.dataset.page);
+   if(next>=1 && next<=totalPages && next!==currentPage){currentPage=next;loadRequests();}
+ }));
+}
+function field(label,value){return `<div class="ma-detail-item"><div class="ma-modal-label">${esc(label)}</div><div class="ma-modal-value">${esc(value)}</div></div>`;}
+async function openDetail(id){
+ const modal=new bootstrap.Modal(document.getElementById('detailModal'));
+ document.getElementById('detailRequestId').textContent='REQ-'+String(id).padStart(6,'0');
+ document.getElementById('detailBody').innerHTML='<div class="ma-loading">Memuat detail...</div>';modal.show();
+ const r=await fetch('/api/approval/requests/'+id);const d=await r.json();
+ if(!r.ok){document.getElementById('detailBody').innerHTML=`<div class="alert alert-danger">${esc(d.error)}</div>`;return;}
+ const x=d.request;
+ document.getElementById('detailBody').innerHTML=`
+ <div class="ma-detail-section"><h3><i class="bi bi-person"></i>Informasi Pengajuan</h3><div class="ma-detail-grid">
+ ${field('Tanggal Pengajuan',x.request_date?.slice(0,19).replace('T',' '))}${field('Pengusul',x.requester_username)}${field('PIC',x.pic)}
+ ${field('Unit Entity',x.unit_entity)}${field('Biro',x.biro_name)}${field('Request Status',x.request_status)}
+ ${field('Request Amount',money(x.request_amount))}${field('Budget Status',x.budget_status)}${field('Budget Scope',x.budget_scope)}
+ <div class="ma-detail-item" style="grid-column:1/-1">${field('Keterangan',x.request_description)}</div></div></div>
+ <div class="ma-detail-section"><h3><i class="bi bi-diagram-3"></i>Informasi Mapping</h3><div class="ma-detail-grid">
+ ${field('Input Profit Center',x.input_profit_center)}${field('Mapped Fund',x.fund_code)}${field('Input Cost Center',x.input_cost_center)}
+ ${field('Mapped Funds Center',x.funds_center_code)}${field('Input GL Account',x.input_gl_account)}${field('Commitment Item',`${x.commitment_item_code||'—'} · ${x.commitment_item_name||''}`)}
+ </div></div>
+ <div class="ma-detail-section"><h3><i class="bi bi-wallet2"></i>Kondisi Anggaran</h3><div class="ma-detail-grid">
+ ${field('Available saat Pengajuan',money(x.available_amount_snapshot))}${field('Shortage Amount',money(x.shortage_amount))}${field('Approval Hold saat Pengajuan',money(x.approval_hold_amount_snapshot))}
+ ${field('Current Budget saat ini',money(x.current_budget))}${field('Consumable Budget saat ini',money(x.consumable_budget))}${field('Consumed Budget saat ini',money(x.consumed_budget))}
+ ${field('Available Budget saat ini',money(x.current_available_amount))}
+ </div></div>
+ <div class="ma-detail-section"><h3><i class="bi bi-clock-history"></i>Riwayat Keputusan</h3>${d.decisions.length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Tanggal</th><th>Approval</th><th>Keputusan</th><th>Nominal</th><th>Instruksi</th></tr></thead><tbody>${d.decisions.map(a=>`<tr><td>${esc(a.decision_date?.slice(0,19).replace('T',' '))}</td><td>${esc(a.approval_username)}</td><td>${esc(a.decision)}</td><td>${money(a.approved_amount)}</td><td>${esc(a.instruction)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-secondary small">Belum ada keputusan.</div>'}</div>
+ <div class="ma-detail-section"><h3><i class="bi bi-arrow-left-right"></i>Riwayat Alokasi</h3>${d.allocations.length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Jenis</th><th>Sumber Budget ID</th><th>Target Budget ID</th><th>Nominal</th><th>Instruksi</th></tr></thead><tbody>${d.allocations.map(a=>`<tr><td>${esc(a.allocation_type)}</td><td>${esc(a.source_budget_id)}</td><td>${esc(a.target_budget_id)}</td><td>${money(a.amount)}</td><td>${esc(a.instruction)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-secondary small">Belum ada aktivitas alokasi.</div>'}</div>
+ <div class="ma-alert"><strong>Mode tahap 1:</strong> Halaman ini masih bersifat monitoring/read-only. Tombol keputusan akan ditambahkan setelah alur Open Budget dan Reallocation diuji agar tidak mengubah angka anggaran secara keliru.</div>`;
+}
+document.getElementById('applyFilter').addEventListener('click',()=>{currentPage=1;loadRequests();});
+document.getElementById('resetFilter').addEventListener('click',()=>{
+ document.getElementById('statusFilter').value='ALL';
+ document.getElementById('searchInput').value='';
+ currentPage=1;
+ loadRequests();
+});
+document.getElementById('refreshBtn').addEventListener('click',async()=>{try{await loadSummary();await loadRequests();}catch(e){alert(e.message);}});
+
+
+document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){currentPage=1;loadRequests();}});
+(async()=>{try{await loadSummary();await loadRequests();}catch(e){document.getElementById('requestRows').innerHTML=`<tr><td colspan="9" class="ma-empty">${esc(e.message)}</td></tr>`;}})();
+</script>
+</body>
+</html>

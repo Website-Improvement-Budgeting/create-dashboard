@@ -3010,6 +3010,311 @@ def ubah_password_approval():
         if conn is not None:
             conn.close()
 
+
+
+# ============================================================
+# MANAJEMEN APPROVAL - REQUEST QUEUE (READ ONLY PHASE)
+# Menggunakan struktur aktual schema_silog.sql.
+# Keputusan dan mutasi budget akan ditambahkan setelah uji queue.
+# ============================================================
+
+def approval_page_guard():
+    if not session.get("user_id"):
+        flash("Silakan login terlebih dahulu.", "danger")
+        return redirect(url_for("login"))
+    if session.get("role") != "Approval":
+        flash("Akses hanya untuk pengguna Approval.", "danger")
+        return redirect(url_for("dashboard"))
+    return None
+
+
+def approval_api_guard():
+    if not session.get("user_id"):
+        return jsonify({"error": "Silakan login terlebih dahulu."}), 401
+    if session.get("role") != "Approval":
+        return jsonify({"error": "Akses hanya untuk pengguna Approval."}), 403
+    return None
+
+
+@app.route("/manajemen-approval", methods=["GET"])
+def manajemen_approval():
+    guard = approval_page_guard()
+    if guard is not None:
+        return guard
+    return render_template(
+        "manajemen_approval.html",
+        username=session.get("username", ""),
+        approval_csrf_token=get_approval_csrf_token()
+    )
+
+
+@app.route("/api/approval/summary", methods=["GET"])
+def api_approval_summary():
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT
+                    COUNT(*)::integer AS total_requests,
+                    COUNT(*) FILTER (WHERE request_status = 'Pending')::integer AS pending,
+                    COUNT(*) FILTER (WHERE request_status = 'Approved')::integer AS approved,
+                    COUNT(*) FILTER (WHERE request_status = 'Rejected')::integer AS rejected,
+                    COALESCE(SUM(request_amount) FILTER (
+                        WHERE request_status = 'Pending'
+                    ), 0) AS pending_amount
+                FROM public.budget_request
+            """)
+            row = cursor.fetchone()
+        return jsonify({
+            key: (str(value) if isinstance(value, Decimal) else value)
+            for key, value in row.items()
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat ringkasan Manajemen Approval")
+        return jsonify({"error": "Ringkasan pengajuan gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests", methods=["GET"])
+def api_approval_requests():
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    status = request.args.get("status", "ALL").strip()
+    entity_id = request.args.get("entity_id", "").strip()
+    biro_id = request.args.get("biro_id", "").strip()
+    keyword = request.args.get("q", "").strip()
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = request.args.get("per_page", 10, type=int)
+    per_page = min(max(per_page, 10), 50)
+
+    allowed_status = {"ALL", "Pending", "Approved", "Rejected"}
+    if status not in allowed_status:
+        return jsonify({"error": "Filter status tidak valid."}), 400
+    if entity_id and not entity_id.isdigit():
+        return jsonify({"error": "Filter Unit Entity tidak valid."}), 400
+    if biro_id and not biro_id.isdigit():
+        return jsonify({"error": "Filter Biro tidak valid."}), 400
+    if len(keyword) > 150:
+        return jsonify({"error": "Kata pencarian terlalu panjang."}), 400
+
+    where = ["1=1"]
+    params = []
+    if status != "ALL":
+        where.append("br.request_status = %s")
+        params.append(status)
+    if entity_id:
+        where.append("br.entity_id = %s")
+        params.append(int(entity_id))
+    if biro_id:
+        where.append("u.biro_id = %s")
+        params.append(int(biro_id))
+    if keyword:
+        where.append("""(
+            CAST(br.request_id AS TEXT) ILIKE %s
+            OR COALESCE(br.pic, '') ILIKE %s
+            OR COALESCE(br.request_description, '') ILIKE %s
+            OR COALESCE(u.username, '') ILIKE %s
+            OR COALESCE(ci.commitment_item_code, '') ILIKE %s
+            OR COALESCE(ci.commitment_item_name, '') ILIKE %s
+        )""")
+        params.extend([f"%{keyword}%"] * 6)
+
+    where_sql = " AND ".join(where)
+    offset = (page - 1) * per_page
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"""
+                SELECT COUNT(*)::integer AS total
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = br.mapped_commitment_item_id
+                WHERE {where_sql}
+            """, params)
+            total = cursor.fetchone()["total"]
+
+            cursor.execute(f"""
+                SELECT
+                    br.request_id,
+                    br.entity_id,
+                    u.biro_id,
+                    br.request_date,
+                    br.pic,
+                    br.request_amount,
+                    br.request_description,
+                    br.available_amount_snapshot,
+                    br.shortage_amount,
+                    br.approval_hold_amount_snapshot,
+                    br.mapping_status,
+                    br.budget_status,
+                    br.request_status,
+                    br.budget_scope,
+                    u.username AS requester_username,
+                    ue.unit_entity,
+                    b.biro_name,
+                    f.fund_code,
+                    fc.funds_center_code,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.biro b
+                    ON b.biro_id = u.biro_id
+                   AND b.entity_id = br.entity_id
+                LEFT JOIN public.fund f ON f.fund_id = br.mapped_fund_id
+                LEFT JOIN public.funds_center fc
+                    ON fc.funds_center_id = br.mapped_funds_center_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = br.mapped_commitment_item_id
+                WHERE {where_sql}
+                ORDER BY
+                    CASE br.request_status WHEN 'Pending' THEN 0
+                         WHEN 'Approved' THEN 1 ELSE 2 END,
+                    br.request_date ASC,
+                    br.request_id ASC
+                LIMIT %s OFFSET %s
+            """, params + [per_page, offset])
+            rows = cursor.fetchall()
+
+        items = []
+        for row in rows:
+            item = {}
+            for key, value in row.items():
+                if isinstance(value, Decimal):
+                    item[key] = str(value)
+                elif hasattr(value, "isoformat"):
+                    item[key] = value.isoformat()
+                else:
+                    item[key] = value
+            items.append(item)
+
+        return jsonify({
+            "items": items,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": (total + per_page - 1) // per_page
+            }
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat daftar pengajuan Approval")
+        return jsonify({"error": "Daftar pengajuan gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests/<int:request_id>", methods=["GET"])
+def api_approval_request_detail(request_id):
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT
+                    br.*,
+                    u.username AS requester_username,
+                    ue.unit_entity,
+                    b.biro_name,
+                    f.fund_code,
+                    fc.funds_center_code,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    bm.current_budget,
+                    bm.consumable_budget,
+                    bm.consumed_budget,
+                    bm.available_amount AS current_available_amount,
+                    bm.budget_scope AS current_budget_scope
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.biro b
+                    ON b.biro_id = u.biro_id
+                   AND b.entity_id = br.entity_id
+                LEFT JOIN public.fund f ON f.fund_id = br.mapped_fund_id
+                LEFT JOIN public.funds_center fc
+                    ON fc.funds_center_id = br.mapped_funds_center_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = br.mapped_commitment_item_id
+                LEFT JOIN public.budget_master bm ON bm.budget_id = br.budget_id
+                WHERE br.request_id = %s
+                LIMIT 1
+            """, (request_id,))
+            row = cursor.fetchone()
+            if row is None:
+                return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
+
+            cursor.execute("""
+                SELECT
+                    ad.approval_id,
+                    ad.decision,
+                    ad.instruction,
+                    ad.approved_amount,
+                    ad.decision_date,
+                    u.username AS approval_username
+                FROM public.approval_decision ad
+                JOIN public.users u ON u.user_id = ad.approval_user_id
+                WHERE ad.request_id = %s
+                ORDER BY ad.decision_date DESC, ad.approval_id DESC
+            """, (request_id,))
+            decisions = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT
+                    ba.allocation_id,
+                    ba.allocation_type,
+                    ba.amount,
+                    ba.instruction,
+                    ba.source_budget_id,
+                    ba.target_budget_id,
+                    ba.approved_by
+                FROM public.budget_allocation ba
+                WHERE ba.request_id = %s
+                ORDER BY ba.allocation_id
+            """, (request_id,))
+            allocations = cursor.fetchall()
+
+        def serialize(row_data):
+            result = {}
+            for key, value in row_data.items():
+                if isinstance(value, Decimal):
+                    result[key] = str(value)
+                elif hasattr(value, "isoformat"):
+                    result[key] = value.isoformat()
+                else:
+                    result[key] = value
+            return result
+
+        return jsonify({
+            "request": serialize(row),
+            "decisions": [serialize(x) for x in decisions],
+            "allocations": [serialize(x) for x in allocations]
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat detail pengajuan Approval")
+        return jsonify({"error": "Detail pengajuan gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
 # menjalankan aplikasi flask lokal
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
