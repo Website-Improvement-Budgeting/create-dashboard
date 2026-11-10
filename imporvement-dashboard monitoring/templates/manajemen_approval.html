@@ -350,6 +350,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
   .ma-budget-grid .ma-modal-value{font-size:12px}
 }
 
+/* Manual multi-row reallocation */
+.ma-reallocation-select,.ma-reallocation-amount{min-width:110px;font-size:11px!important;border-radius:7px!important}
+.ma-reallocation-select{min-width:240px}
+.ma-reallocation-code{font-size:11px;font-weight:700;color:#394252;white-space:nowrap}
+.ma-reallocation-remove{border:1px solid #f0c5c8;background:#fff;color:#c81921;border-radius:7px;padding:5px 8px}
 </style>
 </head>
 <body>
@@ -411,7 +416,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
     </div>
   </div>
   <div class="ma-panel">
-    <div class="ma-panel-head"><div><h2>Daftar Pengajuan Budget</h2><p>Seluruh pengajuan tambahan anggaran dari Pengusul</p></div><span class="ma-pill p-pending" id="pendingTag">Memuat...</span></div>
+    <div class="ma-panel-head"><div><h2>Daftar Pengajuan Budget</h2><p>Seluruh pengajuan tambahan anggaran dari Pengusul</p></div><div class="d-flex align-items-center gap-2"><a class="ma-detail-btn" href="/approval/export-budget.xlsx"><i class="bi bi-file-earmark-excel me-1"></i>Export Excel</a><span class="ma-pill p-pending" id="pendingTag">Memuat...</span></div></div>
     <div class="ma-filters ma-history-toolbar">
       <label class="ma-search-wrap ma-history-search" for="searchInput">
         <i class="bi bi-search"></i>
@@ -486,7 +491,7 @@ async function loadRequests(){
  <td><span class="ma-pill ${budgetClass(x.budget_status)}">${esc(x.budget_status)}</span></td>
  <td>${x.approval_decision ? `<span class="ma-pill p-approved">${esc(x.approval_decision)}</span>` : '<span class="ma-muted">—</span>'}</td>
  <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
- <td><button class="ma-detail-btn" onclick="openDetail(${x.request_id})"><i class="bi bi-eye me-1"></i>Detail</button></td>
+ <td><div class="d-flex gap-1"><button class="ma-detail-btn" onclick="openDetail(${x.request_id})"><i class="bi bi-eye me-1"></i>Detail</button><a class="ma-detail-btn" href="/approval/export-budget/${x.request_id}.xlsx" title="Download Excel pengajuan"><i class="bi bi-download"></i></a></div></td>
  </tr>`).join('');
  const totalItems = Number(d.pagination.total || 0);
  const perPage = Number(d.pagination.per_page || 10);
@@ -581,9 +586,23 @@ async function openDetail(id){
     </div>
     <div id="approvalActionForm" class="ma-action-form">
       <div id="reallocationSourceWrap" class="mb-3" style="display:none">
-        <label class="form-label" for="reallocationSource">Sumber Budget</label>
-        <select id="reallocationSource" class="form-select"><option value="">Memuat sumber budget...</option></select>
-        <div class="ma-action-note">Setiap sumber menampilkan kode dan nama Commitment Item, Funds Center, scope, serta Available Budget. Hanya budget dengan Unit Entity, Biro, tahun, dan scope yang sama yang ditampilkan.</div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4"><label class="form-label" for="reallocationDate">Date Realokasi</label><input id="reallocationDate" class="form-control" type="date"></div>
+          <div class="col-md-8"><div class="ma-action-note mt-4">Pilih Unit Entity dan Biro terlebih dahulu, lalu pilih sumber budget. Fund, Funds Center, dan Commitment Item akan terisi otomatis dari data master dan mengikuti aturan Budget Scope.</div></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-2" style="min-width:1180px">
+            <thead class="table-light"><tr><th>Unit Entity</th><th>Biro</th><th style="width:22%">Sumber Budget</th><th>Fund</th><th>Funds Center</th><th>Commitment Item</th><th>Available</th><th style="width:145px">Amount (-)</th><th></th></tr></thead>
+            <tbody id="reallocationRows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="ma-action-cancel" onclick="addReallocationRow()"><i class="bi bi-plus-circle me-1"></i>Tambah Baris</button>
+        <div class="d-flex flex-wrap justify-content-between gap-2 mt-3 p-3" style="background:#fff;border:1px solid #f0d5d7;border-radius:9px">
+          <div><small class="text-secondary d-block">Total Pengurangan (-)</small><strong id="reallocationTotalMinus">Rp0</strong></div>
+          <div><small class="text-secondary d-block">Penambahan (+) Budget Tujuan</small><strong id="reallocationTotalPlus">Rp0</strong></div>
+          <div><small class="text-secondary d-block">Shortage Budget</small><strong id="reallocationShortage">Rp0</strong></div>
+        </div>
+        <div class="ma-action-note mt-2">Pilih Unit Entity dan Biro untuk menentukan sumber secara manual. Kandidat yang tampil sudah difilter sesuai Budget Scope: FC_CI wajib sama Funds Center dan Commitment Item; CI_ONLY wajib sama Commitment Item. Nominal otomatis mengikuti sisa shortage (maksimal Available sumber), tetapi dapat diedit dan dibagi ke beberapa baris. Total pengurangan (-) akan ditambahkan (+) ke budget tujuan dan tidak boleh melebihi shortage.</div>
       </div>
       <div class="row g-3">
         <div class="col-md-6"><label class="form-label" for="approvalAmount">Nominal yang Dibuka</label><input id="approvalAmount" class="form-control" type="number" min="0.01" step="0.01" placeholder="Nominal terisi otomatis"><div class="ma-action-note" id="approvalAmountHint"></div></div>
@@ -598,6 +617,7 @@ async function openDetail(id){
 let activeApprovalRequestId = null;
 let activeApprovalAction = null;
 let activeApprovalRequest = null;
+let reallocationSourceItems = [];
 
 async function submitDirectApprove(){
  const instruction=document.getElementById('directApproveInstruction')?.value.trim()||'';
@@ -647,6 +667,12 @@ function showApprovalAction(mode){
  document.getElementById('approvalAmount').value=suggestedAmount>0?String(suggestedAmount):'';
  document.getElementById('approvalInstruction').value='';
  sourceWrap.style.display=mode==='reallocate'?'block':'none';
+  const amountWrap=document.getElementById('approvalAmount')?.closest('.col-md-6');
+  if(amountWrap) amountWrap.style.display=mode==='open'?'':'none';
+  if(mode==='reallocate'){
+    const dateInput=document.getElementById('reallocationDate');
+    if(dateInput && !dateInput.value) dateInput.value=new Date().toISOString().slice(0,10);
+  }
  hint.textContent=mode==='open'
    ? `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Maksimal dapat dibuka dari Approval Hold: ${money(hold)}.`
    : `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Realokasi dibatasi oleh Available Budget sumber dan shortage target.`;
@@ -657,48 +683,140 @@ function hideApprovalAction(){
  if(form) form.classList.remove('active');
  activeApprovalAction=null;
 }
+
+function getReallocationShortage(){
+ return Math.max(0,Number(activeApprovalRequest?.request_amount||0)-Number(activeApprovalRequest?.current_available_amount||0));
+}
+function getRemainingReallocationShortage(excludeInput=null){
+ const body=document.getElementById('reallocationRows');
+ if(!body) return getReallocationShortage();
+ const used=[...body.querySelectorAll('[data-role="amount"]')]
+   .filter(input=>input!==excludeInput)
+   .reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0);
+ return Math.max(0,getReallocationShortage()-used);
+}
+function getReallocationEntities(){
+ const map=new Map();
+ reallocationSourceItems.forEach(x=>map.set(String(x.entity_id),x.unit_entity||`Entity ${x.entity_id}`));
+ return [...map.entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+}
+function getReallocationBiRows(entityId){
+ return reallocationSourceItems.filter(x=>String(x.entity_id)===String(entityId))
+   .reduce((arr,x)=>{if(!arr.some(y=>String(y.id)===String(x.biro_id)))arr.push({id:x.biro_id,label:x.biro_name||x.biro_code||`Biro ${x.biro_id}`});return arr;},[])
+   .sort((a,b)=>String(a.label).localeCompare(String(b.label)));
+}
+function addReallocationRow(){
+ const body=document.getElementById('reallocationRows');
+ if(!body) return;
+ const tr=document.createElement('tr');
+ tr.innerHTML=`<td><select class="form-select ma-reallocation-select" data-role="entity"><option value="">Entity</option></select></td>
+ <td><select class="form-select ma-reallocation-select" data-role="biro" disabled><option value="">Biro</option></select></td>
+ <td><select class="form-select ma-reallocation-select" data-role="source" disabled><option value="">Sumber Budget</option></select></td>
+ <td class="ma-reallocation-code" data-role="fund">—</td><td class="ma-reallocation-code" data-role="fc">—</td>
+ <td class="ma-reallocation-code" data-role="ci">—</td><td class="ma-reallocation-code" data-role="available">—</td>
+ <td><input class="form-control ma-reallocation-amount" data-role="amount" data-auto="1" type="number" min="0.01" step="0.01" placeholder="Sisa shortage"></td>
+ <td><button type="button" class="ma-reallocation-remove" title="Hapus baris"><i class="bi bi-trash"></i></button></td>`;
+ body.appendChild(tr);
+ const entitySelect=tr.querySelector('[data-role="entity"]');
+ const biroSelect=tr.querySelector('[data-role="biro"]');
+ const sourceSelect=tr.querySelector('[data-role="source"]');
+ const amountInput=tr.querySelector('[data-role="amount"]');
+ getReallocationEntities().forEach(([id,label])=>entitySelect.add(new Option(label,id)));
+ entitySelect.addEventListener('change',()=>{
+   const biros=getReallocationBiRows(entitySelect.value);
+   biroSelect.innerHTML='<option value="">Pilih biro</option>';
+   biros.forEach(b=>biroSelect.add(new Option(b.label,b.id)));
+   biroSelect.disabled=!entitySelect.value||!biros.length;
+   sourceSelect.innerHTML='<option value="">Pilih sumber budget</option>';
+   sourceSelect.disabled=true;
+   clearReallocationRowDetails(tr);
+   updateReallocationTotals();
+ });
+ biroSelect.addEventListener('change',()=>{
+   const matches=reallocationSourceItems.filter(x=>String(x.entity_id)===entitySelect.value&&String(x.biro_id)===biroSelect.value);
+   sourceSelect.innerHTML='<option value="">Pilih sumber budget</option>';
+   matches.forEach(b=>{
+     const label=`${b.fund_code||'FUND —'} · ${b.funds_center_code||'FC —'} · ${b.commitment_item_code||'CI —'} · Available ${money(b.available_amount)}`;
+     sourceSelect.add(new Option(label,b.budget_id));
+   });
+   sourceSelect.disabled=!matches.length;
+   clearReallocationRowDetails(tr);
+   updateReallocationTotals();
+ });
+ sourceSelect.addEventListener('change',()=>{
+   const item=reallocationSourceItems.find(x=>String(x.budget_id)===sourceSelect.value);
+   tr.querySelector('[data-role="fund"]').textContent=item?.fund_code||'—';
+   tr.querySelector('[data-role="fc"]').textContent=item?.funds_center_code||'—';
+   tr.querySelector('[data-role="ci"]').textContent=item?.commitment_item_code||'—';
+   tr.querySelector('[data-role="available"]').textContent=item?money(item.available_amount):'—';
+   amountInput.max=item?.available_amount||'';
+   if(amountInput.dataset.auto==='1'){
+     const remaining=getRemainingReallocationShortage(amountInput);
+     const suggested=item?Math.min(remaining,Math.max(0,Number(item.available_amount)||0)):0;
+     amountInput.value=suggested>0?String(suggested):'';
+   }
+   updateReallocationTotals();
+ });
+ amountInput.addEventListener('input',()=>{amountInput.dataset.auto='0';updateReallocationTotals();});
+ tr.querySelector('.ma-reallocation-remove').addEventListener('click',()=>{tr.remove();updateReallocationTotals();});
+ updateReallocationTotals();
+}
+function clearReallocationRowDetails(tr){
+ ['fund','fc','ci','available'].forEach(role=>{const el=tr.querySelector(`[data-role="${role}"]`);if(el)el.textContent='—';});
+ const amount=tr.querySelector('[data-role="amount"]');
+ if(amount){amount.value='';amount.max='';amount.dataset.auto='1';}
+}
+function updateReallocationTotals(){
+ const body=document.getElementById('reallocationRows');
+ if(!body) return;
+ const total=[...body.querySelectorAll('[data-role="amount"]')].reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0);
+ const shortage=getReallocationShortage();
+ document.getElementById('reallocationTotalMinus').textContent=money(total);
+ document.getElementById('reallocationTotalPlus').textContent=money(total);
+ document.getElementById('reallocationShortage').textContent=money(shortage);
+}
 async function loadReallocationSources(){
- const select=document.getElementById('reallocationSource');
- select.innerHTML='<option value="">Memuat sumber budget...</option>';
+ const body=document.getElementById('reallocationRows');
+ body.innerHTML='<tr><td colspan="9" class="text-secondary small py-3">Memuat master budget...</td></tr>';
  try{
    const r=await fetch(`/api/approval/requests/${activeApprovalRequestId}/reallocation-sources`);
    const d=await r.json();
    if(!r.ok) throw Error(d.error||'Gagal memuat sumber budget.');
-   if(!d.items.length){select.innerHTML='<option value="">Tidak ada sumber budget yang tersedia</option>';return;}
-   select.innerHTML='<option value="">Pilih sumber budget</option>'+d.items.map(b=>{
-      const ciCode = b.commitment_item_code || `CI ID ${b.commitment_item_id}`;
-      const ciName = b.commitment_item_name || 'Nama Commitment Item belum tersedia';
-      const fundsCenter = b.funds_center_code || 'Tanpa Funds Center';
-      const scope = b.budget_scope || '—';
-      const label = `Budget #${b.budget_id} · ${ciCode} - ${ciName} · ${fundsCenter} · ${scope} · Available ${money(b.available_amount)}`;
-      return `<option value="${esc(b.budget_id)}" data-available="${esc(b.available_amount)}" title="${esc(label)}">${esc(label)}</option>`;
-    }).join('');
- }catch(e){select.innerHTML=`<option value="">${esc(e.message)}</option>`;}
+   reallocationSourceItems=d.items||[];
+   body.innerHTML='';
+   if(!reallocationSourceItems.length){body.innerHTML='<tr><td colspan="9" class="text-danger small py-3">Tidak ada sumber budget yang memenuhi ketentuan realokasi.</td></tr>';return;}
+   addReallocationRow();
+ }catch(e){body.innerHTML=`<tr><td colspan="9" class="text-danger small py-3">${esc(e.message)}</td></tr>`;}
 }
 async function submitApprovalAction(){
- const amount=document.getElementById('approvalAmount').value;
- const instruction=document.getElementById('approvalInstruction').value.trim();
  const feedback=document.getElementById('approvalActionFeedback');
  const submit=document.getElementById('approvalActionSubmit');
- const payload={amount,instruction};
- let endpoint='';
- if(activeApprovalAction==='open') endpoint=`/api/approval/requests/${activeApprovalRequestId}/open-budget`;
- else if(activeApprovalAction==='reallocate'){
+ const instruction=document.getElementById('approvalInstruction').value.trim();
+ let endpoint=''; let payload={instruction};
+ if(activeApprovalAction==='open'){
+   const amount=document.getElementById('approvalAmount').value;
+   if(!amount || Number(amount)<=0){feedback.className='ma-action-feedback error';feedback.textContent='Masukkan nominal lebih besar dari Rp0.';return;}
+   payload.amount=amount; endpoint=`/api/approval/requests/${activeApprovalRequestId}/open-budget`;
+ }else if(activeApprovalAction==='reallocate'){
    endpoint=`/api/approval/requests/${activeApprovalRequestId}/reallocate`;
-   payload.source_budget_id=document.getElementById('reallocationSource').value;
- }
- if(!amount || Number(amount)<=0){feedback.className='ma-action-feedback error';feedback.textContent='Masukkan nominal lebih besar dari Rp0.';return;}
- if(activeApprovalAction==='reallocate' && !payload.source_budget_id){feedback.className='ma-action-feedback error';feedback.textContent='Pilih sumber budget terlebih dahulu.';return;}
- if(!confirm(`Konfirmasi ${activeApprovalAction==='open'?'Approve with Open Budget':'Approve with Reallocation Budget'} sebesar ${money(amount)}? Perubahan anggaran akan langsung disimpan.`)) return;
+   payload.allocation_date=document.getElementById('reallocationDate').value;
+   const trs=[...document.querySelectorAll('#reallocationRows tr')];
+   payload.allocations=trs.map(tr=>({source_budget_id:tr.querySelector('[data-role="source"]')?.value,amount:tr.querySelector('[data-role="amount"]')?.value}));
+   if(!payload.allocation_date){feedback.className='ma-action-feedback error';feedback.textContent='Pilih tanggal realokasi.';return;}
+   if(!payload.allocations.length || payload.allocations.some(x=>!x.source_budget_id || !x.amount || Number(x.amount)<=0)){
+     feedback.className='ma-action-feedback error';feedback.textContent='Lengkapi sumber budget dan nominal pada seluruh baris.';return;
+   }
+   const total=payload.allocations.reduce((sum,x)=>sum+Number(x.amount),0);
+   const shortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Number(activeApprovalRequest.current_available_amount||0));
+   if(total<=0 || total-shortage>0.009){feedback.className='ma-action-feedback error';feedback.textContent=`Total pengurangan harus lebih dari Rp0 dan tidak boleh melebihi shortage ${money(shortage)}.`;return;}
+ }else return;
+ if(!confirm(activeApprovalAction==='open'?`Konfirmasi Open Budget sebesar ${money(payload.amount)}?`:`Konfirmasi realokasi ${payload.allocations.length} baris? Total pengurangan akan ditambahkan ke budget tujuan.`)) return;
  submit.disabled=true;submit.textContent='Memproses...';feedback.className='ma-action-feedback';feedback.textContent='';
  try{
    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify(payload)});
-   const d=await r.json();
-   if(!r.ok) throw Error(d.error||'Tindakan approval gagal diproses.');
-   feedback.className='ma-action-feedback success';
-   feedback.textContent=`${d.message} Status pengajuan: ${d.request_status}. Sisa shortage: ${money(d.remaining_shortage)}.`;
+   const d=await r.json(); if(!r.ok) throw Error(d.error||'Tindakan approval gagal diproses.');
+   feedback.className='ma-action-feedback success';feedback.textContent=`${d.message} Status: ${d.request_status}. Sisa shortage: ${money(d.remaining_shortage)}.`;
    await Promise.all([loadSummary(),loadRequests()]);
-   // Jangan membuat/membuka instance modal baru di atas modal yang masih aktif.
  }catch(e){feedback.className='ma-action-feedback error';feedback.textContent=e.message;}
  finally{submit.disabled=false;submit.textContent='Konfirmasi Tindakan';}
 }

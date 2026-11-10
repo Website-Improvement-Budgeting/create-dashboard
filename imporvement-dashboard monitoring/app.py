@@ -3801,6 +3801,7 @@ def api_approval_reallocation_sources(request_id):
                     bm.entity_id,
                     ue.unit_entity,
                     bm.biro_id,
+                    f.fund_code,
                     b.biro_code,
                     b.biro_name,
                     UPPER(TRIM(bm.budget_scope)) AS budget_scope,
@@ -3815,6 +3816,34 @@ def api_approval_reallocation_sources(request_id):
                     bm.available_amount
                 FROM public.budget_master bm
                 LEFT JOIN public.unit_entity ue ON ue.entity_id = bm.entity_id
+                LEFT JOIN LATERAL (
+                    SELECT
+                        br_source.input_profit_center,
+                        br_source.mapped_fund_id
+                    FROM public.budget_request br_source
+                    WHERE br_source.budget_id = bm.budget_id
+                    ORDER BY br_source.request_date DESC, br_source.request_id DESC
+                    LIMIT 1
+                ) source_request ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT MIN(mf.target_fund_id) AS target_fund_id
+                    FROM public.master_fund mf
+                    WHERE TRIM(mf.from_profit_center::text) ~ '^[A-Za-z0-9]+$'
+                      AND TRIM(mf.to_profit_center::text) ~ '^[A-Za-z0-9]+$'
+                      AND (
+                          UPPER(TRIM(source_request.input_profit_center::text)) COLLATE "C"
+                      ) BETWEEN (
+                          UPPER(TRIM(mf.from_profit_center::text)) COLLATE "C"
+                      ) AND (
+                          UPPER(TRIM(mf.to_profit_center::text)) COLLATE "C"
+                      )
+                    HAVING COUNT(*) = 1
+                ) source_fund_map ON TRUE
+                LEFT JOIN public.fund f
+                    ON f.fund_id = COALESCE(
+                        source_fund_map.target_fund_id,
+                        source_request.mapped_fund_id
+                    )
                 LEFT JOIN public.biro b
                     ON b.biro_id = bm.biro_id AND b.entity_id = bm.entity_id
                 LEFT JOIN public.funds_center fc
