@@ -2121,59 +2121,164 @@ def pengajuan_get_biro(cursor, user_id, entity_id):
     return rows[0]
 
 
+
+
+
 def pengajuan_get_mapping(cursor, data):
+    """
+    Mapping menggunakan rentang From-To.
+    FUND dan FUNDS CENTER mendukung kode alfanumerik.
+    COMMITMENT ITEM menggunakan perbandingan numerik.
+    """
+
     queries = (
-        ("fund", """
-            SELECT mf.target_fund_id AS id, f.fund_code AS code
+        (
+            "fund",
+            """
+            SELECT
+                mf.target_fund_id AS id,
+                f.fund_code AS code
             FROM public.master_fund mf
-            JOIN public.fund f ON f.fund_id = mf.target_fund_id
-            WHERE mf.from_profit_center = %s LIMIT 2
-        """, data["profit_center"]),
-        ("funds_center", """
-            SELECT mfc.target_funds_center_id AS id, fc.funds_center_code AS code
+            JOIN public.fund f
+                ON f.fund_id = mf.target_fund_id
+            WHERE
+                TRIM(mf.from_profit_center::text)
+                    ~ '^[A-Za-z0-9]+$'
+                AND TRIM(mf.to_profit_center::text)
+                    ~ '^[A-Za-z0-9]+$'
+                AND (
+                    UPPER(TRIM(%s::text)) COLLATE "C"
+                ) BETWEEN (
+                    UPPER(TRIM(mf.from_profit_center::text)) COLLATE "C"
+                ) AND (
+                    UPPER(TRIM(mf.to_profit_center::text)) COLLATE "C"
+                )
+            LIMIT 2
+            """,
+            data["profit_center"],
+            "alphanumeric",
+        ),
+        (
+            "funds_center",
+            """
+            SELECT
+                mfc.target_funds_center_id AS id,
+                fc.funds_center_code AS code
             FROM public.master_fc mfc
             JOIN public.funds_center fc
-              ON fc.funds_center_id = mfc.target_funds_center_id
-            WHERE mfc.from_cost_center = %s LIMIT 2
-        """, data["cost_center"]),
-        ("commitment_item", """
-            SELECT mci.target_commitment_item_id AS id,
-                   ci.commitment_item_code AS code,
-                   ci.commitment_item_name AS name
+                ON fc.funds_center_id =
+                   mfc.target_funds_center_id
+            WHERE
+                TRIM(mfc.from_cost_center::text)
+                    ~ '^[A-Za-z0-9]+$'
+                AND TRIM(mfc.to_cost_center::text)
+                    ~ '^[A-Za-z0-9]+$'
+                AND (
+                    UPPER(TRIM(%s::text)) COLLATE "C"
+                ) BETWEEN (
+                    UPPER(TRIM(mfc.from_cost_center::text)) COLLATE "C"
+                ) AND (
+                    UPPER(TRIM(mfc.to_cost_center::text)) COLLATE "C"
+                )
+            LIMIT 2
+            """,
+            data["cost_center"],
+            "alphanumeric",
+        ),
+        (
+            "commitment_item",
+            """
+            SELECT
+                mci.target_commitment_item_id AS id,
+                ci.commitment_item_code AS code,
+                ci.commitment_item_name AS name
             FROM public.master_ci mci
             JOIN public.commitment_item ci
-              ON ci.commitment_item_id = mci.target_commitment_item_id
-            WHERE mci.from_gl_account = %s LIMIT 2
-        """, data["gl_account"]),
+                ON ci.commitment_item_id =
+                   mci.target_commitment_item_id
+            WHERE
+                TRIM(mci.from_gl_account::text)
+                    ~ '^[0-9]+$'
+                AND TRIM(mci.to_gl_account::text)
+                    ~ '^[0-9]+$'
+                AND %s::numeric BETWEEN
+                    TRIM(mci.from_gl_account::text)::numeric
+                    AND
+                    TRIM(mci.to_gl_account::text)::numeric
+            LIMIT 2
+            """,
+            data["gl_account"],
+            "numeric",
+        ),
     )
+
     mapped = {}
     missing = []
-    for key, sql, input_value in queries:
-        cursor.execute(sql, (input_value,))
+
+    for key, sql, input_value, input_type in queries:
+        normalized_input = str(input_value).strip()
+
+        if input_type == "numeric":
+            valid_input = (
+                normalized_input.isascii()
+                and normalized_input.isdigit()
+            )
+        else:
+            valid_input = (
+                normalized_input.isascii()
+                and normalized_input.isalnum()
+            )
+
+        if not valid_input:
+            missing.append(key)
+            continue
+
+        cursor.execute(sql, (normalized_input,))
         rows = cursor.fetchall()
+
         if len(rows) > 1:
-            raise PengajuanValidationError("Mapping master ambigu: " + key, 409)
+            raise PengajuanValidationError(
+                "Mapping master ambigu: " + key,
+                409
+            )
+
         if not rows:
             missing.append(key)
         else:
             mapped[key] = rows[0]
+
     if missing:
-        raise PengajuanValidationError("Mapping tidak ditemukan: " + ", ".join(missing), 422)
+        raise PengajuanValidationError(
+            "Mapping tidak ditemukan: " + ", ".join(missing),
+            422
+        )
+
     return mapped
+
+
 
 
 def pengajuan_public_mapping(mapped):
     return {
-        "mapping_status": "Mapped",
-        "mapped_fund": {"id": mapped["fund"]["id"], "code": mapped["fund"]["code"]},
+        "mapping_status": "Oke",
+
+        "mapped_fund": {
+            "id": mapped["fund"]["id"],
+            "code": mapped["fund"]["code"],
+        },
+
         "mapped_funds_center": {
             "id": mapped["funds_center"]["id"],
             "code": mapped["funds_center"]["code"],
         },
+
         "mapped_commitment_item": {
             "id": mapped["commitment_item"]["id"],
             "code": mapped["commitment_item"]["code"],
-            "name": mapped["commitment_item"]["name"] or "Nama belum tersedia",
+            "name": (
+                mapped["commitment_item"]["name"]
+                or "Nama belum tersedia"
+            ),
         },
     }
 
@@ -2206,35 +2311,100 @@ def pengajuan_find_budget(cursor, biro_id, entity_id, budget_year, mapped):
     return rows[0] if rows else None
 
 
+
+
 def pengajuan_check(cursor, user_id, data):
-    biro = pengajuan_get_biro(cursor, user_id, data["entity_id"])
-    mapped = pengajuan_get_mapping(cursor, data)
-    budget = pengajuan_find_budget(
-        cursor, biro["biro_id"], data["entity_id"],
-        data["transaction_date"].year, mapped,
+    # ==========================================
+    # 1. IDENTIFIKASI BIRO PENGUSUL
+    # ==========================================
+    biro = pengajuan_get_biro(
+        cursor,
+        user_id,
+        data["entity_id"]
     )
+
+    # ==========================================
+    # 2. MAPPING MASTER
+    # ==========================================
+    mapped = pengajuan_get_mapping(
+        cursor,
+        data
+    )
+
+    # ==========================================
+    # 3. PENCARIAN BUDGET
+    # ==========================================
+    budget = pengajuan_find_budget(
+        cursor,
+        biro["biro_id"],
+        data["entity_id"],
+        data["transaction_date"].year,
+        mapped
+    )
+
+    # Jika sumber budget tidak ditemukan.
     if budget is None:
         return {
             "mapped": mapped,
             "budget": None,
             "shortage": None,
-            "budget_status": "Not Found",
-            "message": "Sumber budget tidak ditemukan untuk kombinasi ini.",
+            "budget_status": "Review",
+            "message": (
+                "Mapping berhasil, tetapi sumber budget "
+                "tidak ditemukan. Perlu pemeriksaan Approval."
+            ),
         }
+
+    # ==========================================
+    # 4. VALIDASI AVAILABLE BUDGET
+    # ==========================================
     if budget["available_amount"] is None:
-        raise PengajuanValidationError("Available Amount pada sumber budget belum tersedia.", 422)
-    available = Decimal(str(budget["available_amount"]))
-    shortage = max(Decimal("0"), data["request_amount"] - available)
+        raise PengajuanValidationError(
+            "Available Amount pada sumber budget belum tersedia.",
+            422
+        )
+
+    available = Decimal(
+        str(budget["available_amount"])
+    )
+
+    if not available.is_finite() or available < 0:
+        raise PengajuanValidationError(
+            "Available Budget tidak valid.",
+            422
+        )
+
+    request_amount = data["request_amount"]
+
+    # ==========================================
+    # 5. HITUNG SHORTAGE
+    # ==========================================
+    shortage = max(
+        Decimal("0"),
+        request_amount - available
+    )
+
+    # ==========================================
+    # 6. TENTUKAN STATUS BUDGET
+    # ==========================================
+    budget_status = (
+        "Review"
+        if shortage > 0
+        else "Budget Cukup"
+    )
+
+    message = (
+        "Budget kurang; pengajuan memerlukan review Approval."
+        if shortage > 0
+        else "Budget mencukupi; pengajuan dapat direview Approval."
+    )
+
     return {
         "mapped": mapped,
         "budget": budget,
         "shortage": shortage,
-        "budget_status": "Insufficient" if shortage > 0 else "Sufficient",
-        "message": (
-            "Budget kurang; pengajuan tetap dapat direview Approval."
-            if shortage > 0 else
-            "Budget mencukupi; pengajuan dapat direview Approval."
-        ),
+        "budget_status": budget_status,
+        "message": message,
     }
 
 
@@ -2386,82 +2556,289 @@ def pengajuan_periksa():
             conn.close()
 
 
+
 @app.route("/api/pengajuan/submit", methods=["POST"])
 def pengajuan_submit():
+    # ==========================================
+    # 1. VALIDASI AKSES
+    # ==========================================
     guard = pengajuan_api_guard()
     if guard is not None:
         return guard
-    # Penyimpanan lampiran belum diimplementasikan. Tolak apabila dikirim.
+
+    # Upload lampiran belum tersedia.
     if request.files:
-        return jsonify({"error": "Upload lampiran belum tersedia."}), 422
+        return jsonify({
+            "success": False,
+            "error": "Upload lampiran belum tersedia."
+        }), 422
+
     payload = request.get_json(silent=True) or {}
+
     if payload.get("lampiran") or payload.get("attachment"):
-        return jsonify({"error": "Upload lampiran belum tersedia."}), 422
+        return jsonify({
+            "success": False,
+            "error": "Upload lampiran belum tersedia."
+        }), 422
+
     conn = None
+
     try:
-        data = pengajuan_parse_input(payload, require_details=True)
+        # ==========================================
+        # 2. VALIDASI INPUT PENGAJUAN
+        # ==========================================
+        data = pengajuan_parse_input(
+            payload,
+            require_details=True
+        )
+
         conn = get_db_connection()
+
+        # Seluruh proses penyimpanan berada dalam
+        # satu transaksi database.
         with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                result = pengajuan_check(cursor, session["user_id"], data)
+            with conn.cursor(
+                cursor_factory=RealDictCursor
+            ) as cursor:
+
+                # ==================================
+                # 3. MAPPING DAN PEMERIKSAAN BUDGET
+                # ==================================
+                result = pengajuan_check(
+                    cursor,
+                    session["user_id"],
+                    data
+                )
+
+                mapped = result["mapped"]
                 budget = result["budget"]
+
+                # Sumber budget wajib ditemukan.
                 if budget is None:
                     raise PengajuanValidationError(
-                        "Sumber budget tidak ditemukan. Pengajuan belum dapat dikirim.", 422
+                        "Sumber budget tidak ditemukan. "
+                        "Pengajuan belum dapat dikirim.",
+                        422
                     )
+
+                # ==================================
+                # 4. VALIDASI NILAI BUDGET
+                # ==================================
                 current = budget["current_budget"]
                 consumable = budget["consumable_budget"]
-                approval_hold = (
-                    Decimal(str(current)) - Decimal(str(consumable))
-                    if current is not None and consumable is not None else None
-                )
+                available = budget["available_amount"]
+
+                if (
+                    current is None
+                    or consumable is None
+                    or available is None
+                ):
+                    raise PengajuanValidationError(
+                        "Data Current, Consumable, atau "
+                        "Available Budget belum lengkap.",
+                        422
+                    )
+
+                current = Decimal(str(current))
+                consumable = Decimal(str(consumable))
+                available = Decimal(str(available))
+
+                if current < 0 or consumable < 0 or available < 0:
+                    raise PengajuanValidationError(
+                        "Nilai budget tidak boleh negatif.",
+                        422
+                    )
+
+                if consumable > current:
+                    raise PengajuanValidationError(
+                        "Consumable Budget melebihi Current Budget.",
+                        422
+                    )
+
+                # Approval Hold merupakan bagian Current
+                # Budget yang belum menjadi Consumable.
+                approval_hold = current - consumable
+
+                # ==================================
+                # 5. VALIDASI STATUS
+                # ==================================
+                mapping_status = "Oke"
+
+                budget_status = result["budget_status"]
+
+                allowed_budget_status = {
+                    "Budget Cukup",
+                    "Review"
+                }
+
+                if budget_status not in allowed_budget_status:
+                    raise PengajuanValidationError(
+                        "Status budget tidak sesuai dengan "
+                        "standar database.",
+                        422
+                    )
+
+                request_status = "Pending"
+
+                # ==================================
+                # 6. SIMPAN PENGAJUAN
+                # ==================================
                 cursor.execute("""
                     INSERT INTO public.budget_request (
-                        user_id, entity_id, request_date, pic,
-                        input_profit_center, input_cost_center, input_gl_account,
-                        request_amount, request_description,
-                        mapped_fund_id, mapped_funds_center_id,
-                        mapped_commitment_item_id, budget_id, budget_scope,
-                        available_amount_snapshot, shortage_amount,
+                        user_id,
+                        entity_id,
+                        request_date,
+                        transaction_date,
+                        pic,
+
+                        input_profit_center,
+                        input_cost_center,
+                        input_gl_account,
+
+                        request_amount,
+                        request_description,
+
+                        mapped_fund_id,
+                        mapped_funds_center_id,
+                        mapped_commitment_item_id,
+
+                        budget_id,
+                        budget_scope,
+
+                        available_amount_snapshot,
+                        shortage_amount,
                         approval_hold_amount_snapshot,
-                        mapping_status, budget_status, request_status
-                    ) VALUES (
-                        %s, %s, NOW(), %s,
-                        %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s,
-                        %s, %s, %s, 'Mapped', %s, 'Pending'
-                    ) RETURNING request_id
+
+                        mapping_status,
+                        budget_status,
+                        request_status
+                    )
+                    VALUES (
+                        %s, %s, NOW(), %s, %s,
+                        %s, %s, %s,
+                        %s, %s,
+                        %s, %s, %s,
+                        %s, %s,
+                        %s, %s, %s,
+                        %s, %s, %s
+                    )
+                    RETURNING request_id, request_date,
+                              transaction_date
                 """, (
-                    session["user_id"], data["entity_id"], data["pic"],
-                    data["profit_center"], data["cost_center"], data["gl_account"],
-                    data["request_amount"], data["description"],
-                    result["mapped"]["fund"]["id"],
-                    result["mapped"]["funds_center"]["id"],
-                    result["mapped"]["commitment_item"]["id"],
-                    budget["budget_id"], budget["budget_scope"],
-                    budget["available_amount"], result["shortage"],
-                    approval_hold, result["budget_status"],
+                    session["user_id"],
+                    data["entity_id"],
+                    data["transaction_date"],
+                    data["pic"],
+
+                    data["profit_center"],
+                    data["cost_center"],
+                    data["gl_account"],
+
+                    data["request_amount"],
+                    data["description"],
+
+                    mapped["fund"]["id"],
+                    mapped["funds_center"]["id"],
+                    mapped["commitment_item"]["id"],
+
+                    budget["budget_id"],
+                    budget["budget_scope"],
+
+                    available,
+                    result["shortage"],
+                    approval_hold,
+
+                    mapping_status,
+                    budget_status,
+                    request_status
                 ))
+
                 saved = cursor.fetchone()
+
+        # ==========================================
+        # 7. RESPONS API BERHASIL
+        # ==========================================
         return jsonify({
             "success": True,
+
             "request_id": saved["request_id"],
-            "request_status": "Pending",
-            "budget_status": result["budget_status"],
-            "message": "Pengajuan berhasil dikirim untuk review Approval.",
+
+            "request_date": (
+                saved["request_date"].isoformat()
+                if saved["request_date"] else None
+            ),
+
+            "transaction_date": (
+                saved["transaction_date"].isoformat()
+                if saved["transaction_date"] else None
+            ),
+
+            "mapping_status": mapping_status,
+            "budget_status": budget_status,
+            "request_status": request_status,
+
+            "budget_scope": budget["budget_scope"],
+
+            "request_amount": str(data["request_amount"]),
+            "available_amount_snapshot": str(available),
+            "shortage_amount": (
+                str(result["shortage"])
+                if result["shortage"] is not None
+                else None
+            ),
+
+            "message": (
+                "Pengajuan berhasil dikirim "
+                "dan menunggu keputusan Approval."
+            )
         }), 201
+
+    # ==============================================
+    # 8. PENANGANAN ERROR
+    # ==============================================
     except PengajuanValidationError as exc:
+
         if conn is not None:
             conn.rollback()
-        return jsonify({"success": False, "error": str(exc)}), exc.status_code
+
+        return jsonify({
+            "success": False,
+            "error": str(exc)
+        }), exc.status_code
+
     except psycopg2.Error:
+
         if conn is not None:
             conn.rollback()
-        app.logger.exception("Gagal menyimpan pengajuan")
-        return jsonify({"success": False, "error": "Pengajuan gagal disimpan."}), 500
+
+        app.logger.exception(
+            "Gagal menyimpan pengajuan budget"
+        )
+
+        return jsonify({
+            "success": False,
+            "error": "Pengajuan gagal disimpan."
+        }), 500
+
+    except Exception:
+
+        if conn is not None:
+            conn.rollback()
+
+        app.logger.exception(
+            "Terjadi kesalahan pada proses pengajuan"
+        )
+
+        return jsonify({
+            "success": False,
+            "error": "Terjadi kesalahan saat memproses pengajuan."
+        }), 500
+
     finally:
+
         if conn is not None:
             conn.close()
+
 
 # halaman riwayat pengajuan
 def format_rupiah_riwayat(value):
@@ -3160,6 +3537,7 @@ def api_approval_requests():
                     br.budget_status,
                     br.request_status,
                     br.budget_scope,
+                    latest_decision.decision AS approval_decision,
                     u.username AS requester_username,
                     ue.unit_entity,
                     b.biro_name,
@@ -3178,6 +3556,13 @@ def api_approval_requests():
                     ON fc.funds_center_id = br.mapped_funds_center_id
                 LEFT JOIN public.commitment_item ci
                     ON ci.commitment_item_id = br.mapped_commitment_item_id
+                LEFT JOIN LATERAL (
+                    SELECT ad.decision
+                    FROM public.approval_decision ad
+                    WHERE ad.request_id = br.request_id
+                    ORDER BY ad.decision_date DESC, ad.approval_id DESC
+                    LIMIT 1
+                ) latest_decision ON TRUE
                 WHERE {where_sql}
                 ORDER BY
                     CASE br.request_status WHEN 'Pending' THEN 0
@@ -3310,6 +3695,484 @@ def api_approval_request_detail(request_id):
     except psycopg2.Error:
         app.logger.exception("Gagal memuat detail pengajuan Approval")
         return jsonify({"error": "Detail pengajuan gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+
+# ============================================================
+# MANAJEMEN APPROVAL - OPEN BUDGET & REALLOCATION
+# Seluruh perubahan budget, keputusan, alokasi, dan history
+# dijalankan dalam satu transaksi database.
+# ============================================================
+
+def approval_mutation_guard():
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+    supplied = request.headers.get("X-CSRFToken", "")
+    expected = session.get("approval_password_csrf", "")
+    if not supplied or not expected or not hmac.compare_digest(supplied, expected):
+        return jsonify({"error": "Token keamanan tidak valid. Muat ulang halaman lalu coba kembali."}), 403
+    return None
+
+
+def _approval_decimal(value, label="Nominal"):
+    try:
+        amount = Decimal(str(value).replace(",", "").strip())
+    except (InvalidOperation, TypeError, ValueError, AttributeError):
+        raise ValueError(f"{label} tidak valid.")
+    if not amount.is_finite() or amount <= 0:
+        raise ValueError(f"{label} harus lebih besar dari Rp0.")
+    if amount.quantize(Decimal("0.01")) != amount:
+        raise ValueError(f"{label} maksimal memiliki dua angka desimal.")
+    return amount
+
+
+def _approval_record_decision(cursor, request_id, decision, amount, instruction):
+    cursor.execute("""
+        INSERT INTO public.approval_decision
+            (request_id, approval_user_id, decision, instruction, approved_amount)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (request_id, session["user_id"], decision, instruction, amount))
+
+
+def _approval_record_history(cursor, budget_id, request_id, action,
+                             field_name, previous_value, updated_value, amount):
+    cursor.execute("""
+        INSERT INTO public.budget_history
+            (budget_id, request_id, action, field_name,
+             previous_value, updated_value, amount, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (budget_id, request_id, action, field_name,
+          previous_value, updated_value, amount, session["user_id"]))
+
+
+@app.route("/api/approval/requests/<int:request_id>/reallocation-sources", methods=["GET"])
+def api_approval_reallocation_sources(request_id):
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Ambil identitas budget target sebagai dasar pencarian kandidat.
+            cursor.execute("""
+                SELECT
+                    br.request_id,
+                    br.request_status,
+                    br.budget_id,
+                    bm.entity_id,
+                    bm.biro_id,
+                    bm.budget_year,
+                    UPPER(TRIM(bm.budget_scope)) AS budget_scope,
+                    bm.funds_center_id,
+                    bm.commitment_item_id
+                FROM public.budget_request br
+                JOIN public.budget_master bm ON bm.budget_id = br.budget_id
+                WHERE br.request_id = %s
+                LIMIT 1
+            """, (request_id,))
+            target = cursor.fetchone()
+            if not target:
+                return jsonify({"error": "Pengajuan atau budget tujuan tidak ditemukan."}), 404
+            if target["request_status"] != "Pending":
+                return jsonify({"error": "Hanya pengajuan Pending yang dapat diproses."}), 409
+            if not target["budget_id"]:
+                return jsonify({"error": "Pengajuan tidak memiliki sumber budget tujuan."}), 409
+
+            scope = target["budget_scope"]
+            if scope == "CI_ONLY":
+                # CI_ONLY: hanya Commitment Item yang menjadi kunci.
+                scope_condition = "AND bm.commitment_item_id = %s"
+                scope_params = (target["commitment_item_id"],)
+            elif scope == "FC_CI":
+                # FC_CI: Funds Center dan Commitment Item wajib sama.
+                scope_condition = "AND bm.funds_center_id = %s AND bm.commitment_item_id = %s"
+                scope_params = (target["funds_center_id"], target["commitment_item_id"])
+            else:
+                return jsonify({"error": "Budget Scope target tidak dikenali."}), 409
+
+            cursor.execute(f"""
+                SELECT
+                    bm.budget_id,
+                    bm.entity_id,
+                    ue.unit_entity,
+                    bm.biro_id,
+                    b.biro_code,
+                    b.biro_name,
+                    UPPER(TRIM(bm.budget_scope)) AS budget_scope,
+                    bm.funds_center_id,
+                    fc.funds_center_code,
+                    bm.commitment_item_id,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    bm.current_budget,
+                    bm.consumable_budget,
+                    bm.consumed_budget,
+                    bm.available_amount
+                FROM public.budget_master bm
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = bm.entity_id
+                LEFT JOIN public.biro b
+                    ON b.biro_id = bm.biro_id AND b.entity_id = bm.entity_id
+                LEFT JOIN public.funds_center fc
+                    ON fc.funds_center_id = bm.funds_center_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = bm.commitment_item_id
+                WHERE bm.budget_year IS NOT DISTINCT FROM %s
+                  AND UPPER(TRIM(bm.budget_scope)) = %s
+                  AND bm.budget_id <> %s
+                  AND NOT (
+                      bm.entity_id IS NOT DISTINCT FROM %s
+                      AND bm.biro_id IS NOT DISTINCT FROM %s
+                  )
+                  AND bm.available_amount > 0
+                  {scope_condition}
+                ORDER BY bm.available_amount DESC, bm.budget_id
+            """, (target["budget_year"], scope, target["budget_id"],
+                  target["entity_id"], target["biro_id"]) + scope_params)
+            rows = cursor.fetchall()
+        items = []
+        for row in rows:
+            items.append({k: (str(v) if isinstance(v, Decimal) else v)
+                          for k, v in row.items()})
+        return jsonify({"items": items})
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat sumber realokasi")
+        return jsonify({"error": "Sumber realokasi gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests/<int:request_id>/approve", methods=["POST"])
+def api_approval_direct_approve(request_id):
+    """Approve pengajuan yang dapat dipenuhi oleh available budget saat ini."""
+    guard = approval_mutation_guard()
+    if guard is not None:
+        return guard
+
+    payload = request.get_json(silent=True) or {}
+    instruction = str(payload.get("instruction", "")).strip()
+    if len(instruction) > 2000:
+        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT request_id, request_status, request_amount, budget_id
+                    FROM public.budget_request
+                    WHERE request_id = %s
+                    FOR UPDATE
+                """, (request_id,))
+                req = cursor.fetchone()
+                if not req:
+                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
+                if req["request_status"] != "Pending":
+                    return jsonify({"error": "Hanya pengajuan Pending yang dapat disetujui."}), 409
+                if not req["budget_id"]:
+                    return jsonify({"error": "Sumber budget pengajuan tidak ditemukan."}), 409
+
+                cursor.execute("""
+                    SELECT budget_id, available_amount
+                    FROM public.budget_master
+                    WHERE budget_id = %s
+                    FOR UPDATE
+                """, (req["budget_id"],))
+                budget = cursor.fetchone()
+                if not budget:
+                    return jsonify({"error": "Data budget pengajuan tidak ditemukan."}), 409
+
+                request_amount = Decimal(str(req["request_amount"]))
+                available_amount = Decimal(str(budget["available_amount"]))
+                if available_amount < request_amount:
+                    shortage = request_amount - available_amount
+                    return jsonify({
+                        "error": (
+                            "Available Budget belum mencukupi. "
+                            f"Masih terdapat shortage {shortage:.2f}. "
+                            "Gunakan Open Budget atau Reallocation Budget."
+                        )
+                    }), 409
+
+                cursor.execute("""
+                    UPDATE public.budget_request
+                    SET request_status = 'Approved', budget_status = 'Budget Cukup'
+                    WHERE request_id = %s
+                """, (request_id,))
+                _approval_record_decision(
+                    cursor, request_id, "Approve", request_amount, instruction
+                )
+
+        return jsonify({
+            "message": "Pengajuan berhasil disetujui tanpa Open Budget.",
+            "request_status": "Approved",
+            "budget_status": "Budget Cukup",
+            "approval_decision": "Approve",
+            "approved_amount": str(request_amount)
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal menyetujui pengajuan tanpa Open Budget")
+        return jsonify({"error": "Approve gagal diproses. Tidak ada perubahan yang disimpan."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests/<int:request_id>/open-budget", methods=["POST"])
+def api_approval_open_budget(request_id):
+    guard = approval_mutation_guard()
+    if guard is not None:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        amount = _approval_decimal(payload.get("amount"), "Nominal Open Budget")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    instruction = str(payload.get("instruction", "")).strip()
+    if len(instruction) > 2000:
+        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT br.request_id, br.request_status, br.request_amount,
+                           br.budget_id, br.budget_scope
+                    FROM public.budget_request br
+                    WHERE br.request_id = %s
+                    FOR UPDATE
+                """, (request_id,))
+                req = cursor.fetchone()
+                if not req:
+                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
+                if req["request_status"] != "Pending":
+                    return jsonify({"error": "Pengajuan ini bukan berstatus Pending."}), 409
+                if not req["budget_id"]:
+                    return jsonify({"error": "Sumber budget pengajuan tidak ditemukan."}), 409
+
+                cursor.execute("""
+                    SELECT budget_id, current_budget, consumable_budget,
+                           consumed_budget, available_amount, budget_scope
+                    FROM public.budget_master
+                    WHERE budget_id = %s
+                    FOR UPDATE
+                """, (req["budget_id"],))
+                budget = cursor.fetchone()
+                if not budget:
+                    return jsonify({"error": "Data budget tujuan tidak ditemukan."}), 409
+
+                hold = Decimal(str(budget["current_budget"])) - Decimal(str(budget["consumable_budget"]))
+                live_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - Decimal(str(budget["available_amount"])))
+                if live_shortage <= 0:
+                    return jsonify({"error": "Available Budget saat ini sudah mencukupi. Open Budget tidak diperlukan."}), 409
+                if hold < live_shortage:
+                    return jsonify({"error": "Approval Hold tidak mencukupi untuk menutup seluruh shortage. Gunakan Open Budget with Reallocation."}), 409
+                if hold < amount:
+                    return jsonify({"error": f"Nominal melebihi Approval Hold. Maksimal dapat dibuka {hold:.2f}."}), 409
+                if amount > live_shortage:
+                    return jsonify({"error": f"Nominal melebihi shortage saat ini. Maksimal yang diperlukan {live_shortage:.2f}."}), 409
+
+                old_consumable = Decimal(str(budget["consumable_budget"]))
+                old_available = Decimal(str(budget["available_amount"]))
+                new_consumable = old_consumable + amount
+                new_available = old_available + amount
+                cursor.execute("""
+                    UPDATE public.budget_master
+                    SET consumable_budget = %s, available_amount = %s
+                    WHERE budget_id = %s
+                """, (new_consumable, new_available, req["budget_id"]))
+
+                remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - new_available)
+                fully_covered = remaining_shortage == 0
+                cursor.execute("""
+                    UPDATE public.budget_request
+                    SET request_status = %s, budget_status = %s
+                    WHERE request_id = %s
+                """, ("Approved" if fully_covered else "Pending",
+                      "Budget Cukup" if fully_covered else "Open", request_id))
+
+                _approval_record_decision(cursor, request_id, "Open Budget", amount, instruction)
+                cursor.execute("""
+                    INSERT INTO public.budget_allocation
+                        (request_id, source_budget_id, target_budget_id,
+                         allocation_type, amount, instruction, approved_by)
+                    VALUES (%s, NULL, %s, 'Open Budget', %s, %s, %s)
+                """, (request_id, req["budget_id"], amount, instruction, session["user_id"]))
+                _approval_record_history(cursor, req["budget_id"], request_id,
+                    "Open Budget", "consumable_budget", old_consumable, new_consumable, amount)
+                _approval_record_history(cursor, req["budget_id"], request_id,
+                    "Open Budget", "available_amount", old_available, new_available, amount)
+
+        return jsonify({
+            "message": "Open Budget berhasil diproses.",
+            "request_status": "Approved" if fully_covered else "Pending",
+            "budget_status": "Budget Cukup" if fully_covered else "Open",
+            "opened_amount": str(amount),
+            "remaining_shortage": str(remaining_shortage)
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal memproses Open Budget")
+        return jsonify({"error": "Open Budget gagal diproses. Tidak ada perubahan yang disimpan."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests/<int:request_id>/reallocate", methods=["POST"])
+def api_approval_reallocate(request_id):
+    guard = approval_mutation_guard()
+    if guard is not None:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    source_id = payload.get("source_budget_id")
+    try:
+        if isinstance(source_id, bool) or not str(source_id).isdigit():
+            raise ValueError("Sumber budget realokasi wajib dipilih.")
+        source_id = int(source_id)
+        amount = _approval_decimal(payload.get("amount"), "Nominal realokasi")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    instruction = str(payload.get("instruction", "")).strip()
+    if len(instruction) > 2000:
+        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT br.request_id, br.request_status, br.request_amount,
+                           br.budget_id, br.entity_id, u.biro_id
+                    FROM public.budget_request br
+                    JOIN public.users u ON u.user_id = br.user_id
+                    WHERE br.request_id = %s
+                    FOR UPDATE OF br
+                """, (request_id,))
+                req = cursor.fetchone()
+                if not req:
+                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
+                if req["request_status"] != "Pending":
+                    return jsonify({"error": "Pengajuan ini bukan berstatus Pending."}), 409
+                if not req["budget_id"]:
+                    return jsonify({"error": "Sumber budget tujuan tidak ditemukan."}), 409
+                if source_id == req["budget_id"]:
+                    return jsonify({"error": "Sumber dan target budget tidak boleh sama."}), 400
+
+                # Lock kedua baris secara konsisten untuk mencegah saldo berubah bersamaan.
+                ids = sorted([source_id, req["budget_id"]])
+                cursor.execute("""
+                    SELECT budget_id, entity_id, biro_id, budget_year, budget_scope,
+                           funds_center_id, commitment_item_id,
+                           current_budget, consumable_budget, consumed_budget, available_amount
+                    FROM public.budget_master
+                    WHERE budget_id = ANY(%s)
+                    ORDER BY budget_id
+                    FOR UPDATE
+                """, (ids,))
+                locked = {r["budget_id"]: r for r in cursor.fetchall()}
+                if len(locked) != 2:
+                    return jsonify({"error": "Sumber atau target budget tidak ditemukan."}), 404
+                source, target = locked[source_id], locked[req["budget_id"]]
+
+                # Sumber wajib berasal dari biro/entity lain, bukan dari pemilik target yang sama.
+                if (source["entity_id"] == target["entity_id"]
+                        and source["biro_id"] == target["biro_id"]):
+                    return jsonify({"error": "Sumber realokasi harus berasal dari biro atau entity lain."}), 409
+
+                if source["budget_year"] != target["budget_year"]:
+                    return jsonify({"error": "Tahun anggaran sumber dan target harus sama."}), 409
+
+                source_scope = str(source["budget_scope"] or "").strip().upper()
+                target_scope = str(target["budget_scope"] or "").strip().upper()
+                if source_scope != target_scope:
+                    return jsonify({"error": "Budget Scope sumber dan target harus sama."}), 409
+
+                if target_scope == "CI_ONLY":
+                    if source["commitment_item_id"] != target["commitment_item_id"]:
+                        return jsonify({"error": "Realokasi CI_ONLY hanya diperbolehkan untuk Commitment Item yang sama."}), 409
+                elif target_scope == "FC_CI":
+                    if (source["funds_center_id"] != target["funds_center_id"]
+                            or source["commitment_item_id"] != target["commitment_item_id"]):
+                        return jsonify({"error": "Realokasi FC_CI hanya diperbolehkan untuk kombinasi Funds Center dan Commitment Item yang sama."}), 409
+                else:
+                    return jsonify({"error": "Budget Scope target tidak dikenali."}), 409
+
+                source_available = Decimal(str(source["available_amount"]))
+                live_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - Decimal(str(target["available_amount"])))
+                if live_shortage <= 0:
+                    return jsonify({"error": "Available Budget target saat ini sudah mencukupi. Realokasi tidak diperlukan."}), 409
+                target_hold = Decimal(str(target["current_budget"])) - Decimal(str(target["consumable_budget"]))
+                if target_hold >= live_shortage:
+                    return jsonify({"error": "Approval Hold target masih mencukupi. Gunakan Open Budget, bukan Reallocation."}), 409
+                if source_available < amount:
+                    return jsonify({"error": f"Nominal melebihi Available Budget sumber. Maksimal {source_available:.2f}."}), 409
+                if amount > live_shortage:
+                    return jsonify({"error": f"Nominal melebihi shortage target saat ini. Maksimal yang diperlukan {live_shortage:.2f}."}), 409
+
+                src_old = {k: Decimal(str(source[k])) for k in ("current_budget", "consumable_budget", "available_amount")}
+                tgt_old = {k: Decimal(str(target[k])) for k in ("current_budget", "consumable_budget", "available_amount")}
+                src_new = {k: src_old[k] - amount for k in src_old}
+                tgt_new = {k: tgt_old[k] + amount for k in tgt_old}
+                if any(v < 0 for v in src_new.values()):
+                    return jsonify({"error": "Hasil realokasi membuat saldo sumber negatif."}), 409
+
+                cursor.execute("""
+                    UPDATE public.budget_master
+                    SET current_budget = %s, consumable_budget = %s, available_amount = %s
+                    WHERE budget_id = %s
+                """, (src_new["current_budget"], src_new["consumable_budget"],
+                      src_new["available_amount"], source_id))
+                cursor.execute("""
+                    UPDATE public.budget_master
+                    SET current_budget = %s, consumable_budget = %s, available_amount = %s
+                    WHERE budget_id = %s
+                """, (tgt_new["current_budget"], tgt_new["consumable_budget"],
+                      tgt_new["available_amount"], req["budget_id"]))
+
+                remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - tgt_new["available_amount"])
+                fully_covered = remaining_shortage == 0
+                cursor.execute("""
+                    UPDATE public.budget_request
+                    SET request_status = %s, budget_status = %s
+                    WHERE request_id = %s
+                """, ("Approved" if fully_covered else "Pending",
+                      "Budget Cukup" if fully_covered else "Realokasi", request_id))
+
+                _approval_record_decision(cursor, request_id, "Approve with Reallocation", amount, instruction)
+                allocation_type = "Reallocation FC_CI" if target["budget_scope"] == "FC_CI" else "Reallocation CI_Only"
+                cursor.execute("""
+                    INSERT INTO public.budget_allocation
+                        (request_id, source_budget_id, target_budget_id,
+                         allocation_type, amount, instruction, approved_by)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (request_id, source_id, req["budget_id"], allocation_type,
+                      amount, instruction, session["user_id"]))
+
+                for field in ("current_budget", "consumable_budget", "available_amount"):
+                    _approval_record_history(cursor, source_id, request_id,
+                        "Reallocation Out", field, src_old[field], src_new[field], amount)
+                    _approval_record_history(cursor, req["budget_id"], request_id,
+                        "Reallocation In", field, tgt_old[field], tgt_new[field], amount)
+
+        return jsonify({
+            "message": "Approve with Reallocation Budget berhasil diproses.",
+            "request_status": "Approved" if fully_covered else "Pending",
+            "budget_status": "Budget Cukup" if fully_covered else "Realokasi",
+            "allocated_amount": str(amount),
+            "remaining_shortage": str(remaining_shortage)
+        })
+    except psycopg2.Error:
+        app.logger.exception("Gagal memproses realokasi budget")
+        return jsonify({"error": "Reallocation gagal diproses. Tidak ada perubahan yang disimpan."}), 500
     finally:
         if conn is not None:
             conn.close()

@@ -72,6 +72,34 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 .ma-detail-section h3{font-size:12px;font-weight:750;margin:0 0 15px}
 .ma-detail-section h3 i{color:var(--red);margin-right:6px}
 .ma-detail-item{min-width:0}
+
+/* Kondisi Anggaran: susunan desktop 3-2-2 yang seimbang */
+.ma-budget-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px 14px;
+}
+.ma-budget-grid .ma-detail-item{
+  min-width:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  display:block;
+}
+.ma-budget-grid .ma-modal-label{
+  margin-bottom:6px;
+  font-size:10px;
+  line-height:1.3;
+  letter-spacing:.15px;
+}
+.ma-budget-grid .ma-modal-value{
+  font-size:11px;
+  line-height:1.4;
+  font-weight:750;
+  color:#343a46;
+}
+
 .ma-alert{padding:11px 13px;border-radius:9px;background:#fff5e7;color:#855800;font-size:11px;line-height:1.5}
 @media(max-width:1000px){.ma-content{padding:26px 22px}.ma-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-filters{align-items:stretch;flex-direction:column}.ma-search-wrap{max-width:none}.ma-status-filter{width:100%}.ma-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.ma-content{padding:22px 14px}.ma-heading{flex-direction:column}.ma-kpis{gap:9px}.ma-kpi{padding:13px}.ma-kpi .value{font-size:21px}.ma-status-controls{grid-template-columns:1fr}.ma-status-controls .ma-btn,.ma-reset-btn{width:100%}.ma-detail-grid{grid-template-columns:1fr}.ma-topbar{padding:0 16px}}
@@ -294,6 +322,34 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
   }
 }
 
+
+/* Approval action panel */
+.ma-action-panel{border:1px solid #f0d5d7;background:#fffafa;border-radius:11px;padding:15px;margin-top:14px}
+.ma-action-panel h3{font-size:12px;font-weight:800;margin:0 0 6px}
+.ma-action-panel p{font-size:11px;color:#778191;margin:0 0 12px;line-height:1.5}
+.ma-action-buttons{display:flex;flex-wrap:wrap;gap:9px}
+.ma-action-btn{border:1px solid #ed1c24;background:#ed1c24;color:#fff;border-radius:8px;padding:9px 13px;font-size:11px;font-weight:750}
+.ma-action-btn.secondary{background:#fff;color:#c81921;border-color:#efb8bc}
+.ma-action-btn:disabled{opacity:.55;cursor:not-allowed}
+.ma-action-form{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #f0dfe0}
+.ma-action-form.active{display:block}
+.ma-action-form .form-label{font-size:10px;font-weight:750;color:#687386;margin-bottom:5px}
+.ma-action-form .form-control,.ma-action-form .form-select{font-size:12px;border-radius:8px;min-height:39px}
+.ma-action-note{font-size:10px;color:#778191;margin-top:5px}
+.ma-action-feedback{font-size:11px;padding:10px 12px;border-radius:8px;margin-top:10px;display:none}
+.ma-action-feedback.error{display:block;background:#fff0f1;color:#b4232c}
+.ma-action-feedback.success{display:block;background:#eaf7f1;color:#18764e}
+.ma-action-submit{border:0;background:#ed1c24;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:750}
+.ma-action-cancel{border:1px solid #dce2ea;background:#fff;color:#667085;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:700}
+@media(max-width:600px){.ma-action-buttons{flex-direction:column}.ma-action-buttons button{width:100%}}
+
+
+@media(max-width:600px){
+  .ma-budget-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .ma-budget-grid .ma-detail-item{min-height:62px;padding:9px}
+  .ma-budget-grid .ma-modal-value{font-size:12px}
+}
+
 </style>
 </head>
 <body>
@@ -378,8 +434,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
     </div>
     <div class="ma-table-wrap">
       <table class="ma-table">
-        <thead><tr><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Request Status</th><th>Aksi</th></tr></thead>
-        <tbody id="requestRows"><tr><td colspan="9" class="ma-loading"><i class="bi bi-arrow-repeat me-1"></i>Memuat pengajuan...</td></tr></tbody>
+        <thead><tr><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Approval Decision</th><th>Request Status</th><th>Aksi</th></tr></thead>
+        <tbody id="requestRows"><tr><td colspan="10" class="ma-loading"><i class="bi bi-arrow-repeat me-1"></i>Memuat pengajuan...</td></tr></tbody>
       </table>
     </div>
     <div class="ma-footer">
@@ -416,11 +472,11 @@ async function loadSummary(){
 }
 async function loadRequests(){
  const params=new URLSearchParams({page:currentPage,per_page:10,status:document.getElementById('statusFilter').value,q:document.getElementById('searchInput').value.trim()});
- const body=document.getElementById('requestRows'); body.innerHTML='<tr><td colspan="9" class="ma-loading">Memuat pengajuan...</td></tr>';
+ const body=document.getElementById('requestRows'); body.innerHTML='<tr><td colspan="10" class="ma-loading">Memuat pengajuan...</td></tr>';
  const r=await fetch('/api/approval/requests?'+params); const d=await r.json();
- if(!r.ok){body.innerHTML=`<tr><td colspan="9" class="ma-empty">${esc(d.error||'Gagal memuat data')}</td></tr>`;return;}
+ if(!r.ok){body.innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(d.error||'Gagal memuat data')}</td></tr>`;return;}
  totalPages=Math.max(1,d.pagination.pages);
- if(!d.items.length){body.innerHTML='<tr><td colspan="9" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
+ if(!d.items.length){body.innerHTML='<tr><td colspan="10" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
  else body.innerHTML=d.items.map(x=>`<tr>
  <td><div class="ma-id">REQ-${String(x.request_id).padStart(6,'0')}</div><div class="ma-muted">${esc(x.request_date?.slice(0,10))}</div></td>
  <td><strong>${esc(x.requester_username)}</strong><div class="ma-muted">${esc(x.pic)}</div></td>
@@ -428,6 +484,7 @@ async function loadRequests(){
  <td>${esc(x.commitment_item_code)}<div class="ma-muted">${esc(x.commitment_item_name)}</div></td>
  <td class="ma-money">${money(x.request_amount)}</td><td class="ma-money">${money(x.shortage_amount)}</td>
  <td><span class="ma-pill ${budgetClass(x.budget_status)}">${esc(x.budget_status)}</span></td>
+ <td>${x.approval_decision ? `<span class="ma-pill p-approved">${esc(x.approval_decision)}</span>` : '<span class="ma-muted">—</span>'}</td>
  <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
  <td><button class="ma-detail-btn" onclick="openDetail(${x.request_id})"><i class="bi bi-eye me-1"></i>Detail</button></td>
  </tr>`).join('');
@@ -458,13 +515,27 @@ function renderPagination(){
  }));
 }
 function field(label,value){return `<div class="ma-detail-item"><div class="ma-modal-label">${esc(label)}</div><div class="ma-modal-value">${esc(value)}</div></div>`;}
+const detailModalElement = document.getElementById('detailModal');
+const detailModalInstance = bootstrap.Modal.getOrCreateInstance(detailModalElement);
+
+detailModalElement.addEventListener('hidden.bs.modal', () => {
+ // Bersihkan backdrop yatim jika ada. Ini mencegah halaman tertinggal dalam kondisi gelap/freeze.
+ if (!document.querySelector('.modal.show')) {
+   document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+   document.body.classList.remove('modal-open');
+   document.body.style.removeProperty('padding-right');
+   document.body.style.removeProperty('overflow');
+ }
+});
+
 async function openDetail(id){
- const modal=new bootstrap.Modal(document.getElementById('detailModal'));
  document.getElementById('detailRequestId').textContent='REQ-'+String(id).padStart(6,'0');
- document.getElementById('detailBody').innerHTML='<div class="ma-loading">Memuat detail...</div>';modal.show();
+ document.getElementById('detailBody').innerHTML='<div class="ma-loading">Memuat detail...</div>';
+ detailModalInstance.show();
  const r=await fetch('/api/approval/requests/'+id);const d=await r.json();
  if(!r.ok){document.getElementById('detailBody').innerHTML=`<div class="alert alert-danger">${esc(d.error)}</div>`;return;}
  const x=d.request;
+ activeApprovalRequestId=id; activeApprovalRequest=x;
  document.getElementById('detailBody').innerHTML=`
  <div class="ma-detail-section"><h3><i class="bi bi-person"></i>Informasi Pengajuan</h3><div class="ma-detail-grid">
  ${field('Tanggal Pengajuan',x.request_date?.slice(0,19).replace('T',' '))}${field('Pengusul',x.requester_username)}${field('PIC',x.pic)}
@@ -472,18 +543,166 @@ async function openDetail(id){
  ${field('Request Amount',money(x.request_amount))}${field('Budget Status',x.budget_status)}${field('Budget Scope',x.budget_scope)}
  <div class="ma-detail-item" style="grid-column:1/-1">${field('Keterangan',x.request_description)}</div></div></div>
  <div class="ma-detail-section"><h3><i class="bi bi-diagram-3"></i>Informasi Mapping</h3><div class="ma-detail-grid">
- ${field('Input Profit Center',x.input_profit_center)}${field('Mapped Fund',x.fund_code)}${field('Input Cost Center',x.input_cost_center)}
- ${field('Mapped Funds Center',x.funds_center_code)}${field('Input GL Account',x.input_gl_account)}${field('Commitment Item',`${x.commitment_item_code||'—'} · ${x.commitment_item_name||''}`)}
+ ${field('Input Profit Center',x.input_profit_center)}${field('Input Cost Center',x.input_cost_center)}${field('Input GL Account',x.input_gl_account)}
+ ${field('Mapped Fund',x.fund_code)}${field('Mapped Funds Center',x.funds_center_code)}${field('Mapped Commitment Item',`${x.commitment_item_code||'—'} · ${x.commitment_item_name||'Nama belum tersedia'}`)}
  </div></div>
- <div class="ma-detail-section"><h3><i class="bi bi-wallet2"></i>Kondisi Anggaran</h3><div class="ma-detail-grid">
- ${field('Available saat Pengajuan',money(x.available_amount_snapshot))}${field('Shortage Amount',money(x.shortage_amount))}${field('Approval Hold saat Pengajuan',money(x.approval_hold_amount_snapshot))}
- ${field('Current Budget saat ini',money(x.current_budget))}${field('Consumable Budget saat ini',money(x.consumable_budget))}${field('Consumed Budget saat ini',money(x.consumed_budget))}
- ${field('Available Budget saat ini',money(x.current_available_amount))}
- </div></div>
+ <div class="ma-detail-section"><h3><i class="bi bi-wallet2"></i>Kondisi Anggaran</h3><div class="ma-budget-grid">
+  <div class="ma-detail-item"><div class="ma-modal-label">Nominal Pengajuan</div><div class="ma-modal-value">${money(x.request_amount)}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Shortage Budget</div><div class="ma-modal-value">${money(Math.max(0,Number(x.request_amount||0)-Number(x.available_amount_snapshot||0)))}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Consumed Budget</div><div class="ma-modal-value">${money(x.consumed_budget)}</div></div>
+
+  <div class="ma-detail-item"><div class="ma-modal-label">Available Budget</div><div class="ma-modal-value">${money(x.available_amount_snapshot)}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Current Budget</div><div class="ma-modal-value">${money(x.current_budget)}</div></div>
+
+  <div class="ma-detail-item"><div class="ma-modal-label">Approval Hold Amount</div><div class="ma-modal-value">${money(x.approval_hold_amount_snapshot)}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Consumable Budget</div><div class="ma-modal-value">${money(x.consumable_budget)}</div></div>
+</div></div>
  <div class="ma-detail-section"><h3><i class="bi bi-clock-history"></i>Riwayat Keputusan</h3>${d.decisions.length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Tanggal</th><th>Approval</th><th>Keputusan</th><th>Nominal</th><th>Instruksi</th></tr></thead><tbody>${d.decisions.map(a=>`<tr><td>${esc(a.decision_date?.slice(0,19).replace('T',' '))}</td><td>${esc(a.approval_username)}</td><td>${esc(a.decision)}</td><td>${money(a.approved_amount)}</td><td>${esc(a.instruction)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-secondary small">Belum ada keputusan.</div>'}</div>
  <div class="ma-detail-section"><h3><i class="bi bi-arrow-left-right"></i>Riwayat Alokasi</h3>${d.allocations.length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Jenis</th><th>Sumber Budget ID</th><th>Target Budget ID</th><th>Nominal</th><th>Instruksi</th></tr></thead><tbody>${d.allocations.map(a=>`<tr><td>${esc(a.allocation_type)}</td><td>${esc(a.source_budget_id)}</td><td>${esc(a.target_budget_id)}</td><td>${money(a.amount)}</td><td>${esc(a.instruction)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-secondary small">Belum ada aktivitas alokasi.</div>'}</div>
- <div class="ma-alert"><strong>Mode tahap 1:</strong> Halaman ini masih bersifat monitoring/read-only. Tombol keputusan akan ditambahkan setelah alur Open Budget dan Reallocation diuji agar tidak mengubah angka anggaran secara keliru.</div>`;
+ ${x.request_status === 'Pending' && Number(x.request_amount)<=Number(x.current_available_amount) ? `
+  <div class="ma-action-panel">
+    <h3><i class="bi bi-shield-check me-1" style="color:var(--red)"></i>Tindakan Approval</h3>
+    <p>Available Budget mencukupi. Pengajuan dapat disetujui langsung tanpa membuka atau memindahkan anggaran.</p>
+    <div class="ma-action-buttons">
+      <button type="button" class="ma-action-btn" onclick="submitDirectApprove()"><i class="bi bi-check-circle me-1"></i>Approve</button>
+    </div>
+    <div class="mt-3"><label class="form-label" for="directApproveInstruction">Instruksi / Catatan (opsional)</label><input id="directApproveInstruction" class="form-control" type="text" maxlength="2000" placeholder="Tambahkan catatan keputusan"></div>
+    <div id="directApproveFeedback" class="ma-action-feedback"></div>
+  </div>` : x.request_status === 'Pending' && Number(x.request_amount)>Number(x.current_available_amount) ? `
+  <div class="ma-action-panel">
+    <h3><i class="bi bi-shield-check me-1" style="color:var(--red)"></i>Tindakan Approval</h3>
+    ${Number(x.approval_hold_amount_snapshot||0) >= Number(x.shortage_amount||0)
+      ? `<p>Approval Hold mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Open Budget.</p>`
+      : `<p>Approval Hold tidak mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Reallocation dari sumber budget lain.</p>`}
+    <div class="ma-action-buttons">
+      ${Number(x.approval_hold_amount_snapshot||0) >= Number(x.shortage_amount||0)
+        ? `<button type="button" class="ma-action-btn" onclick="showApprovalAction('open')"><i class="bi bi-unlock me-1"></i>Open Budget</button>`
+        : `<button type="button" class="ma-action-btn" onclick="showApprovalAction('reallocate')"><i class="bi bi-arrow-left-right me-1"></i>Open Budget with Reallocation</button>`}
+    </div>
+    <div id="approvalActionForm" class="ma-action-form">
+      <div id="reallocationSourceWrap" class="mb-3" style="display:none">
+        <label class="form-label" for="reallocationSource">Sumber Budget</label>
+        <select id="reallocationSource" class="form-select"><option value="">Memuat sumber budget...</option></select>
+        <div class="ma-action-note">Setiap sumber menampilkan kode dan nama Commitment Item, Funds Center, scope, serta Available Budget. Hanya budget dengan Unit Entity, Biro, tahun, dan scope yang sama yang ditampilkan.</div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="approvalAmount">Nominal yang Dibuka</label><input id="approvalAmount" class="form-control" type="number" min="0.01" step="0.01" placeholder="Nominal terisi otomatis"><div class="ma-action-note" id="approvalAmountHint"></div></div>
+        <div class="col-md-6"><label class="form-label" for="approvalInstruction">Instruksi / Catatan</label><input id="approvalInstruction" class="form-control" type="text" maxlength="2000" placeholder="Opsional"></div>
+      </div>
+      <div id="approvalActionFeedback" class="ma-action-feedback"></div>
+      <div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="ma-action-cancel" onclick="hideApprovalAction()">Batal</button><button type="button" class="ma-action-submit" id="approvalActionSubmit" onclick="submitApprovalAction()">Konfirmasi Tindakan</button></div>
+    </div>
+  </div>` : `<div class="ma-alert"><strong>Informasi:</strong> Pengajuan ini tidak memiliki shortage yang perlu dibuka atau statusnya bukan Pending.</div>`}`;
 }
+
+let activeApprovalRequestId = null;
+let activeApprovalAction = null;
+let activeApprovalRequest = null;
+
+async function submitDirectApprove(){
+ const instruction=document.getElementById('directApproveInstruction')?.value.trim()||'';
+ const feedback=document.getElementById('directApproveFeedback');
+ const button=document.querySelector('.ma-action-buttons button[onclick="submitDirectApprove()"]');
+ if(!activeApprovalRequestId) return;
+ if(!confirm('Setujui pengajuan ini tanpa Open Budget atau Reallocation?')) return;
+ if(button){button.disabled=true;button.innerHTML='<i class="bi bi-arrow-repeat me-1"></i>Memproses...';}
+ feedback.className='ma-action-feedback';feedback.textContent='';
+ try{
+   const r=await fetch(`/api/approval/requests/${activeApprovalRequestId}/approve`,{
+     method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+     body:JSON.stringify({instruction})
+   });
+   const d=await r.json();
+   if(!r.ok) throw Error(d.error||'Approve gagal diproses.');
+   feedback.className='ma-action-feedback success';
+   feedback.textContent=d.message;
+   await Promise.all([loadSummary(),loadRequests()]);
+   // Modal detail tetap terbuka agar pengguna dapat membaca notifikasi,
+   // lalu menekan Tutup untuk kembali ke Manajemen Approval.
+ }catch(e){
+   feedback.className='ma-action-feedback error';feedback.textContent=e.message;
+ }finally{
+   if(button){button.disabled=false;button.innerHTML='<i class="bi bi-check-circle me-1"></i>Approve';}
+ }
+}
+
+function showApprovalAction(mode){
+ activeApprovalAction=mode;
+ const form=document.getElementById('approvalActionForm');
+ const sourceWrap=document.getElementById('reallocationSourceWrap');
+ const hint=document.getElementById('approvalAmountHint');
+ const feedback=document.getElementById('approvalActionFeedback');
+ if(!form) return;
+ form.classList.add('active');
+ feedback.className='ma-action-feedback';feedback.textContent='';
+ const liveShortage=Math.max(0,
+   Number(activeApprovalRequest.request_amount||0)-
+   Number(activeApprovalRequest.current_available_amount||0)
+ );
+ const hold=Math.max(0,
+   Number(activeApprovalRequest.current_budget||0)-
+   Number(activeApprovalRequest.consumable_budget||0)
+ );
+ const suggestedAmount=mode==='open' ? Math.min(liveShortage,hold) : liveShortage;
+ document.getElementById('approvalAmount').value=suggestedAmount>0?String(suggestedAmount):'';
+ document.getElementById('approvalInstruction').value='';
+ sourceWrap.style.display=mode==='reallocate'?'block':'none';
+ hint.textContent=mode==='open'
+   ? `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Maksimal dapat dibuka dari Approval Hold: ${money(hold)}.`
+   : `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Realokasi dibatasi oleh Available Budget sumber dan shortage target.`;
+ if(mode==='reallocate') loadReallocationSources();
+}
+function hideApprovalAction(){
+ const form=document.getElementById('approvalActionForm');
+ if(form) form.classList.remove('active');
+ activeApprovalAction=null;
+}
+async function loadReallocationSources(){
+ const select=document.getElementById('reallocationSource');
+ select.innerHTML='<option value="">Memuat sumber budget...</option>';
+ try{
+   const r=await fetch(`/api/approval/requests/${activeApprovalRequestId}/reallocation-sources`);
+   const d=await r.json();
+   if(!r.ok) throw Error(d.error||'Gagal memuat sumber budget.');
+   if(!d.items.length){select.innerHTML='<option value="">Tidak ada sumber budget yang tersedia</option>';return;}
+   select.innerHTML='<option value="">Pilih sumber budget</option>'+d.items.map(b=>{
+      const ciCode = b.commitment_item_code || `CI ID ${b.commitment_item_id}`;
+      const ciName = b.commitment_item_name || 'Nama Commitment Item belum tersedia';
+      const fundsCenter = b.funds_center_code || 'Tanpa Funds Center';
+      const scope = b.budget_scope || '—';
+      const label = `Budget #${b.budget_id} · ${ciCode} - ${ciName} · ${fundsCenter} · ${scope} · Available ${money(b.available_amount)}`;
+      return `<option value="${esc(b.budget_id)}" data-available="${esc(b.available_amount)}" title="${esc(label)}">${esc(label)}</option>`;
+    }).join('');
+ }catch(e){select.innerHTML=`<option value="">${esc(e.message)}</option>`;}
+}
+async function submitApprovalAction(){
+ const amount=document.getElementById('approvalAmount').value;
+ const instruction=document.getElementById('approvalInstruction').value.trim();
+ const feedback=document.getElementById('approvalActionFeedback');
+ const submit=document.getElementById('approvalActionSubmit');
+ const payload={amount,instruction};
+ let endpoint='';
+ if(activeApprovalAction==='open') endpoint=`/api/approval/requests/${activeApprovalRequestId}/open-budget`;
+ else if(activeApprovalAction==='reallocate'){
+   endpoint=`/api/approval/requests/${activeApprovalRequestId}/reallocate`;
+   payload.source_budget_id=document.getElementById('reallocationSource').value;
+ }
+ if(!amount || Number(amount)<=0){feedback.className='ma-action-feedback error';feedback.textContent='Masukkan nominal lebih besar dari Rp0.';return;}
+ if(activeApprovalAction==='reallocate' && !payload.source_budget_id){feedback.className='ma-action-feedback error';feedback.textContent='Pilih sumber budget terlebih dahulu.';return;}
+ if(!confirm(`Konfirmasi ${activeApprovalAction==='open'?'Approve with Open Budget':'Approve with Reallocation Budget'} sebesar ${money(amount)}? Perubahan anggaran akan langsung disimpan.`)) return;
+ submit.disabled=true;submit.textContent='Memproses...';feedback.className='ma-action-feedback';feedback.textContent='';
+ try{
+   const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify(payload)});
+   const d=await r.json();
+   if(!r.ok) throw Error(d.error||'Tindakan approval gagal diproses.');
+   feedback.className='ma-action-feedback success';
+   feedback.textContent=`${d.message} Status pengajuan: ${d.request_status}. Sisa shortage: ${money(d.remaining_shortage)}.`;
+   await Promise.all([loadSummary(),loadRequests()]);
+   // Jangan membuat/membuka instance modal baru di atas modal yang masih aktif.
+ }catch(e){feedback.className='ma-action-feedback error';feedback.textContent=e.message;}
+ finally{submit.disabled=false;submit.textContent='Konfirmasi Tindakan';}
+}
+
 document.getElementById('applyFilter').addEventListener('click',()=>{currentPage=1;loadRequests();});
 document.getElementById('resetFilter').addEventListener('click',()=>{
  document.getElementById('statusFilter').value='ALL';
@@ -495,7 +714,7 @@ document.getElementById('refreshBtn').addEventListener('click',async()=>{try{awa
 
 
 document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){currentPage=1;loadRequests();}});
-(async()=>{try{await loadSummary();await loadRequests();}catch(e){document.getElementById('requestRows').innerHTML=`<tr><td colspan="9" class="ma-empty">${esc(e.message)}</td></tr>`;}})();
+(async()=>{try{await loadSummary();await loadRequests();}catch(e){document.getElementById('requestRows').innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(e.message)}</td></tr>`;}})();
 </script>
 </body>
 </html>
