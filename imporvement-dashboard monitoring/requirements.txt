@@ -3,3 +3,4 @@ gunicorn
 psycopg2-binary
 python-dotenv
 bcrypt
+openpyxl==3.1.5

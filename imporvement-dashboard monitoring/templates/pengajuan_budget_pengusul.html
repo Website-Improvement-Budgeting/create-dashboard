@@ -89,19 +89,109 @@
         }
 
         /* =================================================
-           USER PROFILE
+           USER PROFILE DROPDOWN - SAMA DENGAN BUDGET DETAIL
         ================================================= */
 
-        .pengajuan-page .user-profile-link {
+        .pengajuan-page .user-dropdown-toggle {
             display: flex;
             align-items: center;
-            gap: 12px;
-            color: inherit;
+            gap: 11px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text);
+            text-align: left;
+            cursor: pointer;
+            transition: background .2s ease;
+        }
+
+        .pengajuan-page .user-dropdown-toggle:hover,
+        .pengajuan-page .user-dropdown-toggle[aria-expanded="true"] {
+            background: #f5f5f5;
+            color: var(--text);
+        }
+
+        .pengajuan-page .user-dropdown-toggle:focus-visible {
+            outline: 2px solid var(--red);
+            outline-offset: 2px;
+        }
+
+        .pengajuan-page .user-dropdown-toggle .user-info {
+            text-align: left;
+        }
+
+        .pengajuan-page .user-dropdown-toggle .user-info strong {
+            display: block;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .pengajuan-page .user-dropdown-toggle .user-info small {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .pengajuan-page .dropdown-chevron {
+            margin-left: 5px;
+            color: var(--muted);
+            font-size: 12px;
+            transition: transform .2s ease;
+        }
+
+        .pengajuan-page .user-dropdown-toggle[aria-expanded="true"] .dropdown-chevron {
+            transform: rotate(180deg);
+        }
+
+        .pengajuan-page .user-dropdown-menu {
+            min-width: 215px;
+            padding: 8px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, .09);
+        }
+
+        .pengajuan-page .user-dropdown-menu .dropdown-header {
+            padding: 9px 12px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .pengajuan-page .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: #40434b;
+            font-size: 12px;
             text-decoration: none;
         }
 
-        .pengajuan-page .user-profile-link:hover {
-            color: inherit;
+        .pengajuan-page .user-dropdown-menu .dropdown-item:hover {
+            background: #f5f6f8;
+        }
+
+        .pengajuan-page .user-dropdown-menu .user-logout-item {
+            color: var(--red);
+            font-weight: 650;
+        }
+
+        .pengajuan-page .user-dropdown-menu .user-logout-item:hover {
+            background: var(--red-soft);
+            color: var(--red-dark);
+        }
+
+        @media (max-width: 650px) {
+            .pengajuan-page .user-dropdown-toggle {
+                padding: 6px;
+            }
         }
 
         /* =================================================
@@ -726,16 +816,48 @@
     <main class="main-content">
 
         <header class="topbar">
-            <a href="{{ url_for('profil') }}" class="user-profile-link">
-                <div class="user-avatar">
-                    <i class="bi bi-person-fill"></i>
+            <div class="dropdown">
+
+                <button
+                    type="button"
+                    class="user-profile user-dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="Buka menu akun pengguna"
+                >
+                    <div class="user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+
+                    <div class="user-info">
+                        <strong>{{ username | title }}</strong>
+                        <small>Pengusul Budget</small>
+                    </div>
+
+                    <i class="bi bi-chevron-down dropdown-chevron"></i>
+                </button>
+
+                <div class="dropdown-menu dropdown-menu-end user-dropdown-menu">
+                    <div class="dropdown-header">
+                        Akun Pengusul
+                    </div>
+
+                    <a href="{{ url_for('profil') }}" class="dropdown-item">
+                        <i class="bi bi-person-circle"></i>
+                        Profil
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <button type="submit" class="dropdown-item user-logout-item">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </button>
+                    </form>
                 </div>
 
-                <div class="user-info">
-                    <strong>{{ username | upper }}</strong>
-                    <small>Pengusul Budget</small>
-                </div>
-            </a>
+            </div>
         </header>
 
         <section class="page-content">
