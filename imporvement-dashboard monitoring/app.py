@@ -4,6 +4,13 @@ import secrets
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
+from openpyxl.comments import Comment
+from flask import send_file
+
 import bcrypt
 import psycopg2
 
@@ -4207,6 +4214,357 @@ def api_approval_reallocate(request_id):
             conn.close()
 
 
+def _budget_export_file(user_mode=False, request_id=None):
+    """Export template budget untuk sisi Approval."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            where = []
+            params = []
+            if user_mode:
+                where.append("br.user_id = %s")
+                params.append(session["user_id"])
+            if request_id is not None:
+                where.append("br.request_id = %s")
+                params.append(request_id)
+
+            where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+
+            cursor.execute(f"""
+                SELECT
+                    br.request_id,
+                    br.request_date,
+                    br.transaction_date,
+                    br.pic,
+                    br.input_profit_center,
+                    br.input_gl_account,
+                    br.request_amount,
+                    br.request_description,
+                    br.input_cost_center,
+                    br.mapped_fund_id,
+                    br.mapped_funds_center_id,
+                    br.mapped_commitment_item_id,
+                    f.fund_code,
+                    fc.funds_center_code,
+                    ci.commitment_item_code,
+                    u.username,
+                    ue.unit_entity,
+                    br.request_status
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.fund f ON f.fund_id = br.mapped_fund_id
+                LEFT JOIN public.funds_center fc
+                    ON fc.funds_center_id = br.mapped_funds_center_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = br.mapped_commitment_item_id
+                {where_sql}
+                ORDER BY br.request_date, br.request_id
+            """, params)
+            requests_data = cursor.fetchall()
+            request_ids = [r["request_id"] for r in requests_data]
+
+            allocations = []
+            decisions = []
+            if request_ids:
+                cursor.execute("""
+                    SELECT
+                        ba.request_id,
+                        COALESCE(br_target.transaction_date, br_target.request_date)::date
+                            AS allocation_date,
+                        ba.amount,
+                        ba.instruction,
+                        ba.allocation_type,
+                        sf.fund_code AS source_fund,
+                        sfc.funds_center_code AS source_fc,
+                        sci.commitment_item_code AS source_ci,
+                        tf.fund_code AS target_fund,
+                        tfc.funds_center_code AS target_fc,
+                        tci.commitment_item_code AS target_ci
+                    FROM public.budget_allocation ba
+                    LEFT JOIN public.budget_master sb
+                        ON sb.budget_id = ba.source_budget_id
+                    LEFT JOIN LATERAL (
+                        SELECT br_source.mapped_fund_id
+                        FROM public.budget_request br_source
+                        WHERE br_source.budget_id = sb.budget_id
+                          AND br_source.mapped_fund_id IS NOT NULL
+                        ORDER BY br_source.request_date DESC,
+                                 br_source.request_id DESC
+                        LIMIT 1
+                    ) source_fund_map ON TRUE
+                    LEFT JOIN public.fund sf
+                        ON sf.fund_id = source_fund_map.mapped_fund_id
+                    LEFT JOIN public.funds_center sfc
+                        ON sfc.funds_center_id = sb.funds_center_id
+                    LEFT JOIN public.commitment_item sci
+                        ON sci.commitment_item_id = sb.commitment_item_id
+                    LEFT JOIN public.budget_master tb
+                        ON tb.budget_id = ba.target_budget_id
+                    LEFT JOIN public.budget_request br_target
+                        ON br_target.request_id = ba.request_id
+                    LEFT JOIN public.fund tf
+                        ON tf.fund_id = br_target.mapped_fund_id
+                    LEFT JOIN public.funds_center tfc
+                        ON tfc.funds_center_id = tb.funds_center_id
+                    LEFT JOIN public.commitment_item tci
+                        ON tci.commitment_item_id = tb.commitment_item_id
+                    WHERE ba.request_id = ANY(%s)
+                    ORDER BY ba.request_id, ba.allocation_id
+                """, (request_ids,))
+                allocations = cursor.fetchall()
+
+                cursor.execute("""
+                    SELECT
+                        ad.request_id,
+                        ad.decision,
+                        ad.approved_amount,
+                        ad.decision_date,
+                        ad.instruction,
+                        f.fund_code,
+                        fc.funds_center_code,
+                        ci.commitment_item_code
+                    FROM public.approval_decision ad
+                    LEFT JOIN public.budget_request br
+                        ON br.request_id = ad.request_id
+                    LEFT JOIN public.budget_master bm
+                        ON bm.budget_id = br.budget_id
+                    LEFT JOIN public.fund f
+                        ON f.fund_id = br.mapped_fund_id
+                    LEFT JOIN public.funds_center fc
+                        ON fc.funds_center_id = COALESCE(
+                            br.mapped_funds_center_id, bm.funds_center_id
+                        )
+                    LEFT JOIN public.commitment_item ci
+                        ON ci.commitment_item_id = COALESCE(
+                            br.mapped_commitment_item_id, bm.commitment_item_id
+                        )
+                    WHERE ad.request_id = ANY(%s)
+                    ORDER BY ad.request_id, ad.decision_date
+                """, (request_ids,))
+                decisions = cursor.fetchall()
+
+        wb = Workbook()
+        ws_a = wb.active
+        ws_a.title = "APPROVEL"
+        ws_u = wb.create_sheet("USER")
+
+        # Sheet APPROVEL: enam kolom, tanpa kolom pemisah kosong.
+        ws_a.append(["BUDGET"])
+        ws_a.merge_cells("A1:F1")
+        ws_a.append([
+            "DATE", "INSTRUCTION", "FUND", "FUNDS CENTER",
+            "COMMITMENT ITEM", "AMOUNT"
+        ])
+        ws_a.append([
+            "(TANGGAL)", "(+/-) OPSIONAL", "(LINK COSTCENTER)",
+            "(LINK COSTCENTER)", "(LINK G/L)", "(NOMINAL)"
+        ])
+
+        # Sheet USER: judul DATABASE memenuhi seluruh lebar tabel.
+        ws_u.append(["DATABASE"])
+        ws_u.merge_cells("A1:G1")
+        ws_u.append([
+            "DATE", "PIC", "PROFIT CENTER", "COST CENTER",
+            "GL ACCOUNT", "AMOUNT", "KETERANGAN"
+        ])
+        ws_u.append([
+            "(TANGGAL)", "(NAMA)", "(PROFIT CENTER)", "(COST CENTER)",
+            "(KODE GL)", "(NOMINAL)", "(KETERANGAN PENGAJUAN)"
+        ])
+
+        # DATABASE: satu baris untuk setiap pengajuan.
+        for r in requests_data:
+            ws_u.append([
+                r["transaction_date"] or r["request_date"],
+                r["pic"] or r["username"],
+                r["input_profit_center"],
+                r["input_cost_center"],
+                r["input_gl_account"],
+                float(r["request_amount"] or 0),
+                r["request_description"]
+            ])
+
+        allocations_by_request = {}
+        for a in allocations:
+            allocations_by_request.setdefault(a["request_id"], []).append(a)
+
+        decisions_by_request = {}
+        for d in decisions:
+            decisions_by_request.setdefault(d["request_id"], []).append(d)
+
+        # APPROVEL: transaksi aktual atau rancangan untuk pengajuan pending.
+        for r in requests_data:
+            rid = r["request_id"]
+            request_allocations = allocations_by_request.get(rid, [])
+            request_decisions = decisions_by_request.get(rid, [])
+            status = str(r["request_status"] or "").strip().lower()
+            request_date = r["transaction_date"] or r["request_date"]
+
+            if request_allocations:
+                for a in request_allocations:
+                    dt = a["allocation_date"] or request_date
+                    amount = float(a["amount"] or 0)
+                    ws_a.append([
+                        dt, "-", a["source_fund"], a["source_fc"],
+                        a["source_ci"], amount
+                    ])
+                    ws_a.append([
+                        dt, "+", a["target_fund"], a["target_fc"],
+                        a["target_ci"], amount
+                    ])
+                continue
+
+            if request_decisions:
+                for d in request_decisions:
+                    decision = str(d["decision"] or "").strip().lower()
+                    if "reject" in decision:
+                        continue
+                    if "approve" in decision or "open budget" in decision:
+                        ws_a.append([
+                            d["decision_date"].date() if d["decision_date"] else request_date,
+                            "+",
+                            d["fund_code"] or r["fund_code"],
+                            d["funds_center_code"] or r["funds_center_code"],
+                            d["commitment_item_code"] or r["commitment_item_code"],
+                            float(d["approved_amount"] or 0)
+                        ])
+                continue
+
+            if "pending" in status:
+                row_idx = ws_a.max_row + 1
+                ws_a.append([
+                    request_date, "+", r["fund_code"],
+                    r["funds_center_code"], r["commitment_item_code"],
+                    float(r["request_amount"] or 0)
+                ])
+                ws_a.cell(row=row_idx, column=2).comment = Comment(
+                    "RANCANGAN PENGAJUAN PENDING — belum merupakan keputusan "
+                    "Approval atau transaksi perubahan budget.",
+                    "SILOG Budget Monitoring"
+                )
+                ws_a.cell(row=row_idx, column=6).comment = Comment(
+                    "Nominal ini merupakan nominal pengajuan dari Pengusul, "
+                    "bukan nominal yang sudah disetujui.",
+                    "SILOG Budget Monitoring"
+                )
+
+        # Styling konsisten: judul, header, petunjuk, dan isi.
+        title_fill = PatternFill("solid", fgColor="A80710")
+        header_fill = PatternFill("solid", fgColor="C00000")
+        instruction_fill = PatternFill("solid", fgColor="F2F3F5")
+        alternate_fill = PatternFill("solid", fgColor="FAFAFA")
+        white_bold = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+        header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+        instruction_font = Font(name="Arial", size=9, italic=True, color="666666")
+        body_font = Font(name="Arial", size=10, color="222222")
+        thin = Side(style="thin", color="D9DEE7")
+        table_border = Border(bottom=thin)
+
+        sheet_configs = [
+            (ws_a, 6, [16, 18, 20, 22, 24, 20], 6),
+            (ws_u, 7, [16, 20, 20, 22, 20, 20, 48], 7),
+        ]
+        for ws, column_count, widths, amount_col in sheet_configs:
+            # Judul baris pertama.
+            title_cell = ws.cell(row=1, column=1)
+            title_cell.fill = title_fill
+            title_cell.font = white_bold
+            title_cell.alignment = Alignment(
+                horizontal="left", vertical="center", indent=1
+            )
+            ws.row_dimensions[1].height = 32
+            for col in range(1, column_count + 1):
+                ws.cell(row=1, column=col).fill = title_fill
+
+            # Header baris kedua.
+            for cell in ws[2][:column_count]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center", wrap_text=True
+                )
+                cell.border = table_border
+            ws.row_dimensions[2].height = 28
+
+            # Baris ketiga adalah petunjuk pengisian.
+            for cell in ws[3][:column_count]:
+                cell.fill = instruction_fill
+                cell.font = instruction_font
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center", wrap_text=True
+                )
+                cell.border = table_border
+            ws.row_dimensions[3].height = 32
+
+            # Isi data mulai baris keempat.
+            for row_idx in range(4, ws.max_row + 1):
+                ws.row_dimensions[row_idx].height = 24
+                for col_idx in range(1, column_count + 1):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.font = body_font
+                    cell.border = table_border
+                    cell.alignment = Alignment(
+                        vertical="center",
+                        horizontal=("right" if col_idx == amount_col else "left"),
+                        wrap_text=(col_idx == column_count and ws.title == "USER")
+                    )
+                    if row_idx % 2 == 1:
+                        cell.fill = alternate_fill
+                    if col_idx == 1:
+                        cell.number_format = "dd/mm/yyyy"
+                    if col_idx == amount_col:
+                        cell.number_format = '#,##0.00;[Red]-#,##0.00'
+
+            for col_idx, width in enumerate(widths, start=1):
+                ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+            ws.freeze_panes = "A4"
+            ws.sheet_view.showGridLines = False
+            ws.auto_filter.ref = (
+                f"A2:{get_column_letter(column_count)}{ws.max_row}"
+            )
+            ws.sheet_properties.pageSetUpPr.fitToPage = True
+            ws.page_setup.fitToWidth = 1
+            ws.page_setup.fitToHeight = 0
+            ws.page_setup.orientation = "landscape"
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        suffix = f"_REQ_{request_id}" if request_id is not None else "_SEMUA"
+        role_name = "pengusul" if user_mode else "approval"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=f"template_budget_{role_name}{suffix}.xlsx",
+            mimetype=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            )
+        )
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/approval/export-budget.xlsx")
+def export_budget_approval_all():
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+    return _budget_export_file(user_mode=False)
+
+
+@app.route("/approval/export-budget/<int:request_id>.xlsx")
+def export_budget_approval_one(request_id):
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+    return _budget_export_file(user_mode=False, request_id=request_id)
+
 # menjalankan aplikasi flask lokal
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
