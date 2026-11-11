@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from io import BytesIO
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.comments import Comment
@@ -2847,6 +2847,320 @@ def pengajuan_submit():
             conn.close()
 
 
+
+# =====================================================
+# IMPORT EXCEL PENGAJUAN BUDGET (BATCH)
+# =====================================================
+
+PENGAJUAN_EXCEL_COLUMNS = [
+    "Tanggal Transaksi", "Unit Entity", "PIC", "Profit Center",
+    "Cost Center", "GL Account", "Nominal Pengajuan", "Keterangan"
+]
+
+
+def _pengajuan_excel_date(value):
+    if hasattr(value, "date"):
+        value = value.date()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, str):
+        value = value.strip()
+        # Menerima format ISO dan tanggal Indonesia.
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+            try:
+                return date.fromisoformat(value) .isoformat() if fmt == "%Y-%m-%d" else __import__("datetime").datetime.strptime(value, fmt).date().isoformat()
+            except ValueError:
+                pass
+    raise PengajuanValidationError("Tanggal harus berupa tanggal Excel atau format DD/MM/YYYY.")
+
+
+def _pengajuan_excel_entity_id(entity_value, entity_lookup):
+    key = str(entity_value or "").strip().casefold()
+    if not key:
+        raise PengajuanValidationError("Unit Entity wajib diisi.")
+    if key not in entity_lookup:
+        raise PengajuanValidationError("Unit Entity tidak dikenali atau bukan bagian dari akses biro Anda.")
+    return entity_lookup[key]
+
+
+def _pengajuan_bulk_row_payload(row, entity_lookup):
+    return {
+        "tanggal": _pengajuan_excel_date(row.get("Tanggal Transaksi")),
+        "entity_id": _pengajuan_excel_entity_id(row.get("Unit Entity"), entity_lookup),
+        "pic": str(row.get("PIC") or "").strip(),
+        "profit_center": str(row.get("Profit Center") or "").strip(),
+        "cost_center": str(row.get("Cost Center") or "").strip(),
+        "gl_account": str(row.get("GL Account") or "").strip(),
+        "request_amount": str(row.get("Nominal Pengajuan") or "").strip(),
+        "keterangan": str(row.get("Keterangan") or "").strip(),
+    }
+
+
+def _pengajuan_insert_one(cursor, user_id, payload):
+    data = pengajuan_parse_input(payload, require_details=True)
+    result = pengajuan_check(cursor, user_id, data)
+    mapped, budget = result["mapped"], result["budget"]
+    if budget is None:
+        raise PengajuanValidationError("Sumber budget tidak ditemukan. Pengajuan belum dapat dikirim.", 422)
+    current = budget["current_budget"]
+    consumable = budget["consumable_budget"]
+    available = budget["available_amount"]
+    if current is None or consumable is None or available is None:
+        raise PengajuanValidationError("Data Current, Consumable, atau Available Budget belum lengkap.", 422)
+    current, consumable, available = Decimal(str(current)), Decimal(str(consumable)), Decimal(str(available))
+    if current < 0 or consumable < 0 or available < 0:
+        raise PengajuanValidationError("Nilai budget tidak boleh negatif.", 422)
+    if consumable > current:
+        raise PengajuanValidationError("Consumable Budget melebihi Current Budget.", 422)
+    if result["budget_status"] not in {"Budget Cukup", "Review"}:
+        raise PengajuanValidationError("Status budget tidak sesuai dengan standar database.", 422)
+    approval_hold = current - consumable
+    cursor.execute("""
+        INSERT INTO public.budget_request (
+            user_id, entity_id, request_date, transaction_date, pic,
+            input_profit_center, input_cost_center, input_gl_account,
+            request_amount, request_description,
+            mapped_fund_id, mapped_funds_center_id, mapped_commitment_item_id,
+            budget_id, budget_scope,
+            available_amount_snapshot, shortage_amount, approval_hold_amount_snapshot,
+            mapping_status, budget_status, request_status
+        ) VALUES (
+            %s, %s, NOW(), %s, %s,
+            %s, %s, %s,
+            %s, %s,
+            %s, %s, %s,
+            %s, %s,
+            %s, %s, %s,
+            'Oke', %s, 'Pending'
+        )
+        RETURNING request_id
+    """, (
+        user_id, data["entity_id"], data["transaction_date"], data["pic"],
+        data["profit_center"], data["cost_center"], data["gl_account"],
+        data["request_amount"], data["description"],
+        mapped["fund"]["id"], mapped["funds_center"]["id"], mapped["commitment_item"]["id"],
+        budget["budget_id"], budget["budget_scope"], available, result["shortage"], approval_hold,
+        result["budget_status"]
+    ))
+    saved = cursor.fetchone()
+    return {
+        "request_id": saved["request_id"],
+        "budget_status": result["budget_status"],
+        "budget_scope": budget["budget_scope"],
+        "shortage_amount": str(result["shortage"]) if result["shortage"] is not None else None,
+        "request_amount": str(data["request_amount"]),
+    }
+
+
+@app.route("/pengajuan-budget/template-excel", methods=["GET"])
+def pengajuan_template_excel():
+    if not session.get("user_id") or session.get("role") != "Pengusul":
+        return redirect(url_for("login"))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Data Pengajuan"
+    ws.append(PENGAJUAN_EXCEL_COLUMNS)
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = "A1:H2"
+    widths = [20, 28, 24, 20, 20, 20, 22, 48]
+    from openpyxl.styles import Font, PatternFill, Alignment
+    for idx, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(idx)].width = width
+        cell = ws.cell(1, idx)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="C8102E")
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[1].height = 30
+    entities = get_pengusul_entity_options(session["user_id"])
+
+    # Dropdown Unit Entity mengikuti hak akses entity milik pengusul.
+    # Daftar disimpan pada sheet referensi tersembunyi agar pilihan
+    # yang tersedia selalu berasal dari master SILOG, bukan ketikan bebas.
+    from openpyxl.worksheet.datavalidation import DataValidation
+    from openpyxl.comments import Comment
+    from openpyxl.workbook.defined_name import DefinedName
+
+    ref_ws = wb.create_sheet("Referensi")
+    entity_names = [
+        str(item.get("unit_entity", "")).strip()
+        for item in entities
+        if item.get("unit_entity") and str(item.get("unit_entity")).strip()
+    ]
+    entity_names = list(dict.fromkeys(entity_names))
+
+    if entity_names:
+        for row_no, entity_name in enumerate(entity_names, start=1):
+            ref_ws.cell(row=row_no, column=1, value=entity_name)
+
+        entity_range = f"'Referensi'!$A$1:$A${len(entity_names)}"
+        defined_name = DefinedName(
+            name="DaftarUnitEntity",
+            attr_text=entity_range
+        )
+
+        # Kompatibilitas beberapa versi openpyxl:
+        # 3.x menggunakan DefinedNameDict.add(), sedangkan versi lama
+        # menggunakan DefinedNameList.append() / definedName.append().
+        names_collection = wb.defined_names
+        if hasattr(names_collection, "add"):
+            try:
+                names_collection.add(defined_name)
+            except (AttributeError, TypeError):
+                if hasattr(names_collection, "append"):
+                    names_collection.append(defined_name)
+                elif hasattr(names_collection, "definedName"):
+                    names_collection.definedName.append(defined_name)
+                else:
+                    raise RuntimeError(
+                        "Versi openpyxl tidak mendukung pembuatan named range."
+                    )
+        elif hasattr(names_collection, "append"):
+            names_collection.append(defined_name)
+        elif hasattr(names_collection, "definedName"):
+            names_collection.definedName.append(defined_name)
+        else:
+            raise RuntimeError(
+                "Versi openpyxl tidak mendukung pembuatan named range."
+            )
+
+        entity_validation = DataValidation(
+            type="list",
+            formula1="=DaftarUnitEntity",
+            allow_blank=False
+        )
+        entity_validation.errorTitle = "Unit Entity tidak valid"
+        entity_validation.error = "Pilih Unit Entity dari daftar dropdown."
+        entity_validation.promptTitle = "Pilih Unit Entity"
+        entity_validation.prompt = "Gunakan pilihan yang tersedia pada dropdown."
+        entity_validation.showErrorMessage = True
+        entity_validation.showInputMessage = True
+        ws.add_data_validation(entity_validation)
+        entity_validation.add("B2:B1048576")
+    else:
+        # Jika pengusul tidak memiliki pilihan entity, jangan membuat
+        # dropdown kosong yang memberi kesan data bisa dipilih.
+        ws["B2"].comment = Comment(
+            "Tidak ada Unit Entity yang tersedia untuk akun ini. Hubungi administrator.",
+            "SILOG"
+        )
+
+    ref_ws.sheet_state = "hidden"
+
+    # Contoh format pada baris input pertama; baris berikutnya tetap
+    # mengikuti format tanggal/angka yang dibaca dari Excel saat import.
+    ws["A2"].number_format = "dd/mm/yyyy"
+    ws["G2"].number_format = '#,##0'
+
+    info = wb.create_sheet("Petunjuk")
+    instructions = [
+        ["PETUNJUK PENGISIAN TEMPLATE PENGAJUAN BUDGET"],
+        ["Isi satu baris untuk satu pengajuan. Mulai pengisian pada baris kedua di sheet Data Pengajuan."],
+        ["Tanggal Transaksi", "Gunakan tanggal Excel atau format DD/MM/YYYY."],
+        ["Unit Entity", "Pilih Unit Entity melalui dropdown pada kolom B di sheet Data Pengajuan. Pilihan mengikuti akses akun pengusul."],
+        ["PIC", "Nama penanggung jawab wajib diisi."],
+        ["Profit Center / Cost Center / GL Account", "Isi kode master yang valid, sistem akan melakukan mapping ulang."],
+        ["Nominal Pengajuan", "Isi angka Rupiah bulat positif tanpa mengetik Rp."],
+        ["Keterangan", "Wajib diisi, maksimal 2.000 karakter."],
+        ["Batas upload", "Tidak ada batas jumlah baris. Ukuran file maksimal 20 MB."],
+        ["Catatan", "Import tidak melewati validasi. Setiap baris diperiksa mapping dan ketersediaan budget sebelum dikirim."]
+    ]
+    for row in instructions:
+        info.append(row)
+    info.column_dimensions["A"].width = 34
+    info.column_dimensions["B"].width = 110
+    info["A1"].font = Font(bold=True, color="C8102E", size=14)
+    for row in info.iter_rows(min_row=3, max_col=2):
+        row[0].font = Font(bold=True)
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name="Template_Pengajuan_Budget_SILOG.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.route("/api/pengajuan/import/preview", methods=["POST"])
+def pengajuan_import_preview():
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename.lower().endswith(".xlsx"):
+        return jsonify({"error": "Pilih file Excel berformat .xlsx."}), 400
+    raw = uploaded.read(20 * 1024 * 1024 + 1)
+    if len(raw) > 20 * 1024 * 1024:
+        return jsonify({"error": "Ukuran file maksimal 20 MB."}), 413
+    try:
+        wb = load_workbook(BytesIO(raw), read_only=True, data_only=True)
+        ws = wb["Data Pengajuan"] if "Data Pengajuan" in wb.sheetnames else wb.active
+        headers = [str(c.value or "").strip() for c in next(ws.iter_rows(min_row=1, max_row=1))]
+        if headers != PENGAJUAN_EXCEL_COLUMNS:
+            return jsonify({"error": "Header kolom tidak sesuai template SILOG. Unduh template terbaru."}), 422
+        entity_options = get_pengusul_entity_options(session["user_id"])
+        entity_lookup = {str(e["unit_entity"]).strip().casefold(): e["entity_id"] for e in entity_options}
+        parsed = []
+        for excel_row, values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not any(v is not None and str(v).strip() for v in values):
+                continue
+            source = dict(zip(headers, values))
+            item = {"row": excel_row, "payload": None, "status": "Gagal", "message": ""}
+            try:
+                payload = _pengajuan_bulk_row_payload(source, entity_lookup)
+                data = pengajuan_parse_input(payload, require_details=True)
+                conn = get_db_connection()
+                try:
+                    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                        checked = pengajuan_check(cursor, session["user_id"], data)
+                    if checked["budget"] is None:
+                        raise PengajuanValidationError("Sumber budget tidak ditemukan.", 422)
+                    item.update({"payload": payload, "status": "Siap", "message": checked["message"], "budget_status": checked["budget_status"], "shortage_amount": str(checked["shortage"]) if checked["shortage"] is not None else None})
+                finally:
+                    conn.close()
+            except PengajuanValidationError as exc:
+                item["message"] = str(exc)
+            except psycopg2.Error:
+                app.logger.exception("Validasi baris import gagal")
+                item["message"] = "Gagal memeriksa data ke database."
+            parsed.append(item)
+        if not parsed:
+            return jsonify({"error": "File tidak berisi baris pengajuan."}), 422
+        return jsonify({"success": True, "total": len(parsed), "ready": sum(1 for x in parsed if x["status"] == "Siap"), "failed": sum(1 for x in parsed if x["status"] != "Siap"), "rows": parsed})
+    except (ValueError, KeyError, OSError):
+        return jsonify({"error": "File Excel tidak dapat dibaca. Pastikan menggunakan template SILOG."}), 422
+
+
+@app.route("/api/pengajuan/import/submit", methods=["POST"])
+def pengajuan_import_submit():
+    guard = pengajuan_api_guard()
+    if guard is not None:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    rows = payload.get("rows")
+    if not isinstance(rows, list) or not rows:
+        return jsonify({"error": "Data import tidak valid atau kosong."}), 400
+    results = []
+    for item in rows:
+        excel_row = item.get("row") if isinstance(item, dict) else None
+        row_payload = item.get("payload") if isinstance(item, dict) else None
+        outcome = {"row": excel_row, "status": "Gagal", "message": ""}
+        conn = None
+        try:
+            data = pengajuan_parse_input(row_payload, require_details=True)
+            conn = get_db_connection()
+            with conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                    saved = _pengajuan_insert_one(cursor, session["user_id"], row_payload)
+            outcome.update({"status": "Terkirim", "message": f"ID Pengajuan: {saved['request_id']} — berhasil dikirim.", **saved})
+        except PengajuanValidationError as exc:
+            outcome["message"] = str(exc)
+        except psycopg2.Error:
+            app.logger.exception("Gagal menyimpan baris import %s", excel_row)
+            outcome["message"] = "Gagal menyimpan ke database."
+        finally:
+            if conn is not None:
+                conn.close()
+        results.append(outcome)
+    return jsonify({"success": True, "total": len(results), "sent": sum(1 for x in results if x["status"] == "Terkirim"), "failed": sum(1 for x in results if x["status"] != "Terkirim"), "rows": results})
+
+
 # halaman riwayat pengajuan
 def format_rupiah_riwayat(value):
     if value is None:
@@ -4215,13 +4529,21 @@ def api_approval_reallocate(request_id):
 
 
 def _budget_export_file(user_mode=False, request_id=None):
-    """Export template budget untuk sisi Approval."""
+    """
+    Export template budget untuk sisi Approval.
+    Kedua sheet selalu mengikuti filter request yang sama:
+    - APPROVEL: realokasi/keputusan aktual, atau rancangan (+) untuk Pending.
+    - USER: data pengajuan dari pengusul.
+    """
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             where = []
             params = []
+
+            # Endpoint ini dipakai Approval. Filter user_mode tetap dipertahankan
+            # agar helper kompatibel jika kelak dipakai sisi Pengusul.
             if user_mode:
                 where.append("br.user_id = %s")
                 params.append(session["user_id"])
@@ -4263,6 +4585,7 @@ def _budget_export_file(user_mode=False, request_id=None):
                 ORDER BY br.request_date, br.request_id
             """, params)
             requests_data = cursor.fetchall()
+
             request_ids = [r["request_id"] for r in requests_data]
 
             allocations = []
@@ -4350,21 +4673,18 @@ def _budget_export_file(user_mode=False, request_id=None):
         ws_a.title = "APPROVEL"
         ws_u = wb.create_sheet("USER")
 
-        # Sheet APPROVEL: enam kolom, tanpa kolom pemisah kosong.
+        # Header dan urutan kolom dipertahankan sesuai template 10 November.
         ws_a.append(["BUDGET"])
-        ws_a.merge_cells("A1:F1")
         ws_a.append([
             "DATE", "INSTRUCTION", "FUND", "FUNDS CENTER",
-            "COMMITMENT ITEM", "AMOUNT"
+            "COMMITMENT ITEM", None, "AMOUNT"
         ])
         ws_a.append([
             "(TANGGAL)", "(+/-) OPSIONAL", "(LINK COSTCENTER)",
-            "(LINK COSTCENTER)", "(LINK G/L)", "(NOMINAL)"
+            "(LINK COSTCENTER)", "(LINK G/L)", None, "(NOMINAL)"
         ])
 
-        # Sheet USER: judul DATABASE memenuhi seluruh lebar tabel.
-        ws_u.append(["DATABASE"])
-        ws_u.merge_cells("A1:G1")
+        ws_u.append([None, "DATABASE"])
         ws_u.append([
             "DATE", "PIC", "PROFIT CENTER", "COST CENTER",
             "GL ACCOUNT", "AMOUNT", "KETERANGAN"
@@ -4374,7 +4694,7 @@ def _budget_export_file(user_mode=False, request_id=None):
             "(KODE GL)", "(NOMINAL)", "(KETERANGAN PENGAJUAN)"
         ])
 
-        # DATABASE: satu baris untuk setiap pengajuan.
+        # USER: satu baris untuk setiap pengajuan yang masuk dalam cakupan export.
         for r in requests_data:
             ws_u.append([
                 r["transaction_date"] or r["request_date"],
@@ -4394,7 +4714,7 @@ def _budget_export_file(user_mode=False, request_id=None):
         for d in decisions:
             decisions_by_request.setdefault(d["request_id"], []).append(d)
 
-        # APPROVEL: transaksi aktual atau rancangan untuk pengajuan pending.
+        # APPROVEL: setiap pengajuan mendapat baris sesuai keadaan pengajuannya.
         for r in requests_data:
             rid = r["request_id"]
             request_allocations = allocations_by_request.get(rid, [])
@@ -4403,132 +4723,95 @@ def _budget_export_file(user_mode=False, request_id=None):
             request_date = r["transaction_date"] or r["request_date"]
 
             if request_allocations:
+                # Pengajuan realokasi: tulis pasangan minus sumber dan plus target.
                 for a in request_allocations:
                     dt = a["allocation_date"] or request_date
                     amount = float(a["amount"] or 0)
                     ws_a.append([
                         dt, "-", a["source_fund"], a["source_fc"],
-                        a["source_ci"], amount
+                        a["source_ci"], None, amount
                     ])
                     ws_a.append([
                         dt, "+", a["target_fund"], a["target_fc"],
-                        a["target_ci"], amount
+                        a["target_ci"], None, amount
                     ])
                 continue
 
+            # Jika sudah ada keputusan, gunakan nilai keputusan aktual.
             if request_decisions:
                 for d in request_decisions:
                     decision = str(d["decision"] or "").strip().lower()
                     if "reject" in decision:
                         continue
                     if "approve" in decision or "open budget" in decision:
+                        row_idx = ws_a.max_row + 1
                         ws_a.append([
                             d["decision_date"].date() if d["decision_date"] else request_date,
                             "+",
                             d["fund_code"] or r["fund_code"],
                             d["funds_center_code"] or r["funds_center_code"],
                             d["commitment_item_code"] or r["commitment_item_code"],
+                            None,
                             float(d["approved_amount"] or 0)
                         ])
                 continue
 
+            # Pending: tampilkan rancangan penambahan (+), bukan transaksi aktual.
             if "pending" in status:
                 row_idx = ws_a.max_row + 1
                 ws_a.append([
-                    request_date, "+", r["fund_code"],
-                    r["funds_center_code"], r["commitment_item_code"],
+                    request_date,
+                    "+",
+                    r["fund_code"],
+                    r["funds_center_code"],
+                    r["commitment_item_code"],
+                    None,
                     float(r["request_amount"] or 0)
                 ])
+                # Beri penanda eksplisit tanpa mengubah nama/urutan kolom template.
                 ws_a.cell(row=row_idx, column=2).comment = Comment(
                     "RANCANGAN PENGAJUAN PENDING — belum merupakan keputusan "
                     "Approval atau transaksi perubahan budget.",
                     "SILOG Budget Monitoring"
                 )
-                ws_a.cell(row=row_idx, column=6).comment = Comment(
+                ws_a.cell(row=row_idx, column=7).comment = Comment(
                     "Nominal ini merupakan nominal pengajuan dari Pengusul, "
                     "bukan nominal yang sudah disetujui.",
                     "SILOG Budget Monitoring"
                 )
 
-        # Styling konsisten: judul, header, petunjuk, dan isi.
-        title_fill = PatternFill("solid", fgColor="A80710")
-        header_fill = PatternFill("solid", fgColor="C00000")
-        instruction_fill = PatternFill("solid", fgColor="F2F3F5")
-        alternate_fill = PatternFill("solid", fgColor="FAFAFA")
-        white_bold = Font(name="Arial", size=14, bold=True, color="FFFFFF")
-        header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-        instruction_font = Font(name="Arial", size=9, italic=True, color="666666")
-        body_font = Font(name="Arial", size=10, color="222222")
+        # Format visual mengikuti template dan tidak menambah kolom baru.
+        header_fill = PatternFill("solid", fgColor="ED1C24")
+        white_bold = Font(color="FFFFFF", bold=True)
         thin = Side(style="thin", color="D9DEE7")
-        table_border = Border(bottom=thin)
 
-        sheet_configs = [
-            (ws_a, 6, [16, 18, 20, 22, 24, 20], 6),
-            (ws_u, 7, [16, 20, 20, 22, 20, 20, 48], 7),
-        ]
-        for ws, column_count, widths, amount_col in sheet_configs:
-            # Judul baris pertama.
-            title_cell = ws.cell(row=1, column=1)
-            title_cell.fill = title_fill
-            title_cell.font = white_bold
-            title_cell.alignment = Alignment(
-                horizontal="left", vertical="center", indent=1
-            )
-            ws.row_dimensions[1].height = 32
-            for col in range(1, column_count + 1):
-                ws.cell(row=1, column=col).fill = title_fill
-
-            # Header baris kedua.
-            for cell in ws[2][:column_count]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(
-                    horizontal="center", vertical="center", wrap_text=True
-                )
-                cell.border = table_border
-            ws.row_dimensions[2].height = 28
-
-            # Baris ketiga adalah petunjuk pengisian.
-            for cell in ws[3][:column_count]:
-                cell.fill = instruction_fill
-                cell.font = instruction_font
-                cell.alignment = Alignment(
-                    horizontal="center", vertical="center", wrap_text=True
-                )
-                cell.border = table_border
-            ws.row_dimensions[3].height = 32
-
-            # Isi data mulai baris keempat.
-            for row_idx in range(4, ws.max_row + 1):
-                ws.row_dimensions[row_idx].height = 24
-                for col_idx in range(1, column_count + 1):
-                    cell = ws.cell(row=row_idx, column=col_idx)
-                    cell.font = body_font
-                    cell.border = table_border
-                    cell.alignment = Alignment(
-                        vertical="center",
-                        horizontal=("right" if col_idx == amount_col else "left"),
-                        wrap_text=(col_idx == column_count and ws.title == "USER")
-                    )
-                    if row_idx % 2 == 1:
-                        cell.fill = alternate_fill
-                    if col_idx == 1:
-                        cell.number_format = "dd/mm/yyyy"
-                    if col_idx == amount_col:
-                        cell.number_format = '#,##0.00;[Red]-#,##0.00'
-
-            for col_idx, width in enumerate(widths, start=1):
-                ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-            ws.freeze_panes = "A4"
-            ws.sheet_view.showGridLines = False
+        for ws, header_row, widths in [
+            (ws_a, 2, [16, 16, 20, 22, 24, 3, 20]),
+            (ws_u, 2, [16, 22, 20, 22, 20, 20, 48])
+        ]:
+            ws.freeze_panes = f"A{header_row + 1}"
             ws.auto_filter.ref = (
-                f"A2:{get_column_letter(column_count)}{ws.max_row}"
+                f"A{header_row}:{get_column_letter(ws.max_column)}{ws.max_row}"
             )
-            ws.sheet_properties.pageSetUpPr.fitToPage = True
-            ws.page_setup.fitToWidth = 1
-            ws.page_setup.fitToHeight = 0
-            ws.page_setup.orientation = "landscape"
+            for cell in ws[header_row]:
+                cell.fill = header_fill
+                cell.font = white_bold
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center"
+                )
+            for col, width in enumerate(widths, start=1):
+                ws.column_dimensions[get_column_letter(col)].width = width
+            for row in ws.iter_rows(min_row=header_row + 1):
+                for cell in row:
+                    cell.border = Border(bottom=thin)
+                    if cell.column == 1:
+                        cell.number_format = "dd/mm/yyyy"
+                    if (
+                        (ws.title == "APPROVEL" and cell.column == 7)
+                        or (ws.title == "USER" and cell.column == 6)
+                    ):
+                        cell.number_format = '#,##0.00'
+            ws.row_dimensions[header_row].height = 24
 
         output = BytesIO()
         wb.save(output)

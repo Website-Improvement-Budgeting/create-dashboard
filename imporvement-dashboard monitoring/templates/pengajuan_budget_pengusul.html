@@ -753,6 +753,27 @@
                 width: 100%;
             }
         }
+
+        /* IMPORT EXCEL */
+        .pengajuan-page .entry-mode { display:flex; gap:8px; margin:0 0 18px; }
+        .pengajuan-page .entry-mode button { border:1px solid #e1e6ed; background:#fff; color:#667281; border-radius:9px; padding:10px 16px; font-size:12px; font-weight:700; }
+        .pengajuan-page .entry-mode button.active { background:#fff1f2; border-color:#efb8bd; color:#c8102e; }
+        .pengajuan-page .import-panel { background:#fff; border:1px solid #e7ebf1; border-radius:14px; padding:22px; }
+        .pengajuan-page .import-panel h2 { font-size:16px; font-weight:750; margin:0 0 6px; }
+        .pengajuan-page .import-panel p { color:#7c8795; font-size:12px; }
+        .pengajuan-page .import-drop { border:1px dashed #d5dde7; border-radius:11px; background:#fafbfc; padding:24px; text-align:center; margin:16px 0; }
+        .pengajuan-page .import-drop input { display:block; max-width:100%; margin:12px auto 0; font-size:12px; }
+        .pengajuan-page .import-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+        .pengajuan-page .import-summary { margin:16px 0; padding:12px 14px; border-radius:9px; background:#f6f8fb; font-size:12px; color:#536071; }
+        .pengajuan-page .import-table-wrap { overflow:auto; margin-top:14px; }
+        .pengajuan-page .import-table { width:100%; border-collapse:collapse; min-width:680px; font-size:11px; }
+        .pengajuan-page .import-table th,.pengajuan-page .import-table td { padding:10px; border-bottom:1px solid #edf0f4; text-align:left; vertical-align:top; }
+        .pengajuan-page .import-table th { background:#f7f8fa; color:#657182; font-weight:750; }
+        .pengajuan-page .import-pill { display:inline-block; padding:4px 8px; border-radius:20px; font-weight:700; white-space:nowrap; }
+        .pengajuan-page .import-pill.ready { color:#216b4d; background:#eaf6ef; }
+        .pengajuan-page .import-pill.failed { color:#b9303b; background:#fff0f1; }
+        .pengajuan-page .import-pill.sent { color:#216b4d; background:#eaf6ef; }
+        .pengajuan-page .import-hidden { display:none !important; }
     </style>
 </head>
 
@@ -890,7 +911,12 @@
                     {% endfor %}
                 {% endwith %}
 
-                <!-- FORM -->
+                <div class="entry-mode" role="tablist" aria-label="Metode pengajuan">
+                    <button type="button" id="manualModeBtn" class="active" aria-selected="true"> <i class="bi bi-pencil-square me-1"></i> Input Manual</button>
+                    <button type="button" id="excelModeBtn" aria-selected="false"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Import Excel</button>
+                </div>
+
+                <!-- FORM INPUT MANUAL -->
                 <form id="budgetRequestForm" novalidate>
 
                     <section class="request-card">
@@ -1139,6 +1165,39 @@
 
                     </section>
                 </form>
+
+                <!-- IMPORT EXCEL -->
+                <section id="excelImportPanel" class="import-panel import-hidden">
+                    <h2><i class="bi bi-file-earmark-spreadsheet me-2" style="color:#c8102e"></i>Pengajuan Melalui File Excel</h2>
+                    <p>Unggah beberapa pengajuan sekaligus menggunakan template. Setiap baris akan diperiksa.</p>
+                    <div class="import-actions">
+                        <a class="btn-outline-red" href="{{ url_for('pengajuan_template_excel') }}"><i class="bi bi-download"></i> Unduh Template Excel</a>
+                    </div>
+                    <div class="import-drop">
+                        <i class="bi bi-cloud-arrow-up" style="font-size:28px;color:#c8102e"></i>
+                        <div style="font-size:13px;font-weight:700;color:#465263;margin-top:7px">Pilih File Pengajuan (.XLSX)</div>
+                        <input type="file" id="excelImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                        <small style="display:block;color:#98a3b0;margin-top:8px">Tidak ada batas jumlah baris • Maksimal 20 MB per file</small>
+                    </div>
+                    <div class="import-actions">
+                        <button type="button" class="btn-outline-red" id="previewExcelBtn"><i class="bi bi-search"></i> Pemeriksaan Budget</button>
+                        <button type="button" class="btn-red" id="submitExcelBtn" disabled><i class="bi bi-send"></i> Ajukan Budget</button>
+                    </div>
+                    <div id="excelImportSummary" class="import-summary" aria-live="polite">Unduh template, isi data, lalu lakukan validasi sebelum mengirim.</div>
+                    <div class="import-table-wrap" id="excelImportTableWrap" hidden>
+                        <table class="import-table">
+                            <thead><tr><th>Baris Excel</th><th>Status</th><th>Nominal</th><th>Status Budget</th><th>Pesan Validasi</th></tr></thead>
+                            <tbody id="excelImportTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="import-actions" id="excelPreviewPagination" hidden style="align-items:center;justify-content:space-between">
+                        <small id="excelPreviewPageInfo" style="color:#7c8795"></small>
+                        <div style="display:flex;gap:8px">
+                            <button type="button" class="btn-outline-red" id="excelPreviewPrev" disabled>Previous</button>
+                            <button type="button" class="btn-outline-red" id="excelPreviewNext" disabled>Next</button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </section>
     </main>
@@ -1976,6 +2035,166 @@ setShortage(
 );
 
 submitBtn.disabled = true;
+
+
+/* =================================================
+   IMPORT EXCEL BATCH
+================================================= */
+const manualModeBtn = document.getElementById("manualModeBtn");
+const excelModeBtn = document.getElementById("excelModeBtn");
+const excelImportPanel = document.getElementById("excelImportPanel");
+const excelFileInput = document.getElementById("excelImportFile");
+const previewExcelBtn = document.getElementById("previewExcelBtn");
+const submitExcelBtn = document.getElementById("submitExcelBtn");
+const excelSummary = document.getElementById("excelImportSummary");
+const excelTableWrap = document.getElementById("excelImportTableWrap");
+const excelTableBody = document.getElementById("excelImportTableBody");
+const API_IMPORT_PREVIEW = {{ url_for('pengajuan_import_preview') | tojson }};
+const API_IMPORT_SUBMIT = {{ url_for('pengajuan_import_submit') | tojson }};
+let excelPreviewRows = [];
+
+function switchEntryMode(mode) {
+    const excel = mode === "excel";
+    form.classList.toggle("import-hidden", excel);
+    excelImportPanel.classList.toggle("import-hidden", !excel);
+    manualModeBtn.classList.toggle("active", !excel);
+    excelModeBtn.classList.toggle("active", excel);
+    manualModeBtn.setAttribute("aria-selected", String(!excel));
+    excelModeBtn.setAttribute("aria-selected", String(excel));
+}
+manualModeBtn.addEventListener("click", () => switchEntryMode("manual"));
+excelModeBtn.addEventListener("click", () => switchEntryMode("excel"));
+
+const EXCEL_PREVIEW_PAGE_SIZE = 50;
+let excelPreviewPage = 1;
+let excelRenderedRows = [];
+
+function renderExcelRows(rows, submitted = false) {
+    excelRenderedRows = rows || [];
+    const totalPages = Math.max(1, Math.ceil(excelRenderedRows.length / EXCEL_PREVIEW_PAGE_SIZE));
+    excelPreviewPage = Math.min(Math.max(1, excelPreviewPage), totalPages);
+
+    excelTableBody.replaceChildren();
+    const startIndex = (excelPreviewPage - 1) * EXCEL_PREVIEW_PAGE_SIZE;
+    const pageRows = excelRenderedRows.slice(startIndex, startIndex + EXCEL_PREVIEW_PAGE_SIZE);
+
+    pageRows.forEach(row => {
+        const tr = document.createElement("tr");
+        const values = [
+            row.row ?? "—",
+            row.status ?? "—",
+            row.payload?.request_amount ? rupiah(row.payload.request_amount) : (row.request_amount ? rupiah(row.request_amount) : "—"),
+            row.budget_status ?? "—",
+            row.message ?? "—"
+        ];
+        values.forEach((value, index) => {
+            const td = document.createElement("td");
+            if (index === 1) {
+                const pill = document.createElement("span");
+                pill.className = "import-pill " + (row.status === "Siap" ? "ready" : row.status === "Terkirim" ? "sent" : "failed");
+                pill.textContent = value;
+                td.appendChild(pill);
+            } else {
+                td.textContent = String(value);
+            }
+            tr.appendChild(td);
+        });
+        excelTableBody.appendChild(tr);
+    });
+
+    excelTableWrap.hidden = excelRenderedRows.length === 0;
+    const pagination = document.getElementById("excelPreviewPagination");
+    const pageInfo = document.getElementById("excelPreviewPageInfo");
+    const prev = document.getElementById("excelPreviewPrev");
+    const next = document.getElementById("excelPreviewNext");
+    pagination.hidden = excelRenderedRows.length <= EXCEL_PREVIEW_PAGE_SIZE;
+    pageInfo.textContent = `Menampilkan ${startIndex + 1}–${Math.min(startIndex + pageRows.length, excelRenderedRows.length)} dari ${excelRenderedRows.length} baris • Halaman ${excelPreviewPage}/${totalPages}`;
+    prev.disabled = excelPreviewPage <= 1;
+    next.disabled = excelPreviewPage >= totalPages;
+}
+
+document.getElementById("excelPreviewPrev").addEventListener("click", () => {
+    if (excelPreviewPage > 1) {
+        excelPreviewPage--;
+        renderExcelRows(excelRenderedRows);
+    }
+});
+document.getElementById("excelPreviewNext").addEventListener("click", () => {
+    const pages = Math.ceil(excelRenderedRows.length / EXCEL_PREVIEW_PAGE_SIZE);
+    if (excelPreviewPage < pages) {
+        excelPreviewPage++;
+        renderExcelRows(excelRenderedRows);
+    }
+});
+
+previewExcelBtn.addEventListener("click", async () => {
+    const file = excelFileInput.files?.[0];
+    if (!file) {
+        excelSummary.textContent = "Pilih file Excel terlebih dahulu.";
+        return;
+    }
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+        excelSummary.textContent = "File harus berformat .xlsx.";
+        return;
+    }
+    const body = new FormData();
+    body.append("file", file);
+    previewExcelBtn.disabled = true;
+    submitExcelBtn.disabled = true;
+    excelPreviewRows = [];
+    excelPreviewPage = 1;
+    excelRenderedRows = [];
+    excelSummary.textContent = "Sedang membaca file dan memvalidasi setiap baris...";
+    try {
+        const response = await fetch(API_IMPORT_PREVIEW, {
+            method: "POST", credentials: "same-origin",
+            headers: { "X-CSRFToken": CSRF_TOKEN }, body
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Validasi Excel gagal.");
+        excelPreviewRows = result.rows || [];
+        renderExcelRows(excelPreviewRows);
+        excelSummary.textContent = `Total ${result.total} baris • Siap dikirim ${result.ready} • Perlu diperbaiki ${result.failed}. Hanya baris berstatus Siap yang dapat dikirim.`;
+        submitExcelBtn.disabled = result.ready === 0;
+    } catch (error) {
+        excelSummary.textContent = error.message;
+        excelTableWrap.hidden = true;
+    } finally {
+        previewExcelBtn.disabled = false;
+    }
+});
+
+excelFileInput.addEventListener("change", () => {
+    excelPreviewRows = [];
+    excelRenderedRows = [];
+    excelPreviewPage = 1;
+    submitExcelBtn.disabled = true;
+    excelTableWrap.hidden = true;
+    document.getElementById("excelPreviewPagination").hidden = true;
+    excelSummary.textContent = "File berubah. Jalankan Validasi & Preview kembali.";
+});
+
+submitExcelBtn.addEventListener("click", async () => {
+    const readyRows = excelPreviewRows.filter(row => row.status === "Siap" && row.payload);
+    if (!readyRows.length) return;
+    const confirmed = window.confirm(`Kirim ${readyRows.length} pengajuan yang lolos validasi ke Approval? Baris yang gagal tidak akan dikirim.`);
+    if (!confirmed) return;
+    submitExcelBtn.disabled = true;
+    previewExcelBtn.disabled = true;
+    excelSummary.textContent = "Sedang menyimpan pengajuan. Setiap baris diproses secara terpisah.";
+    try {
+        const result = await postJSON(API_IMPORT_SUBMIT, { rows: readyRows });
+        renderExcelRows(result.rows || [], true);
+        excelSummary.textContent = `Proses selesai • Berhasil dikirim ${result.sent} • Gagal ${result.failed}. Periksa ID pengajuan dan pesan pada setiap baris.`;
+        excelPreviewRows = [];
+    } catch (error) {
+        excelSummary.textContent = error.message;
+        submitExcelBtn.disabled = false;
+    } finally {
+        previewExcelBtn.disabled = false;
+    }
+});
+
 </script>
 
 </body>
