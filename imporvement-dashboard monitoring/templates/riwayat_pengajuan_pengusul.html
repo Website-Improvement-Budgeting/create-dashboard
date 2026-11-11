@@ -625,7 +625,8 @@
         .pagination-controls {
             display: flex;
             align-items: center;
-            gap: 7px;
+            flex-wrap: wrap;
+            gap: 5px;
         }
 
         .page-link-custom {
@@ -634,18 +635,21 @@
             justify-content: center;
             min-width: 34px;
             height: 34px;
-            padding: 0 10px;
-            border: 1px solid #e3e8ee;
+            padding: 0 9px;
+            border: 1px solid #e7e8ed;
             border-radius: 8px;
             background: white;
-            color: #556171;
-            font-size: 11px;
+            color: #707783;
+            font-size: 12px;
+            font-weight: 600;
             text-decoration: none;
+            cursor: pointer;
         }
 
-        .page-link-custom:hover {
+        .page-link-custom:hover:not(.disabled):not(.current) {
+            background: #fff0f1;
+            border-color: #ffd3d7;
             color: var(--red);
-            border-color: #efbec2;
         }
 
         .page-link-custom.disabled {
@@ -654,9 +658,9 @@
         }
 
         .page-link-custom.current {
-            background: var(--red-soft);
-            border-color: #ffd3d7;
-            color: var(--red);
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
             font-weight: 700;
         }
 
@@ -1265,15 +1269,32 @@
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             {% else %}
-                                <span class="page-link-custom disabled">
+                                <span class="page-link-custom disabled" aria-disabled="true">
                                     <i class="bi bi-chevron-left"></i>
                                 </span>
                             {% endif %}
 
-                            <!-- PAGE NUMBER -->
-                            <span class="page-link-custom current">
-                                {{ page }} / {{ total_pages }}
-                            </span>
+                            <!-- NOMOR HALAMAN -->
+                            {% set page_window = 5 %}
+                            {% set start_page = [1, page - 2] | max %}
+                            {% set end_page = [total_pages, start_page + page_window - 1] | min %}
+                            {% set start_page = [1, end_page - page_window + 1] | max %}
+
+                            {% for page_number in range(start_page, end_page + 1) %}
+                                {% if page_number == page %}
+                                    <span class="page-link-custom current" aria-current="page">
+                                        {{ page_number }}
+                                    </span>
+                                {% else %}
+                                    <a class="page-link-custom"
+                                       href="{{ url_for('riwayat_pengajuan_pengusul',
+                                                        page=page_number,
+                                                        q=keyword,
+                                                        status=selected_status) }}">
+                                        {{ page_number }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
 
                             <!-- NEXT -->
                             {% if page < total_pages %}
@@ -1286,7 +1307,7 @@
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             {% else %}
-                                <span class="page-link-custom disabled">
+                                <span class="page-link-custom disabled" aria-disabled="true">
                                     <i class="bi bi-chevron-right"></i>
                                 </span>
                             {% endif %}
