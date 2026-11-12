@@ -203,9 +203,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 .ma-history-apply,.ma-history-reset{height:36px;border-radius:8px;font-size:11px}
 .ma-history-apply{padding:0 15px}.ma-history-reset{padding:0 13px}
 .ma-pages{display:flex;align-items:center;gap:7px}
-.ma-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 10px;border:1px solid #e3e8ee;border-radius:8px;background:#fff;color:#556171;font-size:11px}
-.ma-page-btn:hover:not(:disabled){color:var(--red);border-color:#efbec2}
-.ma-page-btn.active{background:#fff0f1;border-color:#ffd3d7;color:var(--red);font-weight:750}
+.ma-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 9px;border:1px solid #e7e8ed;border-radius:8px;background:#fff;color:#707783;font-size:12px;font-weight:600;cursor:pointer}
+.ma-page-btn:hover:not(:disabled):not(.active){background:#fff0f1;border-color:#ffd3d7;color:var(--red)}
+.ma-page-btn.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
 .ma-page-btn:disabled{pointer-events:none;opacity:.4}
 .ma-page-ellipsis{display:inline-flex;align-items:center;justify-content:center;min-width:18px;color:#8992a1;font-size:12px}
 @media(max-width:1150px){.ma-filters.ma-history-toolbar{flex-wrap:wrap}.ma-history-search{flex:1 1 260px;max-width:none}.ma-history-filterbar{margin-left:auto}}
@@ -394,6 +394,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 .ma-reallocation-field [data-role="validation"]{display:block;font-size:10px;line-height:1.45}
 @media(max-width:800px){.ma-reallocation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.ma-reallocation-grid{grid-template-columns:1fr}.ma-reallocation-card{padding:11px}}
+
+/* Jumlah data per halaman — mengikuti Budget Detail Approval */
+.ma-page-size-control{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 10px;border:1px solid #dfe5ec;border-radius:8px;background:#fff;color:#687386;font-size:11px;font-weight:650;white-space:nowrap}
+.ma-page-size-control select{height:25px;min-width:48px;padding:0 20px 0 8px;border:1px solid #dfe5ec;border-radius:6px;background:#fff;color:#48546a;font-size:11px;font-weight:600;outline:none;cursor:pointer}
+.ma-page-size-control select:focus{border-color:#cbd4df;box-shadow:0 0 0 2px rgba(104,115,134,.08)}
+@media(max-width:650px){.ma-history-filterbar .ma-page-size-control{grid-column:1/-1;justify-self:start}}
 </style>
 </head>
 <body>
@@ -463,6 +469,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
                placeholder="Cari Request ID, PIC, Pengusul, Commitment Item..." autocomplete="off">
       </label>
       <div class="ma-history-filterbar">
+        <label class="ma-page-size-control" for="pageSizeSelect">
+          <span>Tampilkan</span>
+          <select id="pageSizeSelect" aria-label="Jumlah data per halaman">
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+          </select>
+          <span>Data</span>
+        </label>
         <div class="ma-history-filtergroup">
           <label for="statusFilter">Status Pengajuan</label>
           <select class="ma-control ma-history-select" id="statusFilter">
@@ -501,7 +519,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-let currentPage = 1, totalPages = 1;
+let currentPage = 1, totalPages = 1, pageSize = 5;
 const money = v => v === null || v === undefined || v === '' ? '—' : new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v));
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statusClass = s => s==='Pending'?'p-pending':s==='Approved'?'p-approved':s==='Rejected'?'p-rejected':'p-review';
@@ -515,13 +533,48 @@ async function loadSummary(){
  document.getElementById('pendingTag').textContent=d.pending+' Pending';
 }
 async function loadRequests(){
- const params=new URLSearchParams({page:currentPage,per_page:10,status:document.getElementById('statusFilter').value,q:document.getElementById('searchInput').value.trim()});
- const body=document.getElementById('requestRows'); body.innerHTML='<tr><td colspan="10" class="ma-loading">Memuat pengajuan...</td></tr>';
- const r=await fetch('/api/approval/requests?'+params); const d=await r.json();
- if(!r.ok){body.innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(d.error||'Gagal memuat data')}</td></tr>`;return;}
- totalPages=Math.max(1,d.pagination.pages);
- if(!d.items.length){body.innerHTML='<tr><td colspan="10" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
- else body.innerHTML=d.items.map(x=>`<tr>
+ // Backend lama memakai pagination 10 baris. Ambil halaman backend yang
+ // diperlukan, lalu tampilkan sesuai pilihan pengguna (5/10/20/.../50).
+ // Dengan begitu tidak ada baris hilang atau terduplikasi saat pindah halaman.
+ const body=document.getElementById('requestRows');
+ body.innerHTML='<tr><td colspan="10" class="ma-loading">Memuat pengajuan...</td></tr>';
+ const status=document.getElementById('statusFilter').value;
+ const q=document.getElementById('searchInput').value.trim();
+ const fetchBackendPage=async page=>{
+   const params=new URLSearchParams({page,per_page:10,status,q});
+   const response=await fetch('/api/approval/requests?'+params);
+   const data=await response.json();
+   if(!response.ok) throw Error(data.error||'Gagal memuat data');
+   return data;
+ };
+ let items=[],totalItems=0;
+ try{
+   const first=await fetchBackendPage(1);
+   totalItems=Number(first.pagination?.total ?? first.items.length) || 0;
+   // Gunakan ukuran halaman yang benar-benar diterapkan backend.
+   const backendSize=Math.max(1,Number(first.pagination?.per_page)||10);
+   totalPages=Math.max(1,Math.ceil(totalItems/pageSize));
+   currentPage=Math.min(Math.max(1,currentPage),totalPages);
+   const offset=(currentPage-1)*pageSize;
+   const lastExclusive=Math.min(offset+pageSize,totalItems);
+   const firstBackendPage=Math.floor(offset/backendSize)+1;
+   const lastBackendPage=Math.max(firstBackendPage,Math.ceil(lastExclusive/backendSize));
+   const byPage=new Map([[1,first.items||[]]]);
+   const missing=[];
+   for(let p=firstBackendPage;p<=lastBackendPage;p++) if(!byPage.has(p)) missing.push(p);
+   const fetched=await Promise.all(missing.map(fetchBackendPage));
+   missing.forEach((p,i)=>byPage.set(p,fetched[i].items||[]));
+   for(let p=firstBackendPage;p<=lastBackendPage;p++){
+     const sliceStart=p===firstBackendPage?offset-(p-1)*backendSize:0;
+     const sliceEnd=p===lastBackendPage?lastExclusive-(p-1)*backendSize:backendSize;
+     items.push(...(byPage.get(p)||[]).slice(sliceStart,sliceEnd));
+   }
+ }catch(error){
+   body.innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(error.message)}</td></tr>`;
+   return;
+ }
+ if(!items.length){body.innerHTML='<tr><td colspan="10" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
+ else body.innerHTML=items.map(x=>`<tr>
  <td><div class="ma-id">REQ-${String(x.request_id).padStart(6,'0')}</div><div class="ma-muted">${esc(x.request_date?.slice(0,10))}</div></td>
  <td><strong>${esc(x.requester_username)}</strong><div class="ma-muted">${esc(x.pic)}</div></td>
  <td>${esc(x.unit_entity)}<div class="ma-muted">${esc(x.biro_name)}</div></td>
@@ -532,10 +585,8 @@ async function loadRequests(){
  <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
  <td><div class="d-flex gap-1"><button class="ma-detail-btn" onclick="openDetail(${x.request_id})"><i class="bi bi-eye me-1"></i>Detail</button><a class="ma-detail-btn" href="/approval/export-budget/${x.request_id}.xlsx" title="Download Excel pengajuan"><i class="bi bi-download"></i></a></div></td>
  </tr>`).join('');
- const totalItems = Number(d.pagination.total || 0);
- const perPage = Number(d.pagination.per_page || 10);
- const firstItem = totalItems ? ((currentPage - 1) * perPage) + 1 : 0;
- const lastItem = Math.min(currentPage * perPage, totalItems);
+ const firstItem = totalItems ? ((currentPage - 1) * pageSize) + 1 : 0;
+ const lastItem = Math.min(currentPage * pageSize, totalItems);
  document.getElementById('pageInfo').textContent = `Menampilkan ${firstItem}–${lastItem} dari ${totalItems} data`;
  renderPagination();
 }
@@ -939,6 +990,7 @@ const liveShortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Nu
  finally{submit.disabled=false;submit.textContent='Konfirmasi Tindakan';}
 }
 
+document.getElementById('pageSizeSelect').addEventListener('change',event=>{pageSize=Number(event.target.value)||5;currentPage=1;loadRequests();});
 document.getElementById('applyFilter').addEventListener('click',()=>{currentPage=1;loadRequests();});
 document.getElementById('resetFilter').addEventListener('click',()=>{
  document.getElementById('statusFilter').value='ALL';
