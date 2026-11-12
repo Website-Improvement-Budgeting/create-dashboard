@@ -4070,6 +4070,47 @@ def _approval_record_history(cursor, budget_id, request_id, action,
           previous_value, updated_value, amount, session["user_id"]))
 
 
+def _approval_consume_request(cursor, budget_id, request_id, request_amount,
+                              old_consumed, old_available):
+    """Konsumsi seluruh nominal pengajuan yang sudah dapat dipenuhi.
+
+    Current Budget dan Consumable Budget tidak berubah pada tahap konsumsi.
+    Fungsi dipanggil di dalam transaksi database endpoint Approval.
+    """
+    request_amount = Decimal(str(request_amount))
+    old_consumed = Decimal(str(old_consumed))
+    old_available = Decimal(str(old_available))
+
+    if request_amount <= 0:
+        raise ValueError("Request Amount harus lebih besar dari Rp0.")
+    if old_available < request_amount:
+        raise ValueError("Available Budget tidak mencukupi untuk konsumsi transaksi.")
+
+    new_consumed = old_consumed + request_amount
+    new_available = old_available - request_amount
+
+    cursor.execute("""
+        UPDATE public.budget_master
+        SET consumed_budget = %s,
+            available_amount = %s
+        WHERE budget_id = %s
+    """, (new_consumed, new_available, budget_id))
+
+    _approval_record_history(
+        cursor, budget_id, request_id, "Consume Budget",
+        "consumed_budget", old_consumed, new_consumed, request_amount
+    )
+    _approval_record_history(
+        cursor, budget_id, request_id, "Consume Budget",
+        "available_amount", old_available, new_available, request_amount
+    )
+
+    return {
+        "consumed_budget": new_consumed,
+        "available_amount": new_available
+    }
+
+
 @app.route("/api/approval/requests/<int:request_id>/reallocation-sources", methods=["GET"])
 def api_approval_reallocation_sources(request_id):
     guard = approval_api_guard()
@@ -4229,7 +4270,7 @@ def api_approval_direct_approve(request_id):
                     return jsonify({"error": "Sumber budget pengajuan tidak ditemukan."}), 409
 
                 cursor.execute("""
-                    SELECT budget_id, available_amount
+                    SELECT budget_id, consumed_budget, available_amount
                     FROM public.budget_master
                     WHERE budget_id = %s
                     FOR UPDATE
@@ -4249,6 +4290,16 @@ def api_approval_direct_approve(request_id):
                             "Gunakan Open Budget atau Reallocation Budget."
                         )
                     }), 409
+
+                # Konsumsi seluruh Request Amount sebelum status Approved disimpan.
+                _approval_consume_request(
+                    cursor=cursor,
+                    budget_id=req["budget_id"],
+                    request_id=request_id,
+                    request_amount=request_amount,
+                    old_consumed=budget["consumed_budget"],
+                    old_available=budget["available_amount"]
+                )
 
                 cursor.execute("""
                     UPDATE public.budget_request
@@ -4342,6 +4393,18 @@ def api_approval_open_budget(request_id):
 
                 remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - new_available)
                 fully_covered = remaining_shortage == 0
+
+                # Setelah pembukaan menutup shortage, konsumsi seluruh pengajuan.
+                if fully_covered:
+                    _approval_consume_request(
+                        cursor=cursor,
+                        budget_id=req["budget_id"],
+                        request_id=request_id,
+                        request_amount=req["request_amount"],
+                        old_consumed=budget["consumed_budget"],
+                        old_available=new_available
+                    )
+
                 cursor.execute("""
                     UPDATE public.budget_request
                     SET request_status = %s, budget_status = %s
@@ -4490,6 +4553,18 @@ def api_approval_reallocate(request_id):
 
                 remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - tgt_new["available_amount"])
                 fully_covered = remaining_shortage == 0
+
+                # Realokasi masuk terlebih dahulu; setelah cukup, konsumsi transaksi.
+                if fully_covered:
+                    _approval_consume_request(
+                        cursor=cursor,
+                        budget_id=req["budget_id"],
+                        request_id=request_id,
+                        request_amount=req["request_amount"],
+                        old_consumed=target["consumed_budget"],
+                        old_available=tgt_new["available_amount"]
+                    )
+
                 cursor.execute("""
                     UPDATE public.budget_request
                     SET request_status = %s, budget_status = %s
