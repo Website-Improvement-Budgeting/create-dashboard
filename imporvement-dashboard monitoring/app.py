@@ -4441,19 +4441,55 @@ def api_approval_open_budget(request_id):
 
 @app.route("/api/approval/requests/<int:request_id>/reallocate", methods=["POST"])
 def api_approval_reallocate(request_id):
+    """Buka Approval Hold, realokasikan sisa shortage, lalu konsumsi request penuh."""
     guard = approval_mutation_guard()
     if guard is not None:
         return guard
+
     payload = request.get_json(silent=True) or {}
-    source_id = payload.get("source_budget_id")
+    raw_allocations = payload.get("allocations")
+    if not isinstance(raw_allocations, list) or not raw_allocations:
+        raw_allocations = [{
+            "source_budget_id": payload.get("source_budget_id"),
+            "amount": payload.get("amount"),
+            "allocation_date": payload.get("allocation_date"),
+            "instruction": payload.get("instruction", "")
+        }]
+    if len(raw_allocations) > 50:
+        return jsonify({"error": "Maksimal 50 baris realokasi dalam satu keputusan."}), 400
+
+    allocations = []
     try:
-        if isinstance(source_id, bool) or not str(source_id).isdigit():
-            raise ValueError("Sumber budget realokasi wajib dipilih.")
-        source_id = int(source_id)
-        amount = _approval_decimal(payload.get("amount"), "Nominal realokasi")
+        for index, item in enumerate(raw_allocations, start=1):
+            if not isinstance(item, dict):
+                raise ValueError(f"Format baris realokasi {index} tidak valid.")
+            source_id = item.get("source_budget_id")
+            if isinstance(source_id, bool) or not str(source_id or "").isdigit():
+                raise ValueError(f"Sumber budget pada baris {index} wajib dipilih.")
+            amount = _approval_decimal(item.get("amount"), f"Nominal realokasi baris {index}")
+            date_text = str(item.get("allocation_date") or "").strip()
+            try:
+                allocation_date = date.fromisoformat(date_text)
+            except ValueError:
+                raise ValueError(f"Tanggal realokasi pada baris {index} tidak valid.")
+            row_instruction = str(item.get("instruction") or "").strip()
+            if len(row_instruction) > 2000:
+                raise ValueError(f"Instruksi baris {index} maksimal 2.000 karakter.")
+            allocations.append({
+                "source_budget_id": int(source_id),
+                "amount": amount,
+                "allocation_date": allocation_date,
+                "instruction": row_instruction,
+                "entity_id": str(item.get("entity_id") or ""),
+                "biro_id": str(item.get("biro_id") or ""),
+                "fund_code": str(item.get("fund_code") or "").strip().upper(),
+                "funds_center_code": str(item.get("funds_center_code") or "").strip().upper(),
+                "commitment_item_code": str(item.get("commitment_item_code") or "").strip().upper()
+            })
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-    instruction = str(payload.get("instruction", "")).strip()
+
+    instruction = str(payload.get("instruction") or "").strip()
     if len(instruction) > 2000:
         return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
 
@@ -4477,124 +4513,258 @@ def api_approval_reallocate(request_id):
                     return jsonify({"error": "Pengajuan ini bukan berstatus Pending."}), 409
                 if not req["budget_id"]:
                     return jsonify({"error": "Sumber budget tujuan tidak ditemukan."}), 409
-                if source_id == req["budget_id"]:
+
+                target_id = req["budget_id"]
+                source_ids = [x["source_budget_id"] for x in allocations]
+                if target_id in source_ids:
                     return jsonify({"error": "Sumber dan target budget tidak boleh sama."}), 400
 
-                # Lock kedua baris secara konsisten untuk mencegah saldo berubah bersamaan.
-                ids = sorted([source_id, req["budget_id"]])
+                all_ids = sorted(set(source_ids + [target_id]))
                 cursor.execute("""
-                    SELECT budget_id, entity_id, biro_id, budget_year, budget_scope,
-                           funds_center_id, commitment_item_id,
-                           current_budget, consumable_budget, consumed_budget, available_amount
-                    FROM public.budget_master
-                    WHERE budget_id = ANY(%s)
-                    ORDER BY budget_id
-                    FOR UPDATE
-                """, (ids,))
-                locked = {r["budget_id"]: r for r in cursor.fetchall()}
-                if len(locked) != 2:
-                    return jsonify({"error": "Sumber atau target budget tidak ditemukan."}), 404
-                source, target = locked[source_id], locked[req["budget_id"]]
+                    SELECT
+                        bm.budget_id, bm.entity_id, bm.biro_id, bm.budget_year,
+                        UPPER(TRIM(bm.budget_scope)) AS budget_scope,
+                        bm.funds_center_id, bm.commitment_item_id,
+                        bm.current_budget, bm.consumable_budget,
+                        bm.consumed_budget, bm.available_amount,
+                        f.fund_code, fc.funds_center_code, ci.commitment_item_code
+                    FROM public.budget_master bm
+                    LEFT JOIN public.funds_center fc ON fc.funds_center_id = bm.funds_center_id
+                    LEFT JOIN public.commitment_item ci ON ci.commitment_item_id = bm.commitment_item_id
+                    LEFT JOIN LATERAL (
+                        SELECT br_source.mapped_fund_id
+                        FROM public.budget_request br_source
+                        WHERE br_source.budget_id = bm.budget_id
+                          AND br_source.mapped_fund_id IS NOT NULL
+                        ORDER BY br_source.request_date DESC, br_source.request_id DESC
+                        LIMIT 1
+                    ) source_request ON TRUE
+                    LEFT JOIN public.fund f ON f.fund_id = source_request.mapped_fund_id
+                    WHERE bm.budget_id = ANY(%s)
+                    ORDER BY bm.budget_id
+                    FOR UPDATE OF bm
+                """, (all_ids,))
+                locked = {row["budget_id"]: row for row in cursor.fetchall()}
+                if len(locked) != len(all_ids):
+                    return jsonify({"error": "Salah satu sumber atau target budget tidak ditemukan."}), 404
 
-                # Sumber wajib berasal dari biro/entity lain, bukan dari pemilik target yang sama.
-                if (source["entity_id"] == target["entity_id"]
-                        and source["biro_id"] == target["biro_id"]):
-                    return jsonify({"error": "Sumber realokasi harus berasal dari biro atau entity lain."}), 409
-
-                if source["budget_year"] != target["budget_year"]:
-                    return jsonify({"error": "Tahun anggaran sumber dan target harus sama."}), 409
-
-                source_scope = str(source["budget_scope"] or "").strip().upper()
-                target_scope = str(target["budget_scope"] or "").strip().upper()
-                if source_scope != target_scope:
-                    return jsonify({"error": "Budget Scope sumber dan target harus sama."}), 409
-
-                if target_scope == "CI_ONLY":
-                    if source["commitment_item_id"] != target["commitment_item_id"]:
-                        return jsonify({"error": "Realokasi CI_ONLY hanya diperbolehkan untuk Commitment Item yang sama."}), 409
-                elif target_scope == "FC_CI":
-                    if (source["funds_center_id"] != target["funds_center_id"]
-                            or source["commitment_item_id"] != target["commitment_item_id"]):
-                        return jsonify({"error": "Realokasi FC_CI hanya diperbolehkan untuk kombinasi Funds Center dan Commitment Item yang sama."}), 409
-                else:
+                target = locked[target_id]
+                scope = str(target["budget_scope"] or "").strip().upper()
+                if scope not in ("FC_CI", "CI_ONLY"):
                     return jsonify({"error": "Budget Scope target tidak dikenali."}), 409
 
-                source_available = Decimal(str(source["available_amount"]))
-                live_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - Decimal(str(target["available_amount"])))
-                if live_shortage <= 0:
+                request_amount = Decimal(str(req["request_amount"]))
+                target_available = Decimal(str(target["available_amount"]))
+                shortage = max(Decimal("0"), request_amount - target_available)
+                if shortage <= 0:
                     return jsonify({"error": "Available Budget target saat ini sudah mencukupi. Realokasi tidak diperlukan."}), 409
-                target_hold = Decimal(str(target["current_budget"])) - Decimal(str(target["consumable_budget"]))
-                if target_hold >= live_shortage:
-                    return jsonify({"error": "Approval Hold target masih mencukupi. Gunakan Open Budget, bukan Reallocation."}), 409
-                if source_available < amount:
-                    return jsonify({"error": f"Nominal melebihi Available Budget sumber. Maksimal {source_available:.2f}."}), 409
-                if amount > live_shortage:
-                    return jsonify({"error": f"Nominal melebihi shortage target saat ini. Maksimal yang diperlukan {live_shortage:.2f}."}), 409
 
-                src_old = {k: Decimal(str(source[k])) for k in ("current_budget", "consumable_budget", "available_amount")}
-                tgt_old = {k: Decimal(str(target[k])) for k in ("current_budget", "consumable_budget", "available_amount")}
-                src_new = {k: src_old[k] - amount for k in src_old}
-                tgt_new = {k: tgt_old[k] + amount for k in tgt_old}
-                if any(v < 0 for v in src_new.values()):
-                    return jsonify({"error": "Hasil realokasi membuat saldo sumber negatif."}), 409
+                target_current = Decimal(str(target["current_budget"]))
+                target_consumable = Decimal(str(target["consumable_budget"]))
+                target_hold = max(Decimal("0"), target_current - target_consumable)
+                hold_to_open = min(target_hold, shortage)
+                required_reallocation = shortage - hold_to_open
+                if required_reallocation <= 0:
+                    return jsonify({"error": "Approval Hold masih mencukupi. Gunakan Open Budget, bukan Reallocation."}), 409
 
+                aggregated = {}
+                for index, allocation in enumerate(allocations, start=1):
+                    source = locked[allocation["source_budget_id"]]
+                    if source["entity_id"] == target["entity_id"] and source["biro_id"] == target["biro_id"]:
+                        return jsonify({"error": f"Sumber pada baris {index} harus berasal dari biro atau entity lain."}), 409
+                    if source["budget_year"] != target["budget_year"]:
+                        return jsonify({"error": f"Tahun anggaran sumber pada baris {index} tidak sama dengan target."}), 409
+                    if str(source["budget_scope"] or "").strip().upper() != scope:
+                        return jsonify({"error": f"Budget Scope sumber pada baris {index} tidak sama dengan target."}), 409
+                    if scope == "CI_ONLY":
+                        if source["commitment_item_id"] != target["commitment_item_id"]:
+                            return jsonify({"error": f"Commitment Item sumber pada baris {index} tidak sesuai."}), 409
+                    elif (source["funds_center_id"] != target["funds_center_id"]
+                          or source["commitment_item_id"] != target["commitment_item_id"]):
+                        return jsonify({"error": f"Funds Center dan Commitment Item sumber pada baris {index} tidak sesuai."}), 409
+
+                    # Cocokkan pilihan manual frontend dengan record budget yang dikunci.
+                    for field in ("entity_id", "biro_id"):
+                        if allocation[field] and allocation[field] != str(source[field]):
+                            return jsonify({"error": f"{field.replace('_', ' ').title()} pada baris {index} tidak sesuai dengan sumber budget."}), 409
+                    # Budget master SILOG tidak memiliki fund_id. Jangan mensyaratkan
+                    # riwayat pengajuan untuk memvalidasi Fund sumber.
+                    supplied_fund = allocation["fund_code"]
+                    if not supplied_fund:
+                        return jsonify({"error": f"Fund pada baris {index} wajib diisi."}), 400
+                    historical_fund = str(source["fund_code"] or "").strip().upper()
+                    if historical_fund and supplied_fund != historical_fund:
+                        return jsonify({"error": f"Fund pada baris {index} berbeda dengan mapping riwayat sumber."}), 409
+                    cursor.execute("""
+                        SELECT 1
+                        FROM public.fund f
+                        WHERE UPPER(TRIM(f.fund_code)) = %s
+                          AND EXISTS (
+                              SELECT 1 FROM public.master_fund mf
+                              WHERE mf.target_fund_id = f.fund_id
+                          )
+                        LIMIT 1
+                    """, (supplied_fund,))
+                    if cursor.fetchone() is None:
+                        return jsonify({"error": f"Fund pada baris {index} tidak ditemukan di master_fund."}), 409
+                    for field in ("funds_center_code", "commitment_item_code"):
+                        supplied = allocation[field]
+                        expected = str(source[field] or "").strip().upper()
+                        if not supplied or supplied != expected:
+                            return jsonify({"error": f"{field.replace('_', ' ').title()} pada baris {index} tidak sesuai dengan master budget."}), 409
+
+                    bucket = aggregated.setdefault(allocation["source_budget_id"], {"amount": Decimal("0")})
+                    bucket["amount"] += allocation["amount"]
+
+                total_reallocation = sum((x["amount"] for x in allocations), Decimal("0"))
+                if total_reallocation != required_reallocation:
+                    return jsonify({
+                        "error": (
+                            f"Total realokasi harus tepat {required_reallocation:.2f}. "
+                            f"Shortage {shortage:.2f} terlebih dahulu dipenuhi dari "
+                            f"Approval Hold sebesar {hold_to_open:.2f}."
+                        ),
+                        "live_shortage": str(shortage),
+                        "hold_to_open": str(hold_to_open),
+                        "required_reallocation": str(required_reallocation),
+                        "submitted_reallocation": str(total_reallocation)
+                    }), 409
+
+                for source_id, bucket in aggregated.items():
+                    source_available = Decimal(str(locked[source_id]["available_amount"]))
+                    if source_available < bucket["amount"]:
+                        return jsonify({
+                            "error": f"Available Budget sumber ID {source_id} tidak mencukupi. Maksimal {source_available:.2f}."
+                        }), 409
+
+                # Simpan snapshot target sebelum mutasi.
+                target_old = {
+                    key: Decimal(str(target[key]))
+                    for key in ("current_budget", "consumable_budget", "consumed_budget", "available_amount")
+                }
+
+                # Tahap 1: buka Approval Hold yang tersedia pada target.
+                target_after_hold = dict(target_old)
+                target_after_hold["consumable_budget"] += hold_to_open
+                target_after_hold["available_amount"] += hold_to_open
+                if hold_to_open > 0:
+                    cursor.execute("""
+                        UPDATE public.budget_master
+                        SET consumable_budget = %s, available_amount = %s
+                        WHERE budget_id = %s
+                    """, (target_after_hold["consumable_budget"], target_after_hold["available_amount"], target_id))
+                    for field in ("consumable_budget", "available_amount"):
+                        _approval_record_history(
+                            cursor, target_id, request_id, "Open Budget",
+                            field, target_old[field], target_after_hold[field], hold_to_open
+                        )
+                    cursor.execute("""
+                        INSERT INTO public.budget_allocation
+                            (request_id, source_budget_id, target_budget_id,
+                             allocation_type, amount, instruction, approved_by)
+                        VALUES (%s, NULL, %s, 'Open Budget', %s, %s, %s)
+                    """, (
+                        request_id, target_id, hold_to_open,
+                        f"Membuka Approval Hold sebelum realokasi. {instruction}".strip(),
+                        session["user_id"]
+                    ))
+
+                # Tahap 2: kurangi sumber dan catat histori per sumber.
+                for source_id, bucket in aggregated.items():
+                    source = locked[source_id]
+                    amount_for_source = bucket["amount"]
+                    src_old = {
+                        key: Decimal(str(source[key]))
+                        for key in ("current_budget", "consumable_budget", "available_amount")
+                    }
+                    src_new = {key: value - amount_for_source for key, value in src_old.items()}
+                    if any(value < 0 for value in src_new.values()):
+                        raise ValueError(f"Realokasi membuat saldo sumber ID {source_id} negatif.")
+                    cursor.execute("""
+                        UPDATE public.budget_master
+                        SET current_budget = %s, consumable_budget = %s, available_amount = %s
+                        WHERE budget_id = %s
+                    """, (src_new["current_budget"], src_new["consumable_budget"],
+                          src_new["available_amount"], source_id))
+                    for field in ("current_budget", "consumable_budget", "available_amount"):
+                        _approval_record_history(
+                            cursor, source_id, request_id, "Reallocation Out",
+                            field, src_old[field], src_new[field], amount_for_source
+                        )
+
+                # Tahap 3: tambahkan realokasi ke target.
+                target_after_reallocation = dict(target_after_hold)
+                target_after_reallocation["current_budget"] += total_reallocation
+                target_after_reallocation["consumable_budget"] += total_reallocation
+                target_after_reallocation["available_amount"] += total_reallocation
                 cursor.execute("""
                     UPDATE public.budget_master
                     SET current_budget = %s, consumable_budget = %s, available_amount = %s
                     WHERE budget_id = %s
-                """, (src_new["current_budget"], src_new["consumable_budget"],
-                      src_new["available_amount"], source_id))
-                cursor.execute("""
-                    UPDATE public.budget_master
-                    SET current_budget = %s, consumable_budget = %s, available_amount = %s
-                    WHERE budget_id = %s
-                """, (tgt_new["current_budget"], tgt_new["consumable_budget"],
-                      tgt_new["available_amount"], req["budget_id"]))
-
-                remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - tgt_new["available_amount"])
-                fully_covered = remaining_shortage == 0
-
-                # Realokasi masuk terlebih dahulu; setelah cukup, konsumsi transaksi.
-                if fully_covered:
-                    _approval_consume_request(
-                        cursor=cursor,
-                        budget_id=req["budget_id"],
-                        request_id=request_id,
-                        request_amount=req["request_amount"],
-                        old_consumed=target["consumed_budget"],
-                        old_available=tgt_new["available_amount"]
+                """, (target_after_reallocation["current_budget"],
+                      target_after_reallocation["consumable_budget"],
+                      target_after_reallocation["available_amount"], target_id))
+                for field in ("current_budget", "consumable_budget", "available_amount"):
+                    _approval_record_history(
+                        cursor, target_id, request_id, "Reallocation In",
+                        field, target_after_hold[field], target_after_reallocation[field],
+                        total_reallocation
                     )
+
+                # Simpan detail tiap baris sumber. Tanggal dicantumkan pada instruksi
+                # karena tabel budget_allocation yang digunakan aplikasi tidak memakai kolom tanggal.
+                allocation_type = "Reallocation FC_CI" if scope == "FC_CI" else "Reallocation CI_Only"
+                for allocation in allocations:
+                    row_instruction = f"Tanggal realokasi: {allocation['allocation_date'].isoformat()}"
+                    if allocation["instruction"]:
+                        row_instruction += f" | {allocation['instruction']}"
+                    cursor.execute("""
+                        INSERT INTO public.budget_allocation
+                            (request_id, source_budget_id, target_budget_id,
+                             allocation_type, amount, instruction, approved_by)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        request_id, allocation["source_budget_id"], target_id,
+                        allocation_type, allocation["amount"], row_instruction,
+                        session["user_id"]
+                    ))
+
+                # Tahap 4: konsumsi seluruh Request Amount setelah saldo cukup.
+                available_before_consume = target_after_reallocation["available_amount"]
+                remaining_shortage = max(Decimal("0"), request_amount - available_before_consume)
+                if remaining_shortage != 0:
+                    raise ValueError("Saldo target setelah Open Budget dan Reallocation belum cukup untuk konsumsi penuh.")
+                _approval_consume_request(
+                    cursor=cursor,
+                    budget_id=target_id,
+                    request_id=request_id,
+                    request_amount=request_amount,
+                    old_consumed=target_old["consumed_budget"],
+                    old_available=available_before_consume
+                )
 
                 cursor.execute("""
                     UPDATE public.budget_request
-                    SET request_status = %s, budget_status = %s
+                    SET request_status = 'Approved', budget_status = 'Budget Cukup'
                     WHERE request_id = %s
-                """, ("Approved" if fully_covered else "Pending",
-                      "Budget Cukup" if fully_covered else "Realokasi", request_id))
-
-                _approval_record_decision(cursor, request_id, "Approve with Reallocation", amount, instruction)
-                allocation_type = "Reallocation FC_CI" if target["budget_scope"] == "FC_CI" else "Reallocation CI_Only"
-                cursor.execute("""
-                    INSERT INTO public.budget_allocation
-                        (request_id, source_budget_id, target_budget_id,
-                         allocation_type, amount, instruction, approved_by)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (request_id, source_id, req["budget_id"], allocation_type,
-                      amount, instruction, session["user_id"]))
-
-                for field in ("current_budget", "consumable_budget", "available_amount"):
-                    _approval_record_history(cursor, source_id, request_id,
-                        "Reallocation Out", field, src_old[field], src_new[field], amount)
-                    _approval_record_history(cursor, req["budget_id"], request_id,
-                        "Reallocation In", field, tgt_old[field], tgt_new[field], amount)
+                """, (request_id,))
+                _approval_record_decision(
+                    cursor, request_id, "Approve with Reallocation", request_amount, instruction
+                )
 
         return jsonify({
-            "message": "Approve with Reallocation Budget berhasil diproses.",
-            "request_status": "Approved" if fully_covered else "Pending",
-            "budget_status": "Budget Cukup" if fully_covered else "Realokasi",
-            "allocated_amount": str(amount),
-            "remaining_shortage": str(remaining_shortage)
+            "message": "Approve with Reallocation berhasil diproses. Approval Hold dibuka terlebih dahulu, kekurangan dipenuhi melalui realokasi, lalu seluruh Request Amount dikonsumsi.",
+            "request_status": "Approved",
+            "budget_status": "Budget Cukup",
+            "approved_amount": str(request_amount),
+            "opened_from_hold": str(hold_to_open),
+            "allocated_amount": str(total_reallocation),
+            "remaining_shortage": "0"
         })
+    except ValueError as exc:
+        if conn is not None:
+            conn.rollback()
+        return jsonify({"error": str(exc)}), 409
     except psycopg2.Error:
         app.logger.exception("Gagal memproses realokasi budget")
         return jsonify({"error": "Reallocation gagal diproses. Tidak ada perubahan yang disimpan."}), 500

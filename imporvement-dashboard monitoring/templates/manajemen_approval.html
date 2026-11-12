@@ -323,6 +323,34 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 }
 
 
+
+/* Rincian pemenuhan anggaran: hanya pada pengajuan yang perlu realokasi */
+.ma-reallocation-summary{margin:12px 0 14px;padding:13px 14px;border:1px solid #eadde0;border-radius:10px;background:#fff}
+.ma-reallocation-summary-title{font-size:11px;font-weight:800;color:#344054;margin-bottom:10px;display:flex;gap:7px;align-items:center}
+.ma-reallocation-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ma-reallocation-summary-label{font-size:10px;color:#768195;font-weight:650;margin-bottom:4px}
+.ma-reallocation-summary-value{font-size:15px;color:#263242;font-weight:800;font-variant-numeric:tabular-nums}
+.ma-reallocation-summary-total{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e6e9ee;margin-top:11px;padding-top:11px}
+.ma-reallocation-summary-total .ma-reallocation-summary-value{font-size:19px;color:#bb1d2b}
+.ma-reallocation-summary-help{font-size:10px;color:#778191;line-height:1.5;margin-top:4px}
+@media(max-width:540px){.ma-reallocation-summary-total{align-items:flex-start;flex-direction:column;gap:3px}}
+
+
+/* Dua tahap dalam satu transaksi approval */
+.ma-two-step{display:grid;gap:13px;margin:1px 0 14px}
+.ma-step-card{background:#fff;border:1px solid #e4e8ee;border-radius:11px;padding:14px}
+.ma-step-header{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.ma-step-number{display:inline-flex;align-items:center;justify-content:center;flex:0 0 23px;width:23px;height:23px;border-radius:7px;background:#fde9ea;color:#b91c2b;font-size:11px;font-weight:800}
+.ma-step-title{font-size:12px;font-weight:800;color:#30394b}
+.ma-step-subtitle{font-size:10px;color:#778191;line-height:1.55;margin:0 0 12px 32px}
+.ma-step-values{margin-left:32px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ma-step-value-label{font-size:10px;color:#778191;font-weight:650;margin-bottom:4px}
+.ma-step-value-number{font-size:14px;font-weight:800;color:#344054;font-variant-numeric:tabular-nums}
+.ma-step-value-number.emphasis{color:#bd1829}
+.ma-step-locked{margin:10px 0 0 32px;padding:9px 11px;background:#f7f9fc;border:1px solid #edf0f5;border-radius:8px;font-size:10px;color:#667085;line-height:1.5}
+.ma-step-card.second .ma-step-subtitle{margin-bottom:10px}
+@media(max-width:650px){.ma-step-values{grid-template-columns:1fr;gap:8px}.ma-step-values,.ma-step-locked,.ma-step-subtitle{margin-left:0}}
+
 /* Approval action panel */
 .ma-action-panel{border:1px solid #f0d5d7;background:#fffafa;border-radius:11px;padding:15px;margin-top:14px}
 .ma-action-panel h3{font-size:12px;font-weight:800;margin:0 0 6px}
@@ -551,6 +579,8 @@ async function openDetail(id){
  const r=await fetch('/api/approval/requests/'+id);const d=await r.json();
  if(!r.ok){document.getElementById('detailBody').innerHTML=`<div class="alert alert-danger">${esc(d.error)}</div>`;return;}
  const x=d.request;
+ const liveShortage=Math.max(0,Number(x.request_amount||0)-Number(x.current_available_amount||0));
+ const liveHold=Math.max(0,Number(x.current_budget||0)-Number(x.consumable_budget||0));
  activeApprovalRequestId=id; activeApprovalRequest=x;
  document.getElementById('detailBody').innerHTML=`
  <div class="ma-detail-section"><h3><i class="bi bi-person"></i>Informasi Pengajuan</h3><div class="ma-detail-grid">
@@ -564,13 +594,13 @@ async function openDetail(id){
  </div></div>
  <div class="ma-detail-section"><h3><i class="bi bi-wallet2"></i>Kondisi Anggaran</h3><div class="ma-budget-grid">
   <div class="ma-detail-item"><div class="ma-modal-label">Nominal Pengajuan</div><div class="ma-modal-value">${money(x.request_amount)}</div></div>
-  <div class="ma-detail-item"><div class="ma-modal-label">Shortage Budget</div><div class="ma-modal-value">${money(Math.max(0,Number(x.request_amount||0)-Number(x.available_amount_snapshot||0)))}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Shortage Budget</div><div class="ma-modal-value">${money(liveShortage)}</div></div>
   <div class="ma-detail-item"><div class="ma-modal-label">Consumed Budget</div><div class="ma-modal-value">${money(x.consumed_budget)}</div></div>
 
   <div class="ma-detail-item"><div class="ma-modal-label">Available Budget</div><div class="ma-modal-value">${money(x.available_amount_snapshot)}</div></div>
   <div class="ma-detail-item"><div class="ma-modal-label">Current Budget</div><div class="ma-modal-value">${money(x.current_budget)}</div></div>
 
-  <div class="ma-detail-item"><div class="ma-modal-label">Approval Hold Amount</div><div class="ma-modal-value">${money(x.approval_hold_amount_snapshot)}</div></div>
+  <div class="ma-detail-item"><div class="ma-modal-label">Approval Hold Amount</div><div class="ma-modal-value">${money(liveHold)}</div></div>
   <div class="ma-detail-item"><div class="ma-modal-label">Consumable Budget</div><div class="ma-modal-value">${money(x.consumable_budget)}</div></div>
 </div></div>
  <div class="ma-detail-section"><h3><i class="bi bi-clock-history"></i>Riwayat Keputusan</h3>${d.decisions.length?`<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Tanggal</th><th>Approval</th><th>Keputusan</th><th>Nominal</th><th>Instruksi</th></tr></thead><tbody>${d.decisions.map(a=>`<tr><td>${esc(a.decision_date?.slice(0,19).replace('T',' '))}</td><td>${esc(a.approval_username)}</td><td>${esc(a.decision)}</td><td>${money(a.approved_amount)}</td><td>${esc(a.instruction)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-secondary small">Belum ada keputusan.</div>'}</div>
@@ -587,20 +617,51 @@ async function openDetail(id){
   </div>` : x.request_status === 'Pending' && Number(x.request_amount)>Number(x.current_available_amount) ? `
   <div class="ma-action-panel">
     <h3><i class="bi bi-shield-check me-1" style="color:var(--red)"></i>Tindakan Approval</h3>
-    ${Number(x.approval_hold_amount_snapshot||0) >= Number(x.shortage_amount||0)
+    ${liveHold >= liveShortage
       ? `<p>Approval Hold mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Open Budget.</p>`
       : `<p>Approval Hold tidak mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Reallocation dari sumber budget lain.</p>`}
+    ${liveHold < liveShortage ? `
+    <div class="ma-reallocation-summary" aria-label="Rincian pemenuhan anggaran">
+      <div class="ma-reallocation-summary-title"><i class="bi bi-calculator"></i>Rincian Pemenuhan Anggaran</div>
+      <div class="ma-reallocation-summary-grid">
+        <div><div class="ma-reallocation-summary-label">Shortage Budget</div><div class="ma-reallocation-summary-value">${money(liveShortage)}</div></div>
+        <div><div class="ma-reallocation-summary-label">Approval Hold yang Digunakan</div><div class="ma-reallocation-summary-value">${money(Math.min(liveShortage,liveHold))}</div></div>
+      </div>
+      <div class="ma-reallocation-summary-total">
+        <div>
+          <div class="ma-reallocation-summary-label">Budget Perlu Direalokasi</div>
+          <div class="ma-reallocation-summary-help">Shortage dikurangi Approval Hold yang dapat dibuka.</div>
+        </div>
+        <div class="ma-reallocation-summary-value">${money(Math.max(0,liveShortage-liveHold))}</div>
+      </div>
+      <div class="ma-reallocation-summary-help">Total seluruh baris realokasi harus sama dengan nominal kebutuhan.</div>
+    </div>` : ''}
     <div class="ma-action-buttons">
-      ${Number(x.approval_hold_amount_snapshot||0) >= Number(x.shortage_amount||0)
+      ${liveHold >= liveShortage
         ? `<button type="button" class="ma-action-btn" onclick="showApprovalAction('open')"><i class="bi bi-unlock me-1"></i>Open Budget</button>`
         : `<button type="button" class="ma-action-btn" onclick="showApprovalAction('reallocate')"><i class="bi bi-arrow-left-right me-1"></i>Open Budget with Reallocation</button>`}
     </div>
     <div id="approvalActionForm" class="ma-action-form">
       <div id="reallocationSourceWrap" class="mb-3" style="display:none">
-        <div class="ma-action-note mb-3">Silahkan mengisi data realokasi secara manual. Nilai Fund, Funds Center, dan Commitment Item harus sesuai. Sistem akan memvalidasi kombinasi yang diinput.</div>
-        <div id="reallocationRows" class="ma-reallocation-list"></div>
-        <button type="button" class="ma-action-cancel mt-2" onclick="addReallocationRow()"><i class="bi bi-plus-circle me-1"></i>Tambah Baris</button>
-        <div class="ma-action-note mt-3">Nominal awal mengikuti sisa Shortage Budget dan dibatasi Available pada sumber yang cocok. Nominal dapat diedit dan dibagi ke beberapa baris.</div>
+        <div class="ma-two-step">
+          <section class="ma-step-card" aria-label="Tahap 1 Open Budget">
+            <div class="ma-step-header"><span class="ma-step-number">1</span><div class="ma-step-title">Tahap 1 — Open Budget</div></div>
+            <div class="ma-step-subtitle">Gunakan Approval Hold pada budget tujuan terlebih dahulu. Nominal dihitung otomatis dan tidak perlu diinput ulang.</div>
+            <div class="ma-step-values">
+              <div><div class="ma-step-value-label">Approval Hold Tersedia</div><div class="ma-step-value-number" id="stepHoldAvailable">—</div></div>
+              <div><div class="ma-step-value-label">Nominal Dibuka</div><div class="ma-step-value-number" id="stepHoldOpened">—</div></div>
+              <div><div class="ma-step-value-label">Sisa Kekurangan</div><div class="ma-step-value-number emphasis" id="stepHoldRemaining">—</div></div>
+            </div>
+            <div class="ma-step-locked"><i class="bi bi-info-circle me-1"></i>Open Budget akan dijalankan bersama realokasi setelah konfirmasi akhir.</div>
+          </section>
+          <section class="ma-step-card second" aria-label="Tahap 2 Reallocation Budget">
+            <div class="ma-step-header"><span class="ma-step-number">2</span><div class="ma-step-title">Tahap 2 — Reallocation Budget</div></div>
+            <div class="ma-step-subtitle">Isi sumber anggaran untuk menutup sisa kekurangan. Total realokasi harus tepat <strong id="stepReallocationTarget">—</strong>.</div>
+            <div id="reallocationRows" class="ma-reallocation-list"></div>
+            <button type="button" class="ma-action-cancel mt-2" onclick="addReallocationRow()"><i class="bi bi-plus-circle me-1"></i>Tambah Baris</button>
+            <div class="ma-action-note mt-3">Nominal awal dibatasi Available Budget sumber. Jika menggunakan beberapa sumber, jumlah seluruh baris wajib sama dengan kebutuhan realokasi.</div>
+          </section>
+        </div>
       </div>
       <div class="row g-3" id="approvalGeneralFields">
         <div class="col-md-6" id="approvalAmountWrap"><label class="form-label" for="approvalAmount">Nominal yang Dibuka</label><input id="approvalAmount" class="form-control" type="number" min="0.01" step="0.01" placeholder="Nominal terisi otomatis"><div class="ma-action-note" id="approvalAmountHint"></div></div>
@@ -661,7 +722,7 @@ function showApprovalAction(mode){
    Number(activeApprovalRequest.current_budget||0)-
    Number(activeApprovalRequest.consumable_budget||0)
  );
- const suggestedAmount=mode==='open' ? Math.min(liveShortage,hold) : liveShortage;
+ const suggestedAmount=mode==='open' ? Math.min(liveShortage,hold) : Math.max(0,liveShortage-hold);
  document.getElementById('approvalAmount').value=suggestedAmount>0?String(suggestedAmount):'';
  document.getElementById('approvalInstruction').value='';
  sourceWrap.style.display=mode==='reallocate'?'block':'none';
@@ -671,8 +732,16 @@ function showApprovalAction(mode){
   if(instructionWrap) instructionWrap.style.display=mode==='open'?'':'none';
  hint.textContent=mode==='open'
    ? `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Maksimal dapat dibuka dari Approval Hold: ${money(hold)}.`
-   : `Nominal otomatis diisi sebesar shortage ${money(suggestedAmount)}. Realokasi dibatasi oleh Available Budget sumber dan shortage target.`;
- if(mode==='reallocate') loadReallocationSources();
+   : `Approval Hold dibuka terlebih dahulu sebesar ${money(Math.min(liveShortage,hold))}. Sisa yang perlu direalokasikan: ${money(suggestedAmount)}; dibatasi Available Budget sumber.`;
+ if(mode==='reallocate'){
+   const opened=Math.min(liveShortage,hold);
+   const required=Math.max(0,liveShortage-opened);
+   document.getElementById('stepHoldAvailable').textContent=money(hold);
+   document.getElementById('stepHoldOpened').textContent=money(opened);
+   document.getElementById('stepHoldRemaining').textContent=money(required);
+   document.getElementById('stepReallocationTarget').textContent=money(required);
+   loadReallocationSources();
+ }
 }
 function hideApprovalAction(){
  const form=document.getElementById('approvalActionForm');
@@ -681,7 +750,9 @@ function hideApprovalAction(){
 }
 
 function getReallocationShortage(){
- return Math.max(0,Number(activeApprovalRequest?.request_amount||0)-Number(activeApprovalRequest?.current_available_amount||0));
+ const shortage=Math.max(0,Number(activeApprovalRequest?.request_amount||0)-Number(activeApprovalRequest?.current_available_amount||0));
+ const hold=Math.max(0,Number(activeApprovalRequest?.current_budget||0)-Number(activeApprovalRequest?.consumable_budget||0));
+ return Math.max(0,shortage-hold);
 }
 function getRemainingReallocationShortage(excludeInput=null){
  const body=document.getElementById('reallocationRows');
@@ -757,7 +828,7 @@ function addReallocationRow(){
    }
    const matches=reallocationSourceItems.filter(x=>
      String(x.entity_id)===String(entityId) && String(x.biro_id)===String(biroId) &&
-     String(x.fund_code||'').trim().toUpperCase()===fund &&
+     (!x.fund_code || String(x.fund_code).trim().toUpperCase()===fund) &&
      String(x.funds_center_code||'').trim().toUpperCase()===fc &&
      String(x.commitment_item_code||'').trim().toUpperCase()===ci &&
      Number(x.available_amount||0)>0
@@ -772,7 +843,9 @@ function addReallocationRow(){
    sourceId.value=String(item.budget_id);
    amountInput.max=String(item.available_amount||0);
    validation.className='text-success';
-   validation.textContent=`Kombinasi valid. Available sumber: ${money(item.available_amount)}.`;
+   validation.textContent=item.fund_code
+     ? `Kombinasi valid. Available sumber: ${money(item.available_amount)}.`
+     : `Budget sumber ditemukan. Fund akan diverifikasi pada master_fund saat konfirmasi. Available: ${money(item.available_amount)}.`;
    if(amountInput.dataset.auto==='1'){
      const remaining=getRemainingReallocationShortage(amountInput);
      const suggested=Math.min(remaining,Math.max(0,Number(item.available_amount)||0));
@@ -850,15 +923,17 @@ async function submitApprovalAction(){
      feedback.className='ma-action-feedback error';feedback.textContent='Lengkapi tanggal, Unit Entity, Biro, Fund, Funds Center, Commitment Item, dan nominal yang valid pada seluruh baris.';return;
    }
    const total=payload.allocations.reduce((sum,x)=>sum+Number(x.amount),0);
-const shortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Number(activeApprovalRequest.current_available_amount||0));
-   if(total<=0 || total-shortage>0.009){feedback.className='ma-action-feedback error';feedback.textContent=`Total pengurangan harus lebih dari Rp0 dan tidak boleh melebihi shortage ${money(shortage)}.`;return;}
+const liveShortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Number(activeApprovalRequest.current_available_amount||0));
+   const hold=Math.max(0,Number(activeApprovalRequest.current_budget||0)-Number(activeApprovalRequest.consumable_budget||0));
+   const requiredReallocation=Math.max(0,liveShortage-hold);
+   if(total<=0 || Math.abs(total-requiredReallocation)>0.009){feedback.className='ma-action-feedback error';feedback.textContent=`Total realokasi harus tepat ${money(requiredReallocation)} setelah Approval Hold ${money(Math.min(liveShortage,hold))} dibuka.`;return;}
  }else return;
- if(!confirm(activeApprovalAction==='open'?`Konfirmasi Open Budget sebesar ${money(payload.amount)}?`:`Konfirmasi realokasi ${payload.allocations.length} baris?`)) return;
+ if(!confirm(activeApprovalAction==='open'?`Konfirmasi Open Budget sebesar ${money(payload.amount)}?`:`Konfirmasi dua tahap sekaligus: Open Budget lalu realokasi ${payload.allocations.length} baris? Perubahan hanya disimpan jika keduanya berhasil.`)) return;
  submit.disabled=true;submit.textContent='Memproses...';feedback.className='ma-action-feedback';feedback.textContent='';
  try{
    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify(payload)});
    const d=await r.json(); if(!r.ok) throw Error(d.error||'Tindakan approval gagal diproses.');
-   feedback.className='ma-action-feedback success';feedback.textContent=`${d.message} Status: ${d.request_status}. Sisa shortage: ${money(d.remaining_shortage)}.`;
+   feedback.className='ma-action-feedback success';feedback.textContent=`${d.message} Status: ${d.request_status}. Dibuka dari Hold: ${money(d.opened_from_hold||0)}. Realokasi: ${money(d.allocated_amount||0)}. Sisa shortage: ${money(d.remaining_shortage||0)}.`;
    await Promise.all([loadSummary(),loadRequests()]);
  }catch(e){feedback.className='ma-action-feedback error';feedback.textContent=e.message;}
  finally{submit.disabled=false;submit.textContent='Konfirmasi Tindakan';}
