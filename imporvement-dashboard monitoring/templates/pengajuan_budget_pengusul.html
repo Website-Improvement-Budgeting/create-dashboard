@@ -765,6 +765,22 @@
         .pengajuan-page .import-drop input { display:block; max-width:100%; margin:12px auto 0; font-size:12px; }
         .pengajuan-page .import-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
         .pengajuan-page .import-summary { margin:16px 0; padding:12px 14px; border-radius:9px; background:#f6f8fb; font-size:12px; color:#536071; }
+        /* Hasil proses import: hijau saat seluruh pengajuan berhasil dikirim. */
+        .pengajuan-page .import-summary.is-success {
+            background:#eaf7f1;
+            border:1px solid #cde9da;
+            color:#207451;
+        }
+        .pengajuan-page .import-summary.is-warning {
+            background:#fff7e8;
+            border:1px solid #f3dfb7;
+            color:#926313;
+        }
+        .pengajuan-page .import-summary.is-error {
+            background:#fff0f1;
+            border:1px solid #f2cdd1;
+            color:#b42332;
+        }
         .pengajuan-page .import-table-wrap { overflow:auto; margin-top:14px; }
         .pengajuan-page .import-table { width:100%; border-collapse:collapse; min-width:680px; font-size:11px; }
         .pengajuan-page .import-table th,.pengajuan-page .import-table td { padding:10px; border-bottom:1px solid #edf0f4; text-align:left; vertical-align:top; }
@@ -2047,6 +2063,10 @@ const excelFileInput = document.getElementById("excelImportFile");
 const previewExcelBtn = document.getElementById("previewExcelBtn");
 const submitExcelBtn = document.getElementById("submitExcelBtn");
 const excelSummary = document.getElementById("excelImportSummary");
+function setExcelSummaryTone(tone = "") {
+    excelSummary.classList.remove("is-success", "is-warning", "is-error");
+    if (tone) excelSummary.classList.add("is-" + tone);
+}
 const excelTableWrap = document.getElementById("excelImportTableWrap");
 const excelTableBody = document.getElementById("excelImportTableBody");
 const API_IMPORT_PREVIEW = {{ url_for('pengajuan_import_preview') | tojson }};
@@ -2145,6 +2165,7 @@ previewExcelBtn.addEventListener("click", async () => {
     excelPreviewRows = [];
     excelPreviewPage = 1;
     excelRenderedRows = [];
+    setExcelSummaryTone();
     excelSummary.textContent = "Sedang membaca file dan memvalidasi setiap baris...";
     try {
         const response = await fetch(API_IMPORT_PREVIEW, {
@@ -2174,6 +2195,7 @@ excelFileInput.addEventListener("change", () => {
     submitExcelBtn.disabled = true;
     excelTableWrap.hidden = true;
     document.getElementById("excelPreviewPagination").hidden = true;
+    setExcelSummaryTone();
     excelSummary.textContent = "File berubah. Jalankan Validasi & Preview kembali.";
 });
 
@@ -2184,13 +2206,16 @@ submitExcelBtn.addEventListener("click", async () => {
     if (!confirmed) return;
     submitExcelBtn.disabled = true;
     previewExcelBtn.disabled = true;
+    setExcelSummaryTone();
     excelSummary.textContent = "Sedang menyimpan pengajuan. Setiap baris diproses secara terpisah.";
     try {
         const result = await postJSON(API_IMPORT_SUBMIT, { rows: readyRows, filename: excelUploadFilename });
         renderExcelRows(result.rows || [], true);
         excelSummary.textContent = `Proses selesai • Batch ${result.batch_code || "tidak terbentuk"} • Berhasil dikirim ${result.sent} • Gagal ${result.failed}. Periksa ID pengajuan dan pesan pada setiap baris.`;
+        setExcelSummaryTone(Number(result.failed || 0) === 0 && Number(result.sent || 0) > 0 ? "success" : Number(result.sent || 0) > 0 ? "warning" : "error");
         excelPreviewRows = [];
     } catch (error) {
+        setExcelSummaryTone("error");
         excelSummary.textContent = error.message;
         submitExcelBtn.disabled = false;
     } finally {

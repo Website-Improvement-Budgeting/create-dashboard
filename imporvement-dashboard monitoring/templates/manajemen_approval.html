@@ -535,6 +535,102 @@ body,body button,body input,body select,body textarea,body table{font-family:var
 #approvalExcelUploadPanel .ma-excel-guidance strong { color: inherit; font-weight: 400; }
 #approvalExcelUploadPanel .ma-excel-guidance p { margin: 3px 0 0; }
 #approvalExcelUploadPanel .ma-excel-guidance .ma-guidance-title { font-size: 12px; font-weight: 500; color: #394252; }
+
+/* Ringkasan pemeriksaan Excel: warna dinamis dan tipografi ringan. */
+#approvalExcelPreviewSummary .ma-excel-preview-summary {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Status pemeriksaan budget — override agar tidak tertimpa CSS global SILOG. */
+#approvalExcelPreviewSummary .ma-excel-preview-summary.ma-preview-success {
+  background: #eaf7f1 !important;
+  border: 1px solid #cde9da !important;
+  color: #207451 !important;
+}
+#approvalExcelPreviewSummary .ma-excel-preview-summary.ma-preview-warning {
+  background: #fff7e8 !important;
+  border: 1px solid #f3dfb7 !important;
+  color: #926313 !important;
+}
+#approvalExcelPreviewSummary .ma-excel-preview-summary.ma-preview-danger {
+  background: #fff0f1 !important;
+  border: 1px solid #f2cdd1 !important;
+  color: #b42332 !important;
+}
+#approvalExcelPreviewSummary .ma-excel-preview-summary.ma-preview-info {
+  background: #eef4fb !important;
+  border: 1px solid #cfdef0 !important;
+  color: #456586 !important;
+}
+#approvalExcelPreviewSummary .ma-excel-preview-summary strong,
+#approvalExcelPreviewSummary .ma-excel-preview-summary b {
+  font-weight: 400 !important;
+}
+#approvalExcelPreviewSummary .ma-excel-preview-summary i {
+  margin-right: 7px;
+}
+
+/* Hasil konfirmasi Excel: ringkasan dan rincian dalam satu kotak status. */
+#approvalExcelConfirmSummary .ma-excel-confirm-result {
+  padding: 14px 16px;
+  border: 1px solid #cde9da;
+  border-radius: 10px;
+  background: #eaf7f1;
+  color: #207451;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-result.is-warning {
+  background: #fff7e8;
+  border-color: #f3dfb7;
+  color: #926313;
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-result.is-danger {
+  background: #fff0f1;
+  border-color: #f2cdd1;
+  color: #b42332;
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-details {
+  display: grid;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid currentColor;
+  border-color: rgba(32, 116, 81, .16);
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-result.is-warning .ma-excel-confirm-details {
+  border-color: rgba(146, 99, 19, .18);
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-result.is-danger .ma-excel-confirm-details {
+  border-color: rgba(180, 35, 50, .18);
+}
+#approvalExcelConfirmSummary .ma-excel-confirm-result strong {
+  font-weight: 500;
+}
+
+/* Ringkasan detail batch: angka KPI netral, tanpa blok warna status. */
+#batchDetailMeta .ma-batch-meta-item strong,
+#batchDetailMeta .ma-batch-meta-item strong span {
+  background: transparent !important;
+  color: #30394b !important;
+}
+#batchDetailMeta .ma-batch-meta-item strong span {
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}
 </style>
 </head>
 <body>
@@ -681,7 +777,7 @@ body,body button,body input,body select,body textarea,body table{font-family:var
       <div class="ma-panel-head"><h3 class="mb-0">Upload Excel Approval</h3></div>
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <input type="file" id="approvalExcelFile" accept=".xlsx" class="form-control" style="max-width:420px">
-        <button type="button" class="ma-detail-btn" id="approvalExcelUploadButton"><i class="bi bi-upload me-1"></i>Upload & Preview</button>
+        <button type="button" class="ma-detail-btn" id="approvalExcelUploadButton"><i class="bi bi-search me-1"></i>Pemeriksaan Budget</button>
       </div>
       <div class="ma-excel-guidance" role="note">
         <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -976,8 +1072,20 @@ async function uploadApprovalExcel(){
     const data = await response.json();
     if(!response.ok) throw Error(data.error || 'Upload gagal.');
     activeApprovalImportId = Number(data.approval_import_id);
+    // Warna hasil pemeriksaan mengikuti validasi, bukan status approval transaksi.
+    const totalInstructions = Number(data.total || 0);
+    const validInstructions = Number(data.valid || 0);
+    const invalidInstructions = Number(data.invalid || 0);
+    const previewAlertType = totalInstructions > 0 && invalidInstructions === 0 && validInstructions === totalInstructions
+      ? 'success'
+      : invalidInstructions > 0 && validInstructions > 0
+        ? 'warning'
+        : invalidInstructions > 0
+          ? 'danger'
+          : 'info';
+    const previewIcon = previewAlertType === 'success' ? 'bi-check-circle' : previewAlertType === 'warning' ? 'bi-exclamation-triangle' : previewAlertType === 'danger' ? 'bi-x-circle' : 'bi-info-circle';
     document.getElementById('approvalExcelPreviewSummary').innerHTML =
-      `<div class="alert alert-info">File: <strong>${esc(data.filename)}</strong> · Instruksi: <strong>${data.total}</strong> · Valid: <strong>${data.valid}</strong> · Invalid: <strong>${data.invalid}</strong></div>`;
+      `<div class="ma-excel-preview-summary ma-preview-${previewAlertType}" role="status"><i class="bi ${previewIcon}" aria-hidden="true"></i>File: ${esc(data.filename)} · Instruksi: ${totalInstructions} · Valid: ${validInstructions} · Invalid: ${invalidInstructions}</div>`;
     document.getElementById('approvalExcelPreviewBody').innerHTML = (data.rows||[]).map(x=>`
       <tr><td>${esc(x.request_label||'—')}</td><td>${Number(x.excel_row_number)}</td>
       <td>${esc(x.instruction||'—')}</td><td>${x.amount?money(x.amount):'—'}</td>
@@ -989,7 +1097,7 @@ async function uploadApprovalExcel(){
   }catch(err){
     document.getElementById('approvalExcelPreviewSummary').innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
   }finally{
-    button.disabled=false; button.innerHTML='<i class="bi bi-upload me-1"></i>Upload & Preview';
+    button.disabled=false; button.innerHTML='<i class="bi bi-search me-1"></i>Pemeriksaan Budget';
   }
 }
 
@@ -1004,9 +1112,22 @@ async function confirmApprovalExcel(){
     });
     const data=await response.json();
     if(!response.ok) throw Error(data.error||'Pemrosesan gagal.');
-    document.getElementById('approvalExcelConfirmSummary').innerHTML =
-      `<div class="alert alert-${Number(data.failed||0) ? 'warning' : 'success'}">Berhasil diproses: <strong>${Number(data.processed||0)}</strong> · Gagal: <strong>${Number(data.failed||0)}</strong>. Pengajuan gagal tetap Pending.</div>
-       <div class="small mt-2">${(data.results||[]).map(x=>`<div><strong>REQ-${Number(x.request_id)}</strong>: ${esc(x.status)} — ${esc(x.message)}</div>`).join('')}</div>`;
+    const processedCount = Number(data.processed || 0);
+    const failedCount = Number(data.failed || 0);
+    const confirmTone = failedCount === 0 && processedCount > 0
+      ? 'is-success' : processedCount > 0 ? 'is-warning' : 'is-danger';
+    const confirmIcon = confirmTone === 'is-success'
+      ? 'bi-check-circle' : confirmTone === 'is-warning' ? 'bi-exclamation-triangle' : 'bi-x-circle';
+    document.getElementById('approvalExcelConfirmSummary').innerHTML = `
+      <div class="ma-excel-confirm-result ${confirmTone}" role="status">
+        <div class="ma-excel-confirm-heading">
+          <i class="bi ${confirmIcon}" aria-hidden="true"></i>
+          <span>Berhasil Diproses: ${processedCount} · Gagal: ${failedCount}.${failedCount ? ' Pengajuan gagal tetap Pending.' : ''}</span>
+        </div>
+        ${(data.results || []).length ? `<div class="ma-excel-confirm-details">
+          ${(data.results || []).map(x => `<div>REQ-${Number(x.request_id)}: ${esc(x.status)} — ${esc(x.message)}</div>`).join('')}
+        </div>` : ''}
+      </div>`;
     await Promise.all([loadSummary(),loadRequests(),openBatchDetail(activeBatchId)]);
   }catch(err){
     document.getElementById('approvalExcelConfirmSummary').innerHTML=`<div class="alert alert-danger">${esc(err.message)}</div>`;
@@ -1039,8 +1160,8 @@ async function openBatchDetail(batchId){
     document.getElementById('batchDetailMeta').innerHTML = `
       <div class="ma-batch-meta-item"><span>NAMA FILE</span><strong>${esc(batch.uploaded_filename || '—')}</strong></div>
       <div class="ma-batch-meta-item"><span>TOTAL PENGAJUAN</span><strong>${counts.total}</strong></div>
-      <div class="ma-batch-meta-item"><span>PENDING</span><strong class="${counts.pending === 0 ? 'batch-zero-success' : ''}">${counts.pending}</strong></div>
-      <div class="ma-batch-meta-item"><span>APPROVED / REJECTED</span><strong><span class="${counts.approved === 0 ? 'batch-approved-zero' : ''}">${counts.approved}</span> / <span class="${counts.rejected === 0 ? 'batch-zero-success' : ''}">${counts.rejected}</span></strong></div>`;
+      <div class="ma-batch-meta-item"><span>PENDING</span><strong>${counts.pending}</strong></div>
+      <div class="ma-batch-meta-item"><span>APPROVED / REJECTED</span><strong><span>${counts.approved}</span> / <span>${counts.rejected}</span></strong></div>`;
     renderBatchDetailRows();
   }catch(error){
     document.getElementById('batchDetailRows').innerHTML = `<tr><td colspan="11" class="ma-empty">${esc(error.message)}</td></tr>`;
