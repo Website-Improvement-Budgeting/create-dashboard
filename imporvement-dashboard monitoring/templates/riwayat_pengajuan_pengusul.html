@@ -838,6 +838,20 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* SILOG — ikon chevron dropdown konsisten dengan Dashboard Approval.
+           Perubahan visual saja; perilaku filter tetap sama. */
+        .filter-bar .filter-group select.filter-select {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-color: #fff !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352677d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 9px center !important;
+            background-size: 13px 13px !important;
+            padding-right: 28px !important;
+        }
     </style>
 </head>
 
@@ -1154,7 +1168,7 @@
                             </thead>
 
                             <tbody>
-                                {% for item in history_rows %}
+                                {% for item in history_rows[:5] %}
 
                                 <tr>
                                     <!-- ID -->
@@ -1253,7 +1267,11 @@
                     <div class="history-footer">
 
                         <span class="history-count">
-                            {{ total_rows }} pengajuan ditemukan
+                            {% if total_rows > 0 %}
+                                Menampilkan {{ (page - 1) * 5 + 1 }}–{{ [page * 5, total_rows] | min }} dari {{ total_rows }} data
+                            {% else %}
+                                Menampilkan 0–0 dari 0 data
+                            {% endif %}
                         </span>
 
                         <div class="pagination-controls">
@@ -1325,7 +1343,7 @@
      DETAIL MODALS
 ========================================== -->
 
-{% for item in history_rows %}
+{% for item in history_rows[:5] %}
 
 <div class="modal fade"
      id="detailModal{{ item.request_id }}"
