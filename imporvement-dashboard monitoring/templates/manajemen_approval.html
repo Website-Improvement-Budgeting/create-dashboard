@@ -498,6 +498,43 @@ body,body button,body input,body select,body textarea,body table{font-family:var
 .ma-filters.ma-history-toolbar select.ma-history-select{font-size:12px}
 .ma-filters.ma-history-toolbar .ma-history-apply,.ma-filters.ma-history-toolbar .ma-history-reset{font-size:12px}
 @media(max-width:650px){.ma-heading h1{font-size:22px!important}.ma-detail-section{padding:14px}.ma-step-card{padding:14px}.ma-reallocation-summary-total{gap:8px}}
+
+/* Approval Batch Excel: indikator nol yang positif untuk Pending/Rejected. */
+#batchListPanel .ma-pill.batch-zero-success,
+#batchDetailPanel .batch-zero-success {
+  color: #18764e;
+  background: #e8f6ef;
+  font-weight: 750;
+}
+/* Approval Batch Excel: penanda approved nol dan petunjuk upload. */
+#batchListPanel .ma-pill.batch-approved-zero,
+#batchDetailPanel .batch-approved-zero {
+  color: #c91620;
+  background: #fff0f1;
+  font-weight: 750;
+}
+#approvalExcelUploadPanel .ma-excel-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 13px;
+  padding: 12px 14px;
+  background: #f8f9fb;
+  border: 1px solid #e5e9ef;
+  border-radius: 10px;
+  color: #566275;
+  font-size: 11px;
+  line-height: 1.65;
+}
+#approvalExcelUploadPanel .ma-excel-guidance > i {
+  flex: 0 0 auto;
+  color: #60748f;
+  font-size: 15px;
+  margin-top: 2px;
+}
+#approvalExcelUploadPanel .ma-excel-guidance strong { color: inherit; font-weight: 400; }
+#approvalExcelUploadPanel .ma-excel-guidance p { margin: 3px 0 0; }
+#approvalExcelUploadPanel .ma-excel-guidance .ma-guidance-title { font-size: 12px; font-weight: 500; color: #394252; }
 </style>
 </head>
 <body>
@@ -646,7 +683,14 @@ body,body button,body input,body select,body textarea,body table{font-family:var
         <input type="file" id="approvalExcelFile" accept=".xlsx" class="form-control" style="max-width:420px">
         <button type="button" class="ma-detail-btn" id="approvalExcelUploadButton"><i class="bi bi-upload me-1"></i>Upload & Preview</button>
       </div>
-      <div class="small text-secondary mt-2">Untuk realokasi, salin SOURCE ENTITY dan <strong>nama SOURCE BIRO</strong> dari sheet DONOR_OPTIONS ke Excel Approval. Kode biro lama juga tetap diterima. Tidak perlu mengisi Budget ID.</div>
+      <div class="ma-excel-guidance" role="note">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <div>
+          <div class="ma-guidance-title">Panduan Pengisian Realokasi</div>
+          <p>Salin SOURCE ENTITY dan nama SOURCE BIRO dari sheet DONOR_OPTIONS ke file Excel Approval.</p>
+          <p>Kode biro lama tetap dapat digunakan. Kolom Budget ID tidak perlu diisi.</p>
+        </div>
+      </div>
       <div id="approvalExcelPreviewSummary" class="mt-3"></div>
       <div class="table-responsive mt-2" id="approvalExcelPreviewWrap" style="display:none">
         <table class="ma-table"><thead><tr><th>Request ID</th><th>Baris</th><th>Instruksi</th><th>Nominal</th><th>Status</th><th>Keterangan</th></tr></thead><tbody id="approvalExcelPreviewBody"></tbody></table>
@@ -847,9 +891,9 @@ function renderBatchListPage(){
       <td><div class="ma-id">${esc(x.batch_code || `BATCH-${x.batch_id}`)}</div><div class="ma-muted">${esc(x.batch_date?.slice(0,10) || '—')}</div></td>
       <td>${esc(x.uploaded_filename || 'Nama file tidak tersedia')}</td>
       <td><strong>${Number(x.total_requests || 0)}</strong></td>
-      <td><span class="ma-pill p-pending">${Number(x.pending || 0)}</span></td>
-      <td><span class="ma-pill p-approved">${Number(x.approved || 0)}</span></td>
-      <td><span class="ma-pill p-rejected">${Number(x.rejected || 0)}</span></td>
+      <td><span class="ma-pill ${Number(x.pending || 0) === 0 ? 'batch-zero-success' : 'p-pending'}">${Number(x.pending || 0)}</span></td>
+      <td><span class="ma-pill ${Number(x.approved || 0) === 0 ? 'batch-approved-zero' : 'p-approved'}">${Number(x.approved || 0)}</span></td>
+      <td><span class="ma-pill ${Number(x.rejected || 0) === 0 ? 'batch-zero-success' : 'p-rejected'}">${Number(x.rejected || 0)}</span></td>
       <td class="ma-money">${money(x.total_amount)}</td>
       <td><div class="d-flex flex-wrap gap-1">
         <button type="button" class="ma-detail-btn" onclick="openBatchDetail(${Number(x.batch_id)})"><i class="bi bi-eye me-1"></i>Lihat Pengajuan</button>
@@ -995,8 +1039,8 @@ async function openBatchDetail(batchId){
     document.getElementById('batchDetailMeta').innerHTML = `
       <div class="ma-batch-meta-item"><span>NAMA FILE</span><strong>${esc(batch.uploaded_filename || '—')}</strong></div>
       <div class="ma-batch-meta-item"><span>TOTAL PENGAJUAN</span><strong>${counts.total}</strong></div>
-      <div class="ma-batch-meta-item"><span>PENDING</span><strong>${counts.pending}</strong></div>
-      <div class="ma-batch-meta-item"><span>APPROVED / REJECTED</span><strong>${counts.approved} / ${counts.rejected}</strong></div>`;
+      <div class="ma-batch-meta-item"><span>PENDING</span><strong class="${counts.pending === 0 ? 'batch-zero-success' : ''}">${counts.pending}</strong></div>
+      <div class="ma-batch-meta-item"><span>APPROVED / REJECTED</span><strong><span class="${counts.approved === 0 ? 'batch-approved-zero' : ''}">${counts.approved}</span> / <span class="${counts.rejected === 0 ? 'batch-zero-success' : ''}">${counts.rejected}</span></strong></div>`;
     renderBatchDetailRows();
   }catch(error){
     document.getElementById('batchDetailRows').innerHTML = `<tr><td colspan="11" class="ma-empty">${esc(error.message)}</td></tr>`;
