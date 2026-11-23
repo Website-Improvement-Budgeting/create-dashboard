@@ -1692,7 +1692,7 @@
             overflow:hidden;
         }
         .approval-dashboard .dashboard-inner {
-            width:100%; max-width:1600px; height:100%; min-width:0; margin:0 auto;
+            width:100%; max-width:1360px; height:100%; min-width:0; margin:0 auto;
         }
         .reference-dashboard {
             display:flex; flex-direction:column; gap:10px;
@@ -1797,11 +1797,17 @@
             background:var(--silog-red-soft);
             color:var(--silog-red);
         }
+        .reference-kpi-grid .approval-kpi:nth-child(1) .approval-kpi-icon { background:#eaf2ff; color:#2c74e6; }
+        .reference-kpi-grid .approval-kpi:nth-child(2) .approval-kpi-icon { background:#e9fbf7; color:#1ea98d; }
+        .reference-kpi-grid .approval-kpi:nth-child(3) .approval-kpi-icon { background:#edf4ff; color:#3078e8; }
+        .reference-kpi-grid .approval-kpi:nth-child(4) .approval-kpi-icon { background:#e9fbf7; color:#13a99b; }
+        .reference-kpi-grid .approval-kpi:nth-child(5) .approval-kpi-icon { background:#fff5e7; color:#ef8a1f; }
+        .reference-kpi-grid .approval-kpi:nth-child(6) .approval-kpi-icon { background:#fff0f1; color:#cf171e; }
 
         /* Chart cards: consistent white surfaces and red accent */
         .reference-chart-grid {
-            display:grid; grid-template-columns:1fr 1fr 1.32fr;
-            gap:9px; align-items:stretch; min-width:0; flex:0 0 31%;
+            display:grid; grid-template-columns:minmax(0, .92fr) minmax(0, 1.28fr);
+            gap:12px; align-items:stretch; min-width:0; flex:0 0 auto;
             min-height:0;
         }
         .reference-card {
@@ -1846,15 +1852,15 @@
         .reference-legend-row .legend-swatch {
             flex:0 0 9px; width:9px; height:9px; margin-top:2px; border-radius:3px;
         }
-        .consumed-swatch { background:var(--silog-red); }
-        .available-swatch { background:#e5e7eb; }
-        .hold-swatch { background:#b9c1cb; }
+        .consumed-swatch { background:#0f4fa8; }
+        .available-swatch { background:#1eb5b2; }
+        .hold-swatch { background:#d9dde4; }
         .reference-legend-row div { display:flex; flex-direction:column; gap:2px; min-width:0; }
         .reference-legend-row b { color:#454e5b; font-size:9px; line-height:1.2; }
         .reference-legend-row span { color:#828b97; font-size:9px; line-height:1.2; }
         .reference-chart-body { position:relative; width:100%; min-width:0; min-height:0; flex:1; }
-        .utilization-chart-body { height:auto; min-height:120px; }
-        .allocation-chart-body { height:auto; min-height:112px; }
+        .combo-chart-body { height:auto; min-height:220px; }
+        .top5-reference-chart { flex:1; height:auto; min-height:230px; margin-top:4px; }
         .reference-chart-body canvas { width:100% !important; height:100% !important; }
         .reference-card .entity-chart-legend-note {
             display:flex; justify-content:center; flex-wrap:wrap;
@@ -1865,8 +1871,8 @@
 
         /* Bottom cards: fit page and no horizontal scrolling */
         .reference-bottom-grid {
-            display:grid; grid-template-columns:minmax(0, .92fr) minmax(0, 1.28fr);
-            gap:9px; align-items:stretch; min-width:0; flex:1 1 0; min-height:0;
+            display:grid; grid-template-columns:minmax(0, .95fr) minmax(0, 1.05fr);
+            gap:12px; align-items:stretch; min-width:0; flex:1 1 0; min-height:0;
         }
         .reference-bottom-grid .reference-card { min-height:0; height:100%; }
         .reference-bottom-heading { align-items:center; }
@@ -1878,7 +1884,6 @@
             width:76px; height:29px; padding:3px 7px; border:1px solid #dfe5ec;
             border-radius:7px; background:#fff; color:#394250; font-size:9px; font-weight:650;
         }
-        .top5-reference-chart { flex:1; height:auto; min-height:0; margin-top:2px; }
         .reference-table-search {
             display:flex; align-items:center; gap:5px; margin-left:auto;
             width:118px; height:29px; padding:0 7px; border:1px solid #dfe5ec;
@@ -1899,22 +1904,25 @@
             width:100%; min-width:0; height:100%; table-layout:fixed; border-collapse:collapse;
         }
         .reference-monitoring-table th {
-            padding:6px 3px; background:#f8f9fb; color:#748094; font-size:7px;
-            font-weight:750; text-align:left; line-height:1.2;
+            padding:8px 6px; background:#f8f9fb; color:#748094; font-size:8px;
+            font-weight:750; text-align:left; line-height:1.25;
             white-space:normal; overflow-wrap:anywhere; border-bottom:1px solid #e8ecf1;
         }
-        .reference-monitoring-table th:nth-child(1) { width:11%; }
-        .reference-monitoring-table th:nth-child(2) { width:8%; }
-        .reference-monitoring-table th:nth-child(3) { width:17%; }
-        .reference-monitoring-table th:nth-child(n+4) { width:9.14%; }
+        .reference-monitoring-table th:nth-child(1) { width:16%; }
+        .reference-monitoring-table th:nth-child(2) { width:10%; }
+        .reference-monitoring-table th:nth-child(3) { width:26%; }
+        .reference-monitoring-table th:nth-child(4),
+        .reference-monitoring-table th:nth-child(5),
+        .reference-monitoring-table th:nth-child(6) { width:13%; }
+        .reference-monitoring-table th:nth-child(7) { width:9%; }
         .reference-monitoring-table td {
-            padding:5px 3px; color:#465164; font-size:7.5px;
-            white-space:normal; overflow-wrap:anywhere; line-height:1.2;
+            padding:7px 6px; color:#465164; font-size:8.5px;
+            white-space:normal; overflow-wrap:anywhere; line-height:1.3;
             border-bottom:1px solid #eff1f4; vertical-align:middle;
         }
         .reference-monitoring-table tbody tr:last-child td { border-bottom:0; }
         .reference-monitoring-table .monitoring-entity { color:#26344b; font-weight:700; }
-        .reference-monitoring-table .monitoring-subtext { color:#8d98a8; font-size:7px; white-space:normal; }
+        .reference-monitoring-table .monitoring-subtext { color:#8d98a8; font-size:7.5px; white-space:normal; }
         .reference-monitoring-table .monitoring-utilization {
             display:inline-block; padding:3px 6px; border-radius:20px;
             background:#fff1f2; color:var(--silog-red); font-weight:750;
@@ -1959,8 +1967,8 @@
             .reference-page-header { align-items:flex-start; flex-direction:column; }
             .reference-filters { width:100%; max-width:none; }
             .reference-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
-            .reference-chart-grid { grid-template-columns:repeat(2,minmax(0,1fr)); flex:0 0 auto; }
-            .reference-donut-card { grid-column:span 2; min-height:180px; }
+            .reference-chart-grid { grid-template-columns:1fr; flex:0 0 auto; }
+            .reference-donut-card { grid-column:auto; min-height:180px; }
             .reference-bottom-grid { grid-template-columns:1fr; flex:0 0 auto; }
             .reference-bottom-grid .reference-card { min-height:260px; }
         }
@@ -2091,7 +2099,379 @@
             }
         }
 
-    </style>
+    
+/* SILOG monitoring tabs — same visual treatment as Manajemen Approval */
+.dashboard-inner > .reference-page-header{margin-bottom:16px!important}
+@media(max-width:1100px){.dashboard-inner > .reference-page-header{flex-wrap:wrap}}
+.monitoring-mode-tabs{display:flex;gap:8px;margin:0 0 16px;padding:5px;background:#fff;border:1px solid #e7e8ed;border-radius:12px;width:max-content;max-width:100%;flex:0 0 auto}
+.monitoring-mode-tab{border:0;background:transparent;color:#667085;border-radius:9px;padding:10px 17px;font-size:12px;font-weight:750;cursor:pointer;transition:background .18s,color .18s}
+.monitoring-mode-tab.active{background:#fff0f1;color:#cf171e;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.monitoring-mode-tab:focus-visible{outline:2px solid #ed1c24;outline-offset:2px}
+.monitoring-tab-panel[hidden]{display:none!important}
+.approval-dashboard .dashboard-content{height:auto!important;min-height:calc(100vh - 60px)!important;overflow:visible!important}
+.approval-dashboard .dashboard-inner{height:auto!important}
+.reference-dashboard{height:auto!important;min-height:0!important}
+.monitoring-tab-panel{min-width:0}
+.monitoring-tab-panel .reference-dashboard{gap:12px}
+.monitoring-tab-panel .reference-chart-grid{flex:none;min-height:245px}
+.monitoring-tab-panel .reference-bottom-grid{flex:none;min-height:280px}
+.monitoring-tab-panel .reference-bottom-grid .reference-card{min-height:280px}
+.monitoring-tab-panel .reference-card{min-height:230px}
+.monitoring-tab-panel .reference-chart-body{min-height:175px}
+.monitoring-tab-panel .reference-monitoring-wrap{min-height:150px;overflow-x:auto}
+.monitoring-tab-panel .reference-monitoring-table{min-width:740px}
+.monitoring-approval-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 17px}
+.monitoring-approval-top h2{margin:0;color:#292e38;font-size:18px;font-weight:750}
+.monitoring-approval-top p{margin:5px 0 0;color:#8b94a1;font-size:12px}
+.monitoring-action-link{display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#ed1c24;color:#fff;border-radius:9px;padding:10px 14px;font-size:11px;font-weight:750}
+.monitoring-action-link:hover{background:#c91620;color:#fff}
+.monitoring-approval-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:16px}
+.monitoring-approval-kpi{background:white;border:1px solid #e5e9ef;border-radius:13px;padding:17px 18px;min-width:0}
+.monitoring-approval-kpi .label{color:#828b98;font-size:11px;font-weight:700}
+.monitoring-approval-kpi .value{color:#292e38;font-size:27px;font-weight:780;display:block;margin-top:7px}
+.monitoring-approval-kpi .hint{color:#8b94a1;font-size:10px;display:block;margin-top:5px}
+.monitoring-approval-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:15px}
+.monitoring-panel{background:#fff;border:1px solid #e5e9ef;border-radius:14px;min-width:0;overflow:hidden}
+.monitoring-panel-header{padding:18px 20px;border-bottom:1px solid #edf0f3}
+.monitoring-panel-header h3{margin:0;font-size:15px;font-weight:750}
+.monitoring-panel-header p{margin:5px 0 0;color:#8b94a1;font-size:11px}
+.monitoring-table-wrap{width:100%;overflow-x:auto}
+.monitoring-table{border-collapse:collapse;width:100%;min-width:690px}
+.monitoring-table th{background:#f8f9fb;color:#788394;font-weight:750;font-size:10px;padding:13px;text-align:left;white-space:nowrap}
+.monitoring-table td{font-size:11px;padding:13px;border-bottom:1px solid #f0f1f3;color:#394250}
+.monitoring-table .money{text-align:right;white-space:nowrap;font-weight:650}
+.monitoring-request-link{color:#c91620;font-weight:750;text-decoration:none}
+.monitoring-state{display:inline-block;border-radius:20px;padding:5px 9px;background:#f3f4f6;color:#616b7c;font-size:10px;font-weight:750}
+.monitoring-state.ok{background:#e8f6ef;color:#18764e}
+.monitoring-state.open{background:#fff4df;color:#956200}
+.monitoring-state.review{background:#fcecee;color:#bd2935}
+.monitoring-classifications{padding:15px 20px}
+.monitoring-class-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #f0f1f3;font-size:12px}
+.monitoring-class-row:last-child{border:0}
+.monitoring-class-row strong{font-weight:750}
+.monitoring-approval-note{margin-top:12px;font-size:11px;line-height:1.6;color:#758092}
+.monitoring-empty{padding:26px;text-align:center;color:#8993a2;font-size:12px}
+@media(max-width:1000px){.monitoring-approval-grid{grid-template-columns:1fr}.monitoring-approval-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.monitoring-mode-tabs{width:100%}.monitoring-mode-tab{flex:1;padding:10px 8px}.monitoring-approval-kpis{gap:9px}.monitoring-approval-kpi{padding:13px}.monitoring-approval-top{align-items:flex-start;flex-direction:column}.monitoring-approval-kpi .value{font-size:22px}}
+
+
+/* === SILOG V3: fixed-size monitoring panels and readable utilization === */
+@media (min-width: 1101px) {
+  .approval-dashboard .dashboard-inner { max-width: 1360px; }
+  .monitoring-tab-panel .reference-dashboard { gap: 10px; }
+  .monitoring-tab-panel .reference-chart-grid { min-height: 0; }
+  .monitoring-tab-panel .reference-bottom-grid { min-height: 0; }
+  .monitoring-tab-panel .reference-card { min-height: 0; }
+  .monitoring-tab-panel .reference-bottom-grid .reference-card { min-height: 0; height: 100%; }
+}
+#monitoringAnggaranPanel .reference-chart-grid { grid-template-columns: minmax(0,.87fr) minmax(0,1.33fr); }
+#monitoringAnggaranPanel .reference-bottom-grid {
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+  align-items: start;
+}
+#monitoringAnggaranPanel .reference-bottom-grid .reference-card {
+  height: 290px;
+  max-height: 290px;
+  min-height: 0;
+  overflow: hidden;
+}
+#monitoringAnggaranPanel .reference-top5-card .top5-reference-chart {
+  height: 235px;
+  max-height: 235px;
+  min-height: 0;
+  flex: 0 0 235px;
+}
+#monitoringAnggaranPanel .reference-monitoring-card .reference-monitoring-wrap {
+  height: 208px;
+  max-height: 208px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+#monitoringAnggaranPanel .reference-monitoring-table {
+  height: auto !important;
+  min-height: 0 !important;
+  table-layout: fixed;
+}
+#monitoringAnggaranPanel .reference-monitoring-table th,
+#monitoringAnggaranPanel .reference-monitoring-table td { vertical-align: middle; }
+#monitoringAnggaranPanel .reference-monitoring-table tbody tr { height: auto !important; }
+#monitoringAnggaranPanel .reference-monitoring-table td { padding: 8px 6px; }
+#monitoringAnggaranPanel .reference-monitoring-table thead th {
+  position: sticky; top: 0; z-index: 2; background: #f8f9fb;
+}
+#monitoringAnggaranPanel .reference-table-footer { margin-top: 4px; }
+#monitoringAnggaranPanel .reference-chart-grid .reference-card { height: 245px; }
+#monitoringAnggaranPanel .reference-combo-card .combo-chart-body {
+  height: 196px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+#monitoringAnggaranPanel .reference-donut-content { min-height: 0; }
+#monitoringAnggaranPanel .reference-top5-card .reference-card-heading,
+#monitoringAnggaranPanel .reference-monitoring-card .reference-card-heading { flex: 0 0 auto; }
+@media (max-width: 1100px) {
+  #monitoringAnggaranPanel .reference-chart-grid,
+  #monitoringAnggaranPanel .reference-bottom-grid { grid-template-columns: 1fr; }
+  #monitoringAnggaranPanel .reference-chart-grid .reference-card { height: auto; min-height: 235px; }
+  #monitoringAnggaranPanel .reference-bottom-grid .reference-card { height: 320px; max-height: 320px; }
+  #monitoringAnggaranPanel .reference-top5-card .top5-reference-chart { height: 265px; max-height: 265px; flex-basis: 265px; }
+  #monitoringAnggaranPanel .reference-monitoring-card .reference-monitoring-wrap { height: 236px; max-height: 236px; }
+}
+
+
+/* V4: match chart dimensions to existing compact layout. */
+#monitoringAnggaranPanel .reference-combo-card .combo-chart-body { height:205px; }
+#monitoringAnggaranPanel .reference-combo-card .reference-card-heading h3 { white-space:normal; }
+    
+/* SILOG: perbaikan visual khusus Komposisi Anggaran (tanpa mengubah teks). */
+#monitoringAnggaranPanel .reference-donut-card .consumed-swatch { background:#ed1c24; }
+#monitoringAnggaranPanel .reference-donut-card .available-swatch { background:#2774d5; }
+#monitoringAnggaranPanel .reference-donut-card .hold-swatch { background:#d9dde4; }
+#monitoringAnggaranPanel .reference-donut-card .donut-hover-detail {
+    display:flex; flex:0 0 30px; height:30px; width:100%;
+    align-items:center; justify-content:center; gap:8px;
+    padding:5px 10px; margin-top:2px;
+    border:1px solid transparent; border-radius:8px;
+    background:transparent; color:#394250;
+    opacity:0; transition:opacity .12s ease;
+    pointer-events:none; overflow:hidden; white-space:nowrap;
+}
+#monitoringAnggaranPanel .reference-donut-card .donut-hover-detail.is-visible {
+    opacity:1; background:#f6f8fc; border-color:#e5e9ef;
+}
+#monitoringAnggaranPanel .reference-donut-card .donut-hover-label {
+    font-size:10px; font-weight:650; min-width:0; overflow:hidden; text-overflow:ellipsis;
+}
+#monitoringAnggaranPanel .reference-donut-card .donut-hover-value {
+    font-size:10px; font-weight:750; font-variant-numeric:tabular-nums;
+}
+#monitoringAnggaranPanel .reference-donut-card .donut-hover-dot {
+    width:9px; height:9px; flex:0 0 9px; border-radius:50%; background:#ed1c24;
+}
+
+/* ==========================================================
+   SILOG V9 — MONITORING APPROVAL ONLY
+   Semua selector baru berada di #monitoringApprovalPanel.
+   Monitoring Anggaran tidak diubah.
+========================================================== */
+#monitoringApprovalPanel .approval-control-center { display:flex; flex-direction:column; gap:12px; min-width:0; }
+#monitoringApprovalPanel .approval-control-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; }
+#monitoringApprovalPanel .approval-control-kpi { display:flex; align-items:center; gap:12px; min-width:0; min-height:90px; padding:12px 14px; background:#fff; border:1px solid #e3e8ef; border-bottom:2px solid #d8e0ec; border-radius:13px; box-shadow:0 4px 14px rgba(27,46,82,.035); }
+#monitoringApprovalPanel .approval-control-kpi.is-pending { border-bottom-color:#ed1c24; }
+#monitoringApprovalPanel .approval-control-kpi.is-shortage { border-bottom-color:#d54a54; }
+#monitoringApprovalPanel .approval-control-kpi.is-approved { border-bottom-color:#1763c3; }
+#monitoringApprovalPanel .approval-control-kpi.is-rejected { border-bottom-color:#9babbf; }
+#monitoringApprovalPanel .approval-control-kpi-icon { display:flex; align-items:center; justify-content:center; width:42px; height:42px; flex:0 0 42px; border-radius:11px; background:#fff0f1; color:#ed1c24; font-size:21px; }
+#monitoringApprovalPanel .is-approved .approval-control-kpi-icon { background:#eaf2fc; color:#115db7; }
+#monitoringApprovalPanel .is-rejected .approval-control-kpi-icon { background:#f1f3f7; color:#57687d; }
+#monitoringApprovalPanel .approval-control-kpi>div { display:flex; flex-direction:column; min-width:0; }
+#monitoringApprovalPanel .approval-control-kpi-label { font-size:11px; line-height:1.2; font-weight:700; color:#455267; }
+#monitoringApprovalPanel .approval-control-kpi-value { font-size:clamp(21px,1.9vw,28px); line-height:1.12; color:#172743; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums; }
+#monitoringApprovalPanel .approval-control-kpi small { color:#8490a0; font-size:10px; margin-top:4px; line-height:1.2; }
+#monitoringApprovalPanel .approval-decision-summary { display:flex; align-items:center; gap:18px; padding:15px 17px; background:#fff; border:1px solid #e3e8ef; border-radius:13px; box-shadow:0 4px 14px rgba(27,46,82,.035); }
+#monitoringApprovalPanel .approval-decision-intro { display:flex; align-items:center; gap:11px; flex:0 0 30%; min-width:0; }
+#monitoringApprovalPanel .approval-decision-icon { display:flex; align-items:center; justify-content:center; width:39px; height:39px; flex:0 0 39px; border-radius:10px; background:#fff0f1; color:#ed1c24; font-size:18px; }
+#monitoringApprovalPanel .approval-decision-intro h3 { margin:0; font-size:14px; font-weight:750; color:#303947; }
+#monitoringApprovalPanel .approval-decision-intro p { margin:4px 0 0; font-size:10px; line-height:1.35; color:#8894a3; }
+#monitoringApprovalPanel .approval-decision-metrics { display:grid; flex:1; grid-template-columns:repeat(3,minmax(0,1fr)); min-width:0; }
+#monitoringApprovalPanel .approval-decision-metric { display:flex; align-items:center; justify-content:center; gap:10px; padding:4px 13px; min-width:0; border-left:1px solid #dce4ee; }
+#monitoringApprovalPanel .metric-symbol { display:flex; align-items:center; justify-content:center; width:37px; height:37px; flex:0 0 37px; border-radius:10px; font-size:18px; }
+#monitoringApprovalPanel .metric-symbol.is-blue { background:#eaf2fd; color:#115db7; }
+#monitoringApprovalPanel .metric-symbol.is-red { background:#fff0f1; color:#ed1c24; }
+#monitoringApprovalPanel .approval-decision-metric>div { display:flex; flex-direction:column; min-width:0; }
+#monitoringApprovalPanel .approval-decision-metric span:not(.metric-symbol) { font-size:10px; font-weight:700; color:#5d6b7e; white-space:nowrap; }
+#monitoringApprovalPanel .approval-decision-metric strong { font-size:clamp(14px,1.25vw,20px); font-weight:800; color:#1f2e47; line-height:1.3; margin-top:4px; white-space:nowrap; }
+#monitoringApprovalPanel .approval-control-grid { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(280px,.76fr); gap:12px; min-width:0; align-items:stretch; }
+#monitoringApprovalPanel .approval-control-panel { min-width:0; background:#fff; border:1px solid #e3e8ef; border-radius:14px; box-shadow:0 4px 14px rgba(27,46,82,.035); overflow:hidden; }
+#monitoringApprovalPanel .approval-control-panel-header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; }
+#monitoringApprovalPanel .approval-control-heading { display:flex; align-items:center; gap:9px; min-width:0; }
+#monitoringApprovalPanel .approval-control-heading-icon { display:flex; align-items:center; justify-content:center; flex:0 0 33px; width:33px; height:33px; border-radius:9px; background:#fff0f1; color:#ed1c24; font-size:16px; }
+#monitoringApprovalPanel .approval-control-heading h3 { margin:0; font-size:13px; color:#303947; font-weight:750; line-height:1.25; }
+#monitoringApprovalPanel .approval-control-heading p { margin:3px 0 0; font-size:9px; color:#8893a2; line-height:1.3; }
+#monitoringApprovalPanel .approval-queue-actions { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+#monitoringApprovalPanel .approval-queue-search { display:flex; align-items:center; gap:6px; height:31px; padding:0 9px; border:1px solid #dce3ed; border-radius:8px; color:#708198; width:min(220px,20vw); }
+#monitoringApprovalPanel .approval-queue-search:focus-within { border-color:#2a6ac3; box-shadow:0 0 0 2px #edf3fc; }
+#monitoringApprovalPanel .approval-queue-search input { border:0; outline:0; width:100%; min-width:0; font-size:10px; color:#344155; background:transparent; }
+#monitoringApprovalPanel .approval-queue-open { display:flex; justify-content:center; align-items:center; width:31px; height:31px; border:1px solid #dce3ed; border-radius:8px; color:#1e5bab; text-decoration:none; }
+#monitoringApprovalPanel .approval-queue-open:hover { background:#eaf2fc; }
+#monitoringApprovalPanel .approval-queue-table-scroll { width:100%; overflow-x:auto; padding:0 11px; }
+#monitoringApprovalPanel .approval-queue-table { width:100%; min-width:665px; table-layout:auto; border-collapse:collapse; }
+#monitoringApprovalPanel .approval-queue-table th { background:#f5f7fa; color:#728094; font-size:9px; font-weight:750; text-align:left; padding:9px 7px; white-space:nowrap; }
+#monitoringApprovalPanel .approval-queue-table td { border-bottom:1px solid #edf0f4; color:#415066; font-size:9px; line-height:1.25; padding:9px 7px; vertical-align:middle; }
+#monitoringApprovalPanel .approval-queue-table tr:last-child td { border-bottom:0; }
+#monitoringApprovalPanel .approval-queue-table .money { text-align:right; font-weight:700; white-space:nowrap; }
+#monitoringApprovalPanel .approval-queue-table td strong { font-weight:750; color:#29374e; }
+#monitoringApprovalPanel .approval-queue-entity { display:block; font-weight:700; color:#303e54; }
+#monitoringApprovalPanel .approval-queue-biro { display:block; margin-top:3px; color:#8994a5; font-size:8px; }
+#monitoringApprovalPanel .approval-age { display:inline-block; white-space:nowrap; border-radius:15px; padding:4px 7px; background:#f0f2f6; color:#5b6678; font-weight:700; }
+#monitoringApprovalPanel .monitoring-state { display:inline-block; max-width:140px; text-align:center; white-space:normal; border-radius:9px; padding:5px 7px; background:#edf1f6; color:#526174; font-size:9px; font-weight:700; }
+#monitoringApprovalPanel .monitoring-state.ok { background:#eaf2fc; color:#1555a9; }
+#monitoringApprovalPanel .monitoring-state.open { background:#edf2f9; color:#486b99; }
+#monitoringApprovalPanel .monitoring-state.review { background:#fff0f1; color:#c51b28; }
+#monitoringApprovalPanel .approval-review-link { display:inline-flex; align-items:center; gap:4px; padding:5px 8px; border:1px solid #c8daef; border-radius:8px; background:#f7faff; color:#1558b3; text-decoration:none; font-size:9px; font-weight:700; white-space:nowrap; }
+#monitoringApprovalPanel .approval-review-link:hover { background:#eaf2fd; }
+#monitoringApprovalPanel .approval-queue-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 13px 11px; color:#6d7d90; font-size:10px; }
+#monitoringApprovalPanel .approval-queue-footer small { display:block; margin-top:2px; color:#9ba5b2; font-size:9px; }
+#monitoringApprovalPanel .approval-queue-pagination { display:flex; align-items:center; gap:3px; flex:0 0 auto; }
+#monitoringApprovalPanel .approval-queue-pagination button { min-width:25px; height:25px; border:1px solid #dde4ee; background:#fff; border-radius:7px; color:#536277; font-size:10px; font-weight:700; }
+#monitoringApprovalPanel .approval-queue-pagination button.active { background:#ed1c24; color:#fff; border-color:#ed1c24; }
+#monitoringApprovalPanel .approval-queue-pagination button:disabled { opacity:.35; cursor:not-allowed; }
+#monitoringApprovalPanel .approval-classification-body { display:flex; justify-content:center; align-items:center; gap:12px; padding:10px 12px; }
+#monitoringApprovalPanel .approval-classification-donut { flex:0 0 122px; width:122px; height:122px; position:relative; }
+#monitoringApprovalPanel .approval-classification-donut canvas { width:100%!important; height:100%!important; }
+#monitoringApprovalPanel .approval-classification-center { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; pointer-events:none; }
+#monitoringApprovalPanel .approval-classification-center strong { font-size:23px; font-weight:800; color:#1d2b44; line-height:1; }
+#monitoringApprovalPanel .approval-classification-center span { margin-top:5px; font-size:9px; color:#526179; text-align:center; line-height:1.15; }
+#monitoringApprovalPanel .approval-classification-legend { display:flex; flex-direction:column; gap:8px; min-width:0; flex:1; }
+#monitoringApprovalPanel .approval-classification-item { display:grid; grid-template-columns:8px minmax(0,1fr) auto; align-items:start; gap:6px; color:#455268; font-size:9px; line-height:1.25; }
+#monitoringApprovalPanel .approval-classification-item strong { font-size:10px; color:#2a374d; font-weight:750; }
+#monitoringApprovalPanel .swatch { display:block; width:8px; height:8px; margin-top:2px; border-radius:3px; }
+#monitoringApprovalPanel .swatch-blue { background:#1769cc; }
+#monitoringApprovalPanel .swatch-steel { background:#75a9ed; }
+#monitoringApprovalPanel .swatch-red { background:#ed1c24; }
+#monitoringApprovalPanel .swatch-gray { background:#aeb8c8; }
+#monitoringApprovalPanel .approval-classification-note { display:flex; gap:7px; align-items:flex-start; margin:3px 12px 12px; padding:10px; border-radius:9px; background:#f3f6fb; color:#65768d; font-size:9px; line-height:1.5; }
+#monitoringApprovalPanel .approval-classification-note i { color:#1a68bc; font-size:13px; }
+#monitoringApprovalPanel .approval-control-panel .monitoring-empty { font-size:11px; padding:22px; }
+@media (max-width:1250px) { #monitoringApprovalPanel .approval-control-grid { grid-template-columns:1fr; } #monitoringApprovalPanel .approval-classification-body { justify-content:flex-start; } }
+@media (max-width:950px) { #monitoringApprovalPanel .approval-control-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } #monitoringApprovalPanel .approval-decision-summary { flex-direction:column; align-items:stretch; } #monitoringApprovalPanel .approval-decision-intro { flex:0 0 auto; } #monitoringApprovalPanel .approval-decision-metrics { width:100%; } }
+@media (max-width:620px) { #monitoringApprovalPanel .approval-control-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; } #monitoringApprovalPanel .approval-control-kpi { padding:10px; gap:7px; } #monitoringApprovalPanel .approval-control-kpi-icon { width:33px; height:33px; flex-basis:33px; font-size:16px; } #monitoringApprovalPanel .approval-decision-metrics { grid-template-columns:1fr; gap:5px; } #monitoringApprovalPanel .approval-decision-metric { justify-content:flex-start; border-left:0; border-top:1px solid #e5e9ef; padding:8px 0; } #monitoringApprovalPanel .approval-queue-header { flex-wrap:wrap; } #monitoringApprovalPanel .approval-queue-actions { width:100%; } #monitoringApprovalPanel .approval-queue-search { width:100%; flex:1; } #monitoringApprovalPanel .approval-queue-footer { align-items:flex-start; flex-direction:column; } }
+
+/* SILOG V10 — approval-only: table full width; centered column headings. */
+#monitoringApprovalPanel .approval-control-grid { display:block; width:100%; }
+#monitoringApprovalPanel .approval-queue-panel { width:100%; }
+#monitoringApprovalPanel .approval-queue-table { width:100%; min-width:665px; }
+#monitoringApprovalPanel .approval-queue-table thead th,
+#monitoringApprovalPanel .approval-queue-table thead th.money {
+    text-align:center;
+    vertical-align:middle;
+}
+#monitoringApprovalPanel .approval-queue-table thead th:first-child { text-align:center; }
+
+/* SILOG V11 — perapian khusus tabel antrean Monitoring Approval.
+   Tidak mengubah Monitoring Anggaran, KPI, atau data approval. */
+#monitoringApprovalPanel .approval-queue-table-scroll {
+    padding: 0 12px;
+}
+#monitoringApprovalPanel .approval-queue-table {
+    width: 100%;
+    min-width: 800px;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+#monitoringApprovalPanel .approval-queue-table th,
+#monitoringApprovalPanel .approval-queue-table td {
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+#monitoringApprovalPanel .approval-queue-table thead th {
+    height: 37px;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 750;
+    color: #728094;
+    border-bottom: 1px solid #e6eaf1;
+}
+#monitoringApprovalPanel .approval-queue-table tbody td {
+    height: 52px;
+    padding: 10px 12px;
+    font-size: 10px;
+    line-height: 1.35;
+    border-bottom: 1px solid #edf0f4;
+}
+#monitoringApprovalPanel .approval-queue-table tbody tr:hover {
+    background: #fafcff;
+}
+#monitoringApprovalPanel .approval-queue-table th:nth-child(1) { width: 9%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(2) { width: 23%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(3) { width: 12%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(4) { width: 16%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(5) { width: 12%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(6) { width: 18%; }
+#monitoringApprovalPanel .approval-queue-table th:nth-child(7) { width: 10%; }
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(1),
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(3),
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(5),
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(6),
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(7) {
+    text-align: center;
+}
+#monitoringApprovalPanel .approval-queue-table tbody td:nth-child(2) {
+    text-align: left;
+}
+#monitoringApprovalPanel .approval-queue-table tbody td.money {
+    text-align: right;
+    padding-right: 16px;
+    font-variant-numeric: tabular-nums;
+}
+#monitoringApprovalPanel .approval-queue-entity {
+    font-size: 10px;
+    line-height: 1.3;
+}
+#monitoringApprovalPanel .approval-queue-biro {
+    font-size: 9px;
+}
+#monitoringApprovalPanel .monitoring-state {
+    max-width: 150px;
+    min-width: 126px;
+    padding: 6px 9px;
+    line-height: 1.25;
+}
+#monitoringApprovalPanel .approval-queue-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 15px 13px;
+    border-top: 1px solid #edf0f4;
+}
+#monitoringApprovalPanel .approval-queue-footer-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #718096;
+    font-size: 10px;
+}
+#monitoringApprovalPanel .approval-queue-pagination {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-left: auto;
+}
+#monitoringApprovalPanel .approval-queue-pagination button {
+    min-width: 27px;
+    height: 27px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+@media (max-width: 620px) {
+    #monitoringApprovalPanel .approval-queue-footer {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+}
+
+/* SILOG V12 — chevron dropdown untuk filter utama saja.
+   Tidak mengubah nilai, event, atau fungsi filter. */
+.reference-filters .summary-filter-group select {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352677d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 9px center !important;
+    background-size: 13px 13px !important;
+    padding-right: 28px !important;
+}
+</style>
 
 </head>
 
@@ -2292,11 +2672,10 @@
                    {% endwith %}
 
 
-                   <div class="reference-dashboard">
                        <div class="summary-header reference-page-header">
                            <div class="summary-heading">
-                               <h1 class="section-title"><i class="bi bi-wallet2 section-title-icon"></i> Analisis Anggaran</h1>
-                               <p class="section-caption">Monitoring penggunaan, ketersediaan, dan posisi anggaran perusahaan</p>
+                               <h1 class="section-title"><i class="bi bi-wallet2 section-title-icon"></i> Monitoring Dashboard</h1>
+                               <p class="section-caption">Pantau posisi anggaran dan antrian pengajuan</p>
                            </div>
                            <form method="GET" action="{{ url_for('dashboard') }}"
                                  class="summary-filters reference-filters" id="dashboardFilterForm">
@@ -2333,45 +2712,47 @@
                            </form>
                        </div>
 
+
+                   <div class="monitoring-mode-tabs" role="tablist" aria-label="Jenis monitoring dashboard">
+                       <button type="button" class="monitoring-mode-tab active" id="monitoringAnggaranTab" role="tab" aria-controls="monitoringAnggaranPanel" aria-selected="true"><i class="bi bi-wallet2 me-1"></i>Monitoring Anggaran</button>
+                       <button type="button" class="monitoring-mode-tab" id="monitoringApprovalTab" role="tab" aria-controls="monitoringApprovalPanel" aria-selected="false"><i class="bi bi-clipboard-check me-1"></i>Monitoring Approval</button>
+                   </div>
+                   <div id="monitoringAnggaranPanel" class="monitoring-tab-panel" role="tabpanel" aria-labelledby="monitoringAnggaranTab">
+                   <div class="reference-dashboard">
                        <div class="approval-kpi-grid reference-kpi-grid">
                            <div class="approval-kpi">
                                <div class="approval-kpi-icon"><i class="bi bi-layers"></i></div>
                                <div class="approval-kpi-info">
-                                   <span class="approval-kpi-label">Total Current Budget</span>
+                                   <span class="approval-kpi-label">Current Budget</span>
                                    <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.current_budget }}">Rp0</strong>
-                                   <small>Total plafon anggaran RKAP</small>
                                </div>
                            </div>
                            <div class="approval-kpi">
                                <div class="approval-kpi-icon"><i class="bi bi-wallet2"></i></div>
                                <div class="approval-kpi-info">
-                                   <span class="approval-kpi-label">Total Consumable Budget</span>
+                                   <span class="approval-kpi-label">Consumable Budget</span>
                                    <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.consumable_budget }}">Rp0</strong>
-                                   <small>Total anggaran yang sudah dibuka</small>
                                </div>
                            </div>
                            <div class="approval-kpi approval-kpi-consumed">
                                <div class="approval-kpi-icon"><i class="bi bi-bar-chart-line"></i></div>
                                <div class="approval-kpi-info">
-                                   <span class="approval-kpi-label">Total Consumed Budget</span>
+                                   <span class="approval-kpi-label">Consumed Budget</span>
                                    <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.consumed_budget }}">Rp0</strong>
-                                   <small>Total anggaran yang telah digunakan</small>
                                </div>
                            </div>
                            <div class="approval-kpi">
                                <div class="approval-kpi-icon"><i class="bi bi-pie-chart"></i></div>
                                <div class="approval-kpi-info">
-                                   <span class="approval-kpi-label">Total Available Amount</span>
+                                   <span class="approval-kpi-label">Available Amount</span>
                                    <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.available_amount }}">Rp0</strong>
-                                   <small>Anggaran terbuka yang belum digunakan</small>
                                </div>
                            </div>
                            <div class="approval-kpi">
                                <div class="approval-kpi-icon"><i class="bi bi-lock"></i></div>
                                <div class="approval-kpi-info">
-                                   <span class="approval-kpi-label">Total Approval Hold</span>
+                                   <span class="approval-kpi-label">Approval Hold Amount</span>
                                    <strong class="approval-kpi-value rupiah-value" data-value="{{ summary.approval_hold }}">Rp0</strong>
-                                   <small>Anggaran yang belum dibuka</small>
                                </div>
                            </div>
                            <div class="approval-kpi reference-utilization-kpi">
@@ -2379,7 +2760,6 @@
                                <div class="approval-kpi-info">
                                    <span class="approval-kpi-label">Budget Utilization</span>
                                    <strong class="approval-kpi-value" id="overviewBudgetUtilization">—</strong>
-                                   <small>Persentase penggunaan anggaran terbuka</small>
                                </div>
                            </div>
                        </div>
@@ -2408,32 +2788,21 @@
                                        <div class="reference-legend-row"><i class="legend-swatch hold-swatch"></i><div><b>Approval Hold</b><span id="donutHold">Rp0</span></div></div>
                                    </div>
                                </div>
+                               <div id="donutHoverDetail" class="donut-hover-detail" role="status" aria-live="off">
+                                   <span id="donutHoverDot" class="donut-hover-dot"></span>
+                                   <span id="donutHoverLabel" class="donut-hover-label"></span>
+                                   <strong id="donutHoverValue" class="donut-hover-value"></strong>
+                               </div>
                            </article>
 
-                           <article class="reference-card">
+                           <article class="reference-card reference-combo-card">
                                <div class="reference-card-heading">
                                    <div class="reference-heading-icon"><i class="bi bi-bar-chart-line"></i></div>
-                                   <div><h3>Penggunaan Anggaran Setiap Unit Entity</h3><p>Tingkat penggunaan anggaran terbuka</p></div>
+                                   <div><h3>Tingkat Penggunaan Anggaran Setiap Entity</h3><p>Persentase penggunaan terhadap Consumable Budget</p></div>
                                </div>
-                               <div class="reference-chart-body utilization-chart-body">
-                                   <canvas id="dimensionUtilizationChart"></canvas>
-                                   <div id="entityAnalysisEmpty" class="chart-empty-state" style="display:none;">Data utilization belum tersedia.</div>
-                               </div>
-                           </article>
-
-                           <article class="reference-card">
-                               <div class="reference-card-heading">
-                                   <div class="reference-heading-icon"><i class="bi bi-layers"></i></div>
-                                   <div><h3>Alokasi Anggaran Setiap Unit Entity</h3><p>Distribusi Consumed Budget, Available Budget, dan Approval Hold Amount</p></div>
-                               </div>
-                               <div class="reference-chart-body allocation-chart-body">
+                               <div class="reference-chart-body combo-chart-body">
                                    <canvas id="entityUtilizationChart"></canvas>
-                                   <div id="entityUtilizationEmpty" class="chart-empty-state" style="display:none;">Data komposisi anggaran belum tersedia.</div>
-                               </div>
-                               <div class="entity-chart-legend-note">
-                                   <span><i style="background:#ed1c24"></i>Consumed Budget</span>
-                                   <span><i style="background:#1673df"></i>Available Amount</span>
-                                   <span><i style="background:#b9c1cb"></i>Approval Hold</span>
+                                   <div id="entityUtilizationEmpty" class="chart-empty-state" style="display:none;">Data kinerja anggaran per entity belum tersedia.</div>
                                </div>
                            </article>
                        </section>
@@ -2442,7 +2811,7 @@
                            <article class="reference-card reference-top5-card">
                                <div class="reference-card-heading reference-bottom-heading">
                                    <div class="reference-heading-icon"><i class="bi bi-bar-chart-fill"></i></div>
-                                   <div><h3>Top Commitment Item berdasarkan Penggunaan Anggaran</h3><p>Commitment Item dengan Consumed Budget tertinggi</p></div>
+                                   <div><h3>Top Commitment Item Berdasarkan Penggunaan Anggaran</h3><p>Commitment Item dengan Consumed Budget tertinggi</p></div>
                                    <div class="reference-top5-controls">
                                        <label for="topCommitmentLimit">Tampilkan</label>
                                        <select id="topCommitmentLimit" class="reference-top5-select" aria-label="Jumlah Commitment Item">
@@ -2463,17 +2832,16 @@
                                <div class="reference-card-heading reference-bottom-heading">
                                    <div class="reference-heading-icon"><i class="bi bi-clipboard-data"></i></div>
                                    <div><h3>Pemantauan Anggaran</h3><p>Rincian anggaran berdasarkan Unit Entity, Biro, dan Commitment Item</p></div>
-                                   <div class="reference-table-search"><i class="bi bi-search"></i><input type="search" id="dimensionTableSearch" placeholder="Cari..." aria-label="Cari data Pemantauan Anggaran"></div>
+                                   <div class="reference-table-search"><i class="bi bi-search"></i><input type="search" id="dimensionTableSearch" placeholder="Cari commitment item..." aria-label="Cari data Pemantauan Anggaran"></div>
                                    <button type="button" class="reference-download-button" id="downloadMonitoringCsv" aria-label="Unduh Pemantauan Anggaran" title="Unduh data Pemantauan Anggaran"><i class="bi bi-download"></i></button>
                                </div>
                                <div class="reference-monitoring-wrap">
                                    <table class="reference-monitoring-table">
                                        <thead><tr>
                                            <th>Unit<br>Entity</th><th>Biro</th><th>Commitment<br>Item</th>
-                                           <th>Current<br>Budget</th><th>Consumable<br>Budget</th><th>Consumed<br>Budget</th>
-                                           <th>Available<br>Amount</th><th>Approval<br>Hold</th><th>Utilization</th>
+                                           <th>Current<br>Budget</th><th>Consumed<br>Budget</th><th>Available<br>Amount</th><th>Utilization</th>
                                        </tr></thead>
-                                       <tbody id="dimensionMonitoringBody"><tr><td colspan="9">Memuat data...</td></tr></tbody>
+                                       <tbody id="dimensionMonitoringBody"><tr><td colspan="7">Memuat data...</td></tr></tbody>
                                    </table>
                                </div>
                                <div class="reference-table-footer">
@@ -2489,6 +2857,113 @@
                        <span id="dimensionAverageRate" hidden></span>
                        <span id="dimensionTableTitle" hidden></span>
                    </div>
+                   </div><!-- /monitoringAnggaranPanel -->
+
+                   <div id="monitoringApprovalPanel" class="monitoring-tab-panel" role="tabpanel" aria-labelledby="monitoringApprovalTab" hidden>
+                       <div class="approval-control-center">
+                           <!-- Ringkasan status: hanya menggunakan hitungan aktual dari approval_monitor. -->
+                           <section class="approval-control-kpis" aria-label="Approval Overview">
+                               <article class="approval-control-kpi is-pending">
+                                   <span class="approval-control-kpi-icon"><i class="bi bi-clock-history"></i></span>
+                                   <div><span class="approval-control-kpi-label">Pending Requests</span>
+                                       <strong class="approval-control-kpi-value">{{ approval_monitor.pending }}</strong>
+                               </article>
+                               <article class="approval-control-kpi is-shortage">
+                                   <span class="approval-control-kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+                                   <div><span class="approval-control-kpi-label">Pending Dengan Shortage</span>
+                                       <strong class="approval-control-kpi-value">{{ approval_monitor.shortage_count }}</strong>
+                               </article>
+                               <article class="approval-control-kpi is-approved">
+                                   <span class="approval-control-kpi-icon"><i class="bi bi-check-circle"></i></span>
+                                   <div><span class="approval-control-kpi-label">Approved Requests</span>
+                                       <strong class="approval-control-kpi-value">{{ approval_monitor.approved }}</strong>
+                               </article>
+                               <article class="approval-control-kpi is-rejected">
+                                   <span class="approval-control-kpi-icon"><i class="bi bi-x-circle"></i></span>
+                                   <div><span class="approval-control-kpi-label">Rejected Requests</span>
+                                       <strong class="approval-control-kpi-value">{{ approval_monitor.rejected }}</strong>
+                               </article>
+                           </section>
+
+                           <!-- Nominal keputusan hanya ditampilkan jika telah disediakan backend. -->
+                           <section class="approval-decision-summary" aria-label="Ringkasan Keputusan">
+                               <div class="approval-decision-intro">
+                                   <span class="approval-decision-icon"><i class="bi bi-bar-chart-fill"></i></span>
+                                   <div><h3>Ringkasan Keputusan</h3><p>Rekapitulasi nilai pengajuan berdasarkan keputusan Approval</p></div>
+                               </div>
+                               <div class="approval-decision-metrics">
+                                   <div class="approval-decision-metric">
+                                       <span class="metric-symbol is-blue"><i class="bi bi-check-circle"></i></span>
+                                       <div><span>Approved Amount</span>
+                                           {% if approval_monitor.approved_amount is defined and approval_monitor.approved_amount is not none %}
+                                           <strong class="rupiah-value" data-value="{{ approval_monitor.approved_amount }}">Rp0</strong>
+                                           {% else %}<strong title="Nominal belum disediakan oleh backend">—</strong>{% endif %}</div>
+                                   </div>
+                                   <div class="approval-decision-metric">
+                                       <span class="metric-symbol is-blue"><i class="bi bi-layers"></i></span>
+                                       <div><span>Open Budget</span>
+                                           {% if approval_monitor.open_budget_amount is defined and approval_monitor.open_budget_amount is not none %}
+                                           <strong class="rupiah-value" data-value="{{ approval_monitor.open_budget_amount }}">Rp0</strong>
+                                           {% else %}<strong title="Nominal belum disediakan oleh backend">—</strong>{% endif %}</div>
+                                   </div>
+                                   <div class="approval-decision-metric">
+                                       <span class="metric-symbol is-red"><i class="bi bi-arrow-left-right"></i></span>
+                                       <div><span>Reallocation</span>
+                                           {% if approval_monitor.reallocation_amount is defined and approval_monitor.reallocation_amount is not none %}
+                                           <strong class="rupiah-value" data-value="{{ approval_monitor.reallocation_amount }}">Rp0</strong>
+                                           {% else %}<strong title="Nominal belum disediakan oleh backend">—</strong>{% endif %}</div>
+                                   </div>
+                               </div>
+                           </section>
+
+                           <div class="approval-control-grid">
+                               <section class="approval-control-panel approval-queue-panel">
+                                   <div class="approval-control-panel-header approval-queue-header">
+                                       <div class="approval-control-heading">
+                                           <span class="approval-control-heading-icon"><i class="bi bi-clipboard-check"></i></span>
+                                           <div><h3>Antrean Pengajuan Pending</h3>
+                                               <p>Pengajuan terawal terlebih dahulu · 5 pengajuan setiap halaman</p></div>
+                                       </div>
+                                       <div class="approval-queue-actions">
+                                           <label class="approval-queue-search"><i class="bi bi-search"></i>
+                                               <input type="search" id="approvalPendingSearch" placeholder="Cari request, entity, atau biro" aria-label="Cari pengajuan Pending">
+                                           </label>
+                                           <a class="approval-queue-open" href="{{ url_for('manajemen_approval') }}" title="Buka Manajemen Approval" aria-label="Buka Manajemen Approval"><i class="bi bi-box-arrow-up-right"></i></a>
+                                       </div>
+                                   </div>
+                                   <div class="approval-queue-table-scroll">
+                                       <table class="approval-queue-table">
+                                           <thead><tr>
+                                               <th>Request</th><th>Unit Entity / Biro</th><th>Tanggal</th>
+                                               <th class="money">Nominal</th><th>Umur Pending</th><th>Kondisi</th><th>Aksi</th>
+                                           </tr></thead>
+                                           <tbody id="approvalPendingBody">
+                                           {% for item in approval_monitor.pending_rows %}
+                                               <tr class="approval-queue-data-row">
+                                                   <td><strong>REQ-{{ item.request_id }}</strong></td>
+                                                   <td><span class="approval-queue-entity">{{ item.unit_entity or '—' }}</span><span class="approval-queue-biro">{{ item.biro_name or '—' }}</span></td>
+                                                   <td>{{ item.request_date.strftime('%d/%m/%Y') if item.request_date else '—' }}</td>
+                                                   <td class="money">Rp{{ '{:,.0f}'.format(item.request_amount | float).replace(',', '.') }}</td>
+                                                   <td><span class="approval-age" data-request-date="{{ item.request_date.strftime('%Y-%m-%d') if item.request_date else '' }}">—</span></td>
+                                                   <td><span class="monitoring-state {{ item.condition_class }}">{{ item.condition }}</span></td>
+                                                   <td><a class="approval-review-link" href="{{ url_for('manajemen_approval') }}"><i class="bi bi-eye"></i>Tinjau</a></td>
+                                               </tr>
+                                           {% else %}
+                                               <tr class="approval-queue-no-data"><td colspan="7" class="monitoring-empty">Tidak ada pengajuan Pending untuk filter ini.</td></tr>
+                                           {% endfor %}
+                                           </tbody>
+                                       </table>
+                                   </div>
+                                   <div class="approval-queue-footer">
+                                       <div class="approval-queue-footer-info"><span id="approvalQueueInfo">Memuat antrean...</span></div>
+                                       <nav id="approvalQueuePagination" class="approval-queue-pagination" aria-label="Halaman antrean Pending"></nav>
+                                   </div>
+                               </section>
+
+
+                           </div>
+                       </div>
+                   </div><!-- /monitoringApprovalPanel -->
 
                </div>
 
@@ -2649,6 +3124,16 @@ Chart.defaults.font.family =
        '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 Chart.defaults.color = "#8993a2";
+const CHART_COLORS = {
+    consumed: "#0f4fa8",
+    consumedSoft: "#2f6fe1",
+    available: "#1eb5b2",
+    availableSoft: "#72d7d0",
+    hold: "#d9dde4",
+    accent: "#f08a24",
+    grid: "#e9edf2",
+    text: "#526073"
+};
 
 /* ==========================================
 
@@ -2671,6 +3156,7 @@ const donutAvailableLabel = document.getElementById("donutAvailableLabel");
 let donutChart = null;
 
 function renderDonut(mode) {
+    document.getElementById("donutHoverDetail")?.classList.remove("is-visible");
     const denominator = mode === "current"
         ? currentBudget
         : consumableBudget;
@@ -2719,15 +3205,16 @@ function renderDonut(mode) {
         data: {
             labels: [
                 "Anggaran Terpakai",
-                "Sisa Anggaran"
+                "Sisa Anggaran",
+                "Approval Hold"
             ],
             datasets: [{
                 data: mode === "current"
                 ? [consumed, availableOnly, hold]
                 : [consumed, remaining],
                 backgroundColor: mode === "current"
-                    ? ["#ed1c24", "#1673df", "#b9c1cb"]
-                    : ["#ed1c24", "#1673df"],
+                    ? ["#ed1c24", "#2774d5", CHART_COLORS.hold]
+                    : ["#ed1c24", "#2774d5"],
                 borderWidth: 0,
                 hoverOffset: 6,
                 borderRadius: 3
@@ -2742,18 +3229,23 @@ function renderDonut(mode) {
                     display: false
                 },
                 tooltip: {
-                    enabled: true,
-                    backgroundColor: "#292e38",
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        title(context) {
-                            return context[0].label;
-                        },
-                        label(context) {
-                            return formatRupiah(context.raw);
+                    enabled: false,
+                    external({tooltip}) {
+                        const detail = document.getElementById("donutHoverDetail");
+                        const label = document.getElementById("donutHoverLabel");
+                        const value = document.getElementById("donutHoverValue");
+                        const dot = document.getElementById("donutHoverDot");
+                        if (!detail || !label || !value || !dot) return;
+                        if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints?.length) {
+                            detail.classList.remove("is-visible");
+                            return;
                         }
+                        const point = tooltip.dataPoints[0];
+                        const colors = ["#ed1c24", "#2774d5", "#d9dde4"];
+                        dot.style.backgroundColor = colors[point.dataIndex] || "#d9dde4";
+                        label.textContent = point.label || "";
+                        value.textContent = formatRupiah(point.raw);
+                        detail.classList.add("is-visible");
                     }
                 }
             }
@@ -2772,7 +3264,7 @@ donutAnalysis.addEventListener("change", function() {
 renderDonut(donutAnalysis.value);
 
 /* ==========================================
-   ENTITY BUDGET COMPOSITION - STACKED BAR
+   ENTITY BUDGET PERFORMANCE - COMBO BAR + LINE
 ========================================== */
 const compositionSource = Array.isArray(visualizationData.entity_budget_composition)
     ? visualizationData.entity_budget_composition
@@ -2800,56 +3292,63 @@ const entityItems = compositionSource.map(item => {
         rate: rateValue
     };
 }).filter(item => item.current > 0 || item.consumed > 0 || item.available > 0 || item.hold > 0)
-  .sort((a, b) => b.consumed - a.consumed);
+  .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1));
 
 const topEntities = entityItems;
 const entityCanvas = document.getElementById("entityUtilizationChart");
 const entityEmpty = document.getElementById("entityUtilizationEmpty");
 
-if (topEntities.length > 0) {
+// Perbandingan lintas entity berbasis persen, tanpa dua skala rupiah.
+const entityUtilizationLabelsPlugin = {
+    id: "silogEntityUtilizationLabels",
+    afterDatasetsDraw(chart) {
+        const {ctx, chartArea} = chart;
+        const bars = chart.getDatasetMeta(0).data;
+        ctx.save();
+        ctx.fillStyle = "#243247";
+        ctx.font = "700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        bars.forEach((bar, i) => {
+            const rate = topEntities[i].rate;
+            ctx.fillText(rate == null ? "—" : formatPercentage(rate), chartArea.right + 10, bar.y);
+        });
+        ctx.restore();
+    }
+};
+
+if (topEntities.length && entityCanvas) {
     entityCanvas.style.display = "block";
-    entityEmpty.style.display = "none";
-
-    const entityChartHeight = Math.max(185, Math.min(240, topEntities.length * 30));
-    entityCanvas.parentElement.style.height = entityChartHeight + "px";
-
+    if (entityEmpty) entityEmpty.style.display = "none";
+    entityCanvas.parentElement.style.height = "205px";
+    const values = topEntities.map(item =>
+        item.rate == null ? null : Math.max(0, Math.min(100, item.rate)));
+    const blues = ["#104b9c", "#2166ca", "#347fe1", "#448fee", "#5b9bf0", "#75b1f5", "#90c7fa"];
     window.entityUtilizationChart = new Chart(entityCanvas, {
         type: "bar",
+        plugins: [entityUtilizationLabelsPlugin],
         data: {
             labels: topEntities.map(item => item.label),
             datasets: [
                 {
-                    label: "Consumed Budget",
-                    data: topEntities.map(item => item.consumed),
-                    backgroundColor: "#ed1c24",
-                    hoverBackgroundColor: "#c91620",
+                    label: "Budget Utilization",
+                    data: values,
+                    backgroundColor: topEntities.map((_, i) => blues[Math.min(i, blues.length-1)]),
+                    hoverBackgroundColor: "#0c428c",
                     borderRadius: 4,
                     borderSkipped: false,
-                    stack: "budget",
-                    barThickness: 22,
-                    maxBarThickness: 25
+                    stack: "rate",
+                    barThickness: 13
                 },
                 {
-                    label: "Available Amount",
-                    data: topEntities.map(item => item.available),
-                    backgroundColor: "#1673df",
-                    hoverBackgroundColor: "#0f5fc0",
-                    borderRadius: 0,
-                    borderSkipped: false,
-                    stack: "budget",
-                    barThickness: 22,
-                    maxBarThickness: 25
-                },
-                {
-                    label: "Approval Hold",
-                    data: topEntities.map(item => item.hold),
-                    backgroundColor: "#e7eaee",
-                    hoverBackgroundColor: "#d5dae0",
+                    label: "Sisa Consumable (%)",
+                    data: values.map(v => v == null ? null : 100-v),
+                    backgroundColor: "#e6e9ef",
+                    hoverBackgroundColor: "#e6e9ef",
                     borderRadius: 4,
                     borderSkipped: false,
-                    stack: "budget",
-                    barThickness: 22,
-                    maxBarThickness: 25
+                    stack: "rate",
+                    barThickness: 13
                 }
             ]
         },
@@ -2857,26 +3356,24 @@ if (topEntities.length > 0) {
             indexAxis: "y",
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 650 },
-            interaction: { mode: "index", intersect: false },
+            animation: {duration: 450},
+            interaction: {mode: "nearest", intersect: false},
+            layout: {padding: {right: 52, top: 4, bottom: 0, left: 0}},
             plugins: {
-                legend: { display: false },
+                legend: {display: false},
                 tooltip: {
-                    backgroundColor: "#292e38",
-                    padding: 12,
-                    cornerRadius: 8,
+                    filter(context) { return context.datasetIndex === 0; },
+                    backgroundColor: "#273244",
+                    padding: 11,
                     callbacks: {
-                        title(context) {
-                            return topEntities[context[0].dataIndex].label;
-                        },
+                        title(context) { return topEntities[context[0].dataIndex].label; },
                         label(context) {
-                            return context.dataset.label + ": " + formatRupiah(context.raw);
-                        },
-                        afterBody(context) {
-                            const item = topEntities[context[0].dataIndex];
+                            const item = topEntities[context.dataIndex];
                             return [
-                                "Current Budget: " + formatRupiah(item.current),
-                                "Utilization: " + (item.rate === null ? "—" : formatPercentage(item.rate))
+                                "Utilization: " + formatPercentage(item.rate),
+                                "Consumed: " + formatRupiah(item.consumed),
+                                "Available: " + formatRupiah(item.available),
+                                "Consumable: " + formatRupiah(item.budget)
                             ];
                         }
                     }
@@ -2885,26 +3382,27 @@ if (topEntities.length > 0) {
             scales: {
                 x: {
                     stacked: true,
-                    beginAtZero: true,
-                    grid: { color: "#f0f1f3" },
-                    border: { display: false },
-                    ticks: {
-                        font: { size: 10 },
-                        callback(value) { return formatCompactRupiah(value); }
-                    }
+                    min: 0,
+                    max: 100,
+                    display: false,
+                    grid: {display: false},
+                    border: {display: false}
                 },
                 y: {
                     stacked: true,
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: { font: { size: 10, weight: "600" } }
+                    grid: {display: false},
+                    border: {display: false},
+                    ticks: {
+                        color: "#344258",
+                        font: {size: 10, weight: "600"}
+                    }
                 }
             }
         }
     });
 } else {
-    entityCanvas.style.display = "none";
-    entityEmpty.style.display = "flex";
+    if (entityCanvas) entityCanvas.style.display = "none";
+    if (entityEmpty) entityEmpty.style.display = "flex";
 }
 
 /* ==========================================
@@ -2990,22 +3488,66 @@ function renderTop5CommitmentItems() {
         return;
     }
 
+    const top5DecorPlugin = {
+        id: "top5ValueLabels",
+        afterDatasetsDraw(chart) {
+            const {ctx} = chart;
+            const meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = "700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#39465a";
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
+            meta.data.forEach((bar, index) => {
+                // Nominal di sebelah kanan setiap bar (tetap seperti sebelumnya).
+                ctx.fillText(formatCompactRupiah(items[index].consumed_budget), bar.x + 9, bar.y);
+            });
+            // Seluruh nomor ranking dan nama Commitment Item rata kiri.
+            // Label digambar sendiri agar tidak mengikuti alignment default sumbu Y.
+            const labelStartX = 6;
+            const nameStartX = 24;
+            const maxLabelWidth = Math.max(50, chart.chartArea.left - nameStartX - 12);
+            ctx.font = "500 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+            ctx.fillStyle = "#5f6672";
+            meta.data.forEach((bar, index) => {
+                const label = String(items[index].label ?? items[index].name ?? "Commitment Item");
+                let visibleLabel = label;
+                while (visibleLabel.length > 1 &&
+                       ctx.measureText(visibleLabel).width > maxLabelWidth) {
+                    visibleLabel = visibleLabel.slice(0, -1);
+                }
+                if (visibleLabel !== label) {
+                    while (visibleLabel.length > 1 &&
+                           ctx.measureText(visibleLabel + "…").width > maxLabelWidth) {
+                        visibleLabel = visibleLabel.slice(0, -1);
+                    }
+                    visibleLabel += "…";
+                }
+                ctx.fillText(`${index + 1}.`, labelStartX, bar.y);
+                ctx.fillText(visibleLabel, nameStartX, bar.y);
+            });
+            ctx.restore();
+        }
+    };
+
     if (empty) empty.style.display = "none";
     top5Canvas.style.display = "block";
 
+    const blueShades = ["#0b4c9e", "#256bd0", "#4387e8", "#68a9f1", "#8fc8fb"];
     top5Canvas.style.height = "100%";
     top5Chart = new Chart(top5Canvas, {
+        plugins: [top5DecorPlugin],
         type: "bar",
         data: {
-            labels: items.map(item => String(item.label ?? item.name ?? "Commitment Item")),
+            labels: items.map((item, index) => `${index + 1}. ${String(item.label ?? item.name ?? "Commitment Item")}`),
             datasets: [{
                 label: "Consumed Budget",
                 data: items.map(item => safeNumber(item.consumed_budget)),
-                backgroundColor: ["#ed1c24", "#1673df", "#3288e8", "#65a5ed", "#9bc5f3"],
-                borderRadius: 6,
+                backgroundColor: items.map((_, index) => blueShades[Math.min(index, blueShades.length - 1)]),
+                borderRadius: 0,
                 borderSkipped: false,
-                barThickness: allowedLimit > 10 ? 8 : allowedLimit > 5 ? 12 : 19,
-                maxBarThickness: 20
+                barThickness: allowedLimit > 10 ? 10 : allowedLimit > 5 ? 16 : 24,
+                maxBarThickness: 26
             }]
         },
         options: {
@@ -3013,7 +3555,7 @@ function renderTop5CommitmentItems() {
             responsive: true,
             maintainAspectRatio: false,
             animation: { duration: 450 },
-            layout: { padding: { right: 12, left: 2 } },
+            layout: { padding: { top: 4, right: 87, bottom: 4, left: 205 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -3023,8 +3565,7 @@ function renderTop5CommitmentItems() {
                     callbacks: {
                         label(context) {
                             const item = items[context.dataIndex];
-                            const rate = item.utilization_rate === null ||
-                                item.utilization_rate === undefined
+                            const rate = item.utilization_rate === null || item.utilization_rate === undefined
                                 ? "—" : formatPercentage(safeNumber(item.utilization_rate));
                             return [
                                 "Terpakai: " + formatRupiah(item.consumed_budget),
@@ -3037,22 +3578,15 @@ function renderTop5CommitmentItems() {
             },
             scales: {
                 x: {
+                    display: false,
                     beginAtZero: true,
-                    grid: { color: "#edf0f3" },
-                    border: { display: false },
-                    ticks: {
-                        color: "#8490a0",
-                        font: { size: 10 },
-                        callback(value) { return formatCompactRupiah(value); }
-                    }
+                    grid: { display: false },
+                    border: { display: false }
                 },
                 y: {
+                    display: false,
                     grid: { display: false },
-                    border: { display: false },
-                    ticks: {
-                        color: "#748092",
-                        font: { size: allowedLimit > 10 ? 7 : allowedLimit > 5 ? 8 : 9, weight: "600" }
-                    }
+                    border: { display: false }
                 }
             }
         }
@@ -3094,7 +3628,7 @@ function renderDimensionMonitoringTable(items, label) {
     const visible = filtered.slice(startIndex, startIndex + pageSize);
 
     if (!total) {
-        dimensionTableBody.innerHTML = `<tr><td colspan="9" class="attention-empty">${query ? "Tidak ada data yang cocok." : "Data Pemantauan Anggaran belum tersedia."}</td></tr>`;
+        dimensionTableBody.innerHTML = `<tr><td colspan="7" class="attention-empty">${query ? "Tidak ada data yang cocok." : "Data Pemantauan Anggaran belum tersedia."}</td></tr>`;
     } else {
         dimensionTableBody.innerHTML = visible.map(item => `
             <tr>
@@ -3102,10 +3636,8 @@ function renderDimensionMonitoringTable(items, label) {
                 <td>${escapeHtml(item.biro_code)}<br><span class="monitoring-subtext">${escapeHtml(item.biro_name)}</span></td>
                 <td><strong>${escapeHtml(item.commitment_item_code)}</strong><br><span class="monitoring-subtext">${escapeHtml(item.commitment_item_name)}</span></td>
                 <td>${formatCompactRupiah(item.current_budget)}</td>
-                <td>${formatCompactRupiah(item.consumable_budget)}</td>
                 <td>${formatCompactRupiah(item.consumed_budget)}</td>
                 <td>${formatCompactRupiah(item.available_amount)}</td>
-                <td>${formatCompactRupiah(item.approval_hold)}</td>
                 <td><span class="monitoring-utilization ${
                     item.utilization_rate == null ? "" :
                     safeNumber(item.utilization_rate) < 50 ? "low" :
@@ -3305,6 +3837,89 @@ console.log("SILOG APPROVAL DASHBOARD", {
        entityItems
 
 });
+
+
+
+/* =====================================================
+   Monitoring Approval: read-only queue, five rows/page,
+   classification overview based on server supplied counts.
+===================================================== */
+(function () {
+    const panel = document.getElementById("monitoringApprovalPanel");
+    if (!panel) return;
+    const pageSize = 5;
+    const allRows = Array.from(panel.querySelectorAll(".approval-queue-data-row"));
+    const search = document.getElementById("approvalPendingSearch");
+    const info = document.getElementById("approvalQueueInfo");
+    const pagination = document.getElementById("approvalQueuePagination");
+    let page = 1;
+
+    // Tanggal dalam antrean dihitung sebagai hari kalender lokal browser.
+    const now = new Date();
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    allRows.forEach(row => {
+        const indicator = row.querySelector(".approval-age");
+        const raw = indicator?.dataset.requestDate || "";
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return;
+        const [y, m, d] = raw.split("-").map(Number);
+        const days = Math.max(0, Math.round((today - Date.UTC(y, m - 1, d)) / 86400000));
+        indicator.textContent = days + " hari";
+    });
+
+    function renderQueue() {
+        const q = (search?.value || "").trim().toLocaleLowerCase("id-ID");
+        const filtered = allRows.filter(row => row.textContent.toLocaleLowerCase("id-ID").includes(q));
+        const count = filtered.length;
+        const pages = Math.max(1, Math.ceil(count / pageSize));
+        page = Math.max(1, Math.min(page, pages));
+        const start = (page - 1) * pageSize;
+        allRows.forEach(row => { row.hidden = true; row.style.display = "none"; });
+        filtered.slice(start, start + pageSize).forEach(row => { row.hidden = false; row.style.display = ""; });
+        if (info) info.textContent = count
+            ? `Menampilkan ${start + 1}–${Math.min(start + pageSize, count)} dari ${count} pengajuan`
+            : "Tidak ada pengajuan yang cocok.";
+        if (pagination) {
+            pagination.replaceChildren();
+            if (count > pageSize) {
+                function addButton(label, target, active = false, disabled = false) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.textContent = label;
+                    btn.classList.toggle("active", active);
+                    btn.disabled = disabled;
+                    btn.setAttribute("aria-label", label === "‹" ? "Halaman sebelumnya" : label === "›" ? "Halaman berikutnya" : `Halaman ${label}`);
+                    if (active) btn.setAttribute("aria-current", "page");
+                    btn.addEventListener("click", () => { page = target; renderQueue(); });
+                    pagination.appendChild(btn);
+                }
+                addButton("‹", page - 1, false, page === 1);
+                for (let i = 1; i <= pages; i++) addButton(String(i), i, i === page);
+                addButton("›", page + 1, false, page === pages);
+            }
+        }
+    }
+    if (search) search.addEventListener("input", () => { page = 1; renderQueue(); });
+    renderQueue();
+
+})();
+
+/* Tabs mengikuti interaksi Approval Satuan / Batch di Manajemen Approval. */
+(function(){
+  const tabs = [document.getElementById('monitoringAnggaranTab'),document.getElementById('monitoringApprovalTab')];
+  const panels = [document.getElementById('monitoringAnggaranPanel'),document.getElementById('monitoringApprovalPanel')];
+  function activate(which,updateUrl=true){
+    const idx = which==='approval' ? 1 : 0;
+    tabs.forEach((tab,i)=>{tab.classList.toggle('active',idx===i);tab.setAttribute('aria-selected',String(idx===i));tab.tabIndex=idx===i?0:-1;panels[i].hidden=idx!==i;});
+    if(updateUrl){const url=new URL(window.location.href);if(idx===1)url.searchParams.set('tab','approval');else url.searchParams.delete('tab');history.replaceState(null,'',url);}
+    if(idx===0 && typeof Chart !== 'undefined'){
+      requestAnimationFrame(()=>{Object.values(Chart.instances||{}).forEach(chart=>chart.resize());});
+    }
+  }
+  tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>activate(i?'approval':'anggaran'));tab.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const j=1-i;activate(j?'approval':'anggaran');tabs[j].focus();}});});
+  activate(new URLSearchParams(window.location.search).get('tab')==='approval'?'approval':'anggaran',false);
+  const form=document.getElementById('dashboardFilterForm');
+  if(form){form.addEventListener('submit',()=>{const old=form.querySelector('input[name="tab"]');if(old)old.remove();if(panels[1].hidden===false){const h=document.createElement('input');h.type='hidden';h.name='tab';h.value='approval';form.appendChild(h);}});}
+})();
 
 </script>
 

@@ -1,7 +1,8 @@
 import os
 import hmac
+import hashlib
 import secrets
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from io import BytesIO
@@ -22,6 +23,7 @@ from database import get_db_connection
 
 from flask import request, jsonify, session
 from psycopg2.extras import RealDictCursor
+from approval_engine_silog import execute_approval, budget_plan, ApprovalEngineError
 
 # konfigurasi aplikasi
 load_dotenv()
@@ -1643,6 +1645,108 @@ def budget_detail_approval():
         return redirect(url_for("dashboard"))
 
 
+
+# Read-only metrics untuk Tab Monitoring Approval.
+# Tidak mengubah saldo, status request, maupun shared approval engine.
+def get_dashboard_approval_monitor(budget_year, entity_id="all", biro_id="all"):
+    from decimal import Decimal
+    from psycopg2.extras import RealDictCursor
+    from approval_engine_silog import budget_plan, ApprovalEngineError
+
+    # Untuk request tanpa budget_id, gunakan tahun pengajuan agar tidak hilang
+    # dari antrean; statusnya tetap "Mapping / Sumber Belum Valid".
+    where = ["(bm.budget_year = %s OR (bm.budget_id IS NULL AND EXTRACT(YEAR FROM br.request_date) = %s))"]
+    params = [budget_year, budget_year]
+    if entity_id != "all":
+        where.append("br.entity_id = %s")
+        params.append(int(entity_id))
+    if biro_id != "all":
+        where.append("u.biro_id = %s")
+        params.append(int(biro_id))
+    clause = " AND ".join(where)
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"""
+                SELECT br.request_id, br.request_status, br.request_date, br.request_amount,
+                       br.mapping_status, br.budget_id, ue.unit_entity, b.biro_name,
+                       bm.current_budget, bm.consumable_budget, bm.available_amount
+                FROM public.budget_request br
+                LEFT JOIN public.budget_master bm ON bm.budget_id = br.budget_id
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.biro b ON b.biro_id = u.biro_id AND b.entity_id = br.entity_id
+                WHERE {clause}
+                ORDER BY br.request_date ASC, br.request_id ASC
+            """, params)
+            rows = cursor.fetchall()
+        result = dict(pending=0, approved=0, rejected=0, shortage_count=0,
+                      sufficient=0, open_needed=0, reallocation_review=0,
+                      unmapped=0, pending_rows=[],
+                      approved_amount=Decimal('0'),
+                      open_budget_amount=Decimal('0'),
+                      reallocation_amount=Decimal('0'))
+        for row in rows:
+            status = row['request_status']
+            if status == 'Approved':
+                result['approved'] += 1
+                # Nominal request berstatus Approved. Ini bukan Consumed Budget
+                # maupun field approved_amount pada histori decision lama.
+                result['approved_amount'] += Decimal(str(row['request_amount'] or 0))
+                continue
+            if status == 'Rejected':
+                result['rejected'] += 1
+                continue
+            if status != 'Pending':
+                continue
+            result['pending'] += 1
+            condition, condition_class = 'Perlu Review', 'review'
+            if row['mapping_status'] != 'Oke' or row['budget_id'] is None:
+                result['unmapped'] += 1
+                condition = 'Mapping Perlu Review'
+            else:
+                try:
+                    plan = budget_plan(row['request_amount'],row['available_amount'],
+                                       row['current_budget'],row['consumable_budget'])
+                    if plan['shortage'] > Decimal('0'):
+                        result['shortage_count'] += 1
+                    if plan['mode'] == 'approve':
+                        result['sufficient'] += 1
+                        condition,condition_class = 'Budget Cukup','ok'
+                    elif plan['mode'] == 'open':
+                        result['open_needed'] += 1
+                        condition,condition_class = 'Potensi Open Budget','open'
+                    else:
+                        result['reallocation_review'] += 1
+                        condition = 'Perlu Realokasi / Review'
+                except (ApprovalEngineError, ValueError, TypeError):
+                    result['reallocation_review'] += 1
+            if len(result['pending_rows']) < 12:
+                result['pending_rows'].append(dict(row, condition=condition, condition_class=condition_class))
+        # Rekapitulasi Open Budget dan Reallocation berasal dari alokasi
+        # transaksi yang tercatat, bukan dari saldo budget atau budget_history.
+        # Satu baris alokasi dihitung satu kali. Filter sama dengan KPI Approval.
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"""
+                SELECT ba.allocation_type, COALESCE(SUM(ba.amount), 0) AS amount
+                FROM public.budget_allocation ba
+                JOIN public.budget_request br ON br.request_id = ba.request_id
+                LEFT JOIN public.budget_master bm ON bm.budget_id = br.budget_id
+                JOIN public.users u ON u.user_id = br.user_id
+                WHERE {clause} AND br.request_status = 'Approved'
+                GROUP BY ba.allocation_type
+            """, params)
+            for allocation in cursor.fetchall():
+                amount = Decimal(str(allocation['amount'] or 0))
+                allocation_type = allocation['allocation_type']
+                if allocation_type == 'Open Budget':
+                    result['open_budget_amount'] += amount
+                elif allocation_type in ('Reallocation FC_CI', 'Reallocation CI_Only'):
+                    result['reallocation_amount'] += amount
+        return result
+    finally:
+        conn.close()
+
 # halaman dashboard berdasarkan role
 @app.route("/dashboard")
 def dashboard():
@@ -1771,6 +1875,10 @@ def dashboard():
                 biro_id=selected_biro
             )
 
+            approval_monitor = get_dashboard_approval_monitor(
+                selected_year, selected_entity, selected_biro
+            )
+
             # Tampilkan dashboard Approval
             return render_template(
                 "dashboard_approval.html",
@@ -1793,6 +1901,7 @@ def dashboard():
                 selected_biro=selected_biro,
 
                 # Data dashboard
+                approval_monitor=approval_monitor,
                 summary=dashboard_data["summary"],
                 scope_summary=dashboard_data["scope_summary"],
                 visualization_data=dashboard_data["visualization_data"]
@@ -2401,9 +2510,9 @@ def pengajuan_check(cursor, user_id, data):
     )
 
     message = (
-        "Budget kurang; pengajuan memerlukan review Approval."
+        "Budget kurang, pengajuan memerlukan review Approval."
         if shortage > 0
-        else "Budget mencukupi; pengajuan dapat direview Approval."
+        else "Budget mencukupi, pengajuan dapat direview Approval."
     )
 
     return {
@@ -2896,7 +3005,7 @@ def _pengajuan_bulk_row_payload(row, entity_lookup):
     }
 
 
-def _pengajuan_insert_one(cursor, user_id, payload):
+def _pengajuan_insert_one(cursor, user_id, payload, batch_id=None):
     data = pengajuan_parse_input(payload, require_details=True)
     result = pengajuan_check(cursor, user_id, data)
     mapped, budget = result["mapped"], result["budget"]
@@ -2917,6 +3026,7 @@ def _pengajuan_insert_one(cursor, user_id, payload):
     approval_hold = current - consumable
     cursor.execute("""
         INSERT INTO public.budget_request (
+            batch_id,
             user_id, entity_id, request_date, transaction_date, pic,
             input_profit_center, input_cost_center, input_gl_account,
             request_amount, request_description,
@@ -2925,6 +3035,7 @@ def _pengajuan_insert_one(cursor, user_id, payload):
             available_amount_snapshot, shortage_amount, approval_hold_amount_snapshot,
             mapping_status, budget_status, request_status
         ) VALUES (
+            %s,
             %s, %s, NOW(), %s, %s,
             %s, %s, %s,
             %s, %s,
@@ -2935,6 +3046,7 @@ def _pengajuan_insert_one(cursor, user_id, payload):
         )
         RETURNING request_id
     """, (
+        batch_id,
         user_id, data["entity_id"], data["transaction_date"], data["pic"],
         data["profit_center"], data["cost_center"], data["gl_account"],
         data["request_amount"], data["description"],
@@ -3122,7 +3234,8 @@ def pengajuan_import_preview():
             parsed.append(item)
         if not parsed:
             return jsonify({"error": "File tidak berisi baris pengajuan."}), 422
-        return jsonify({"success": True, "total": len(parsed), "ready": sum(1 for x in parsed if x["status"] == "Siap"), "failed": sum(1 for x in parsed if x["status"] != "Siap"), "rows": parsed})
+        original_filename = str(uploaded.filename or "").replace("\\", "/").rsplit("/", 1)[-1][:255]
+        return jsonify({"success": True, "filename": original_filename, "total": len(parsed), "ready": sum(1 for x in parsed if x["status"] == "Siap"), "failed": sum(1 for x in parsed if x["status"] != "Siap"), "rows": parsed})
     except (ValueError, KeyError, OSError):
         return jsonify({"error": "File Excel tidak dapat dibaca. Pastikan menggunakan template SILOG."}), 422
 
@@ -3132,23 +3245,70 @@ def pengajuan_import_submit():
     guard = pengajuan_api_guard()
     if guard is not None:
         return guard
+
     payload = request.get_json(silent=True) or {}
     rows = payload.get("rows")
     if not isinstance(rows, list) or not rows:
         return jsonify({"error": "Data import tidak valid atau kosong."}), 400
+
+    # Nama file hanya metadata. Hilangkan path agar tidak menyimpan path lokal klien.
+    uploaded_filename = str(payload.get("filename") or "").replace("\\", "/").rsplit("/", 1)[-1][:255] or None
+
     results = []
+    batch_id = None
+    batch_code = None
+
     for item in rows:
         excel_row = item.get("row") if isinstance(item, dict) else None
         row_payload = item.get("payload") if isinstance(item, dict) else None
         outcome = {"row": excel_row, "status": "Gagal", "message": ""}
         conn = None
+        candidate_batch_id = batch_id
+        candidate_batch_code = batch_code
+
         try:
-            data = pengajuan_parse_input(row_payload, require_details=True)
+            # Validasi bentuk payload sebelum membuka transaksi.
+            pengajuan_parse_input(row_payload, require_details=True)
             conn = get_db_connection()
+
+            # Satu transaksi per baris mempertahankan perilaku partial success.
+            # Batch pertama dibuat di transaksi yang sama dengan request pertama
+            # yang berhasil, sehingga tidak akan tertinggal batch kosong.
             with conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    saved = _pengajuan_insert_one(cursor, session["user_id"], row_payload)
-            outcome.update({"status": "Terkirim", "message": f"ID Pengajuan: {saved['request_id']} — berhasil dikirim.", **saved})
+                    if candidate_batch_id is None:
+                        candidate_batch_code = (
+                            f"BXL-{date.today():%Y%m%d}-{secrets.token_hex(4).upper()}"
+                        )
+                        cursor.execute("""
+                            INSERT INTO public.budget_request_batch (
+                                batch_code, user_id, uploaded_filename
+                            )
+                            VALUES (%s, %s, %s)
+                            RETURNING batch_id
+                        """, (
+                            candidate_batch_code,
+                            session["user_id"],
+                            uploaded_filename
+                        ))
+                        candidate_batch_id = cursor.fetchone()["batch_id"]
+
+                    saved = _pengajuan_insert_one(
+                        cursor,
+                        session["user_id"],
+                        row_payload,
+                        batch_id=candidate_batch_id
+                    )
+
+            # Tetapkan batch di memori hanya setelah transaksi baris commit.
+            batch_id = candidate_batch_id
+            batch_code = candidate_batch_code
+            outcome.update({
+                "status": "Terkirim",
+                "message": f"ID Pengajuan: {saved['request_id']} — berhasil dikirim.",
+                **saved
+            })
+
         except PengajuanValidationError as exc:
             outcome["message"] = str(exc)
         except psycopg2.Error:
@@ -3157,8 +3317,22 @@ def pengajuan_import_submit():
         finally:
             if conn is not None:
                 conn.close()
+
         results.append(outcome)
-    return jsonify({"success": True, "total": len(results), "sent": sum(1 for x in results if x["status"] == "Terkirim"), "failed": sum(1 for x in results if x["status"] != "Terkirim"), "rows": results})
+
+    sent = sum(1 for x in results if x["status"] == "Terkirim")
+    failed = len(results) - sent
+    return jsonify({
+        "success": sent > 0,
+        "batch_id": batch_id,
+        "batch_code": batch_code,
+        "filename": uploaded_filename,
+        "total": len(results),
+        "sent": sent,
+        "failed": failed,
+        "rows": results
+    })
+
 
 
 # halaman riwayat pengajuan
@@ -3804,7 +3978,7 @@ def api_approval_requests():
     if len(keyword) > 150:
         return jsonify({"error": "Kata pencarian terlalu panjang."}), 400
 
-    where = ["1=1"]
+    where = ["br.batch_id IS NULL"]
     params = []
     if status != "ALL":
         where.append("br.request_status = %s")
@@ -4008,9 +4182,24 @@ def api_approval_request_detail(request_id):
                     result[key] = value
             return result
 
+        # Approved Amount bisnis adalah seluruh request yang disetujui.
+        # Simpan nilai kolom historis secara terpisah, tanpa mengubah database.
+        decision_items = []
+        for decision_row in decisions:
+            item = serialize(decision_row)
+            item["stored_approved_amount_legacy"] = item["approved_amount"]
+            item["approved_amount"] = (
+                str(row["request_amount"])
+                if row["request_status"] == "Approved"
+                and decision_row["decision"] in (
+                    "Approve", "Open Budget", "Approve with Reallocation"
+                ) else "0"
+            )
+            decision_items.append(item)
+
         return jsonify({
             "request": serialize(row),
-            "decisions": [serialize(x) for x in decisions],
+            "decisions": decision_items,
             "allocations": [serialize(x) for x in allocations]
         })
     except psycopg2.Error:
@@ -4240,540 +4429,875 @@ def api_approval_reallocation_sources(request_id):
 
 @app.route("/api/approval/requests/<int:request_id>/approve", methods=["POST"])
 def api_approval_direct_approve(request_id):
-    """Approve pengajuan yang dapat dipenuhi oleh available budget saat ini."""
     guard = approval_mutation_guard()
+    if guard is not None: return guard
+    payload=request.get_json(silent=True) or {}
+    instruction=str(payload.get('instruction') or '').strip()
+    if len(instruction)>2000: return jsonify({'error':'Instruksi maksimal 2.000 karakter.'}),400
+    conn=None
+    try:
+        conn=get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                result=execute_approval(cur,session['user_id'],request_id,'approve',instruction=instruction)
+        return jsonify(result)
+    except (ApprovalEngineError,ValueError) as exc:
+        if conn: conn.rollback()
+        return jsonify({'error':str(exc)}),409
+    except psycopg2.Error:
+        if conn: conn.rollback()
+        app.logger.exception('Approve satuan gagal')
+        return jsonify({'error':'Approve gagal diproses. Tidak ada perubahan disimpan.'}),500
+    finally:
+        if conn: conn.close()
+
+@app.route("/api/approval/history", methods=["GET"])
+def api_approval_history():
+    """Riwayat seluruh pengajuan satuan dan Excel yang sudah diputuskan."""
+    guard = approval_api_guard()
     if guard is not None:
         return guard
+    kind = request.args.get("kind", "ALL").upper().strip()
+    status = request.args.get("status", "ALL").strip()
+    keyword = request.args.get("q", "").strip()
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = min(max(request.args.get("per_page", 20, type=int), 5), 100)
+    if kind not in {"ALL", "SATUAN", "BATCH"}:
+        return jsonify({"error":"Filter jenis pengajuan tidak valid."}), 400
+    if status not in {"ALL", "Approved", "Rejected"}:
+        return jsonify({"error":"Filter status riwayat tidak valid."}), 400
+    if len(keyword) > 150:
+        return jsonify({"error":"Kata pencarian terlalu panjang."}), 400
 
-    payload = request.get_json(silent=True) or {}
-    instruction = str(payload.get("instruction", "")).strip()
-    if len(instruction) > 2000:
-        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
+    where = ["br.request_status IN ('Approved','Rejected')"]
+    params = []
+    if kind == "SATUAN":
+        where.append("br.batch_id IS NULL")
+    elif kind == "BATCH":
+        where.append("br.batch_id IS NOT NULL")
+    if status != "ALL":
+        where.append("br.request_status = %s")
+        params.append(status)
+    if keyword:
+        where.append("""(
+            CAST(br.request_id AS TEXT) ILIKE %s
+            OR COALESCE(br.pic,'') ILIKE %s
+            OR COALESCE(br.request_description,'') ILIKE %s
+            OR COALESCE(u.username,'') ILIKE %s
+            OR COALESCE(bb.batch_code,'') ILIKE %s
+        )""")
+        params.extend([f"%{keyword}%"]*5)
+    where_sql = " AND ".join(where)
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"""
+                SELECT COUNT(*)::integer AS total
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id=br.user_id
+                LEFT JOIN public.budget_request_batch bb ON bb.batch_id=br.batch_id
+                WHERE {where_sql}
+            """, params)
+            total = cursor.fetchone()["total"]
+            cursor.execute(f"""
+                SELECT br.request_id, br.batch_id, bb.batch_code,
+                       bb.uploaded_filename, br.request_date, br.pic,
+                       br.request_amount, br.request_description,
+                       br.request_status, br.budget_status,
+                       u.username AS requester_username,
+                       ue.unit_entity, b.biro_name,
+                       latest_decision.decision AS approval_decision,
+                       latest_decision.decision_date
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id=br.user_id
+                LEFT JOIN public.budget_request_batch bb ON bb.batch_id=br.batch_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id=br.entity_id
+                LEFT JOIN public.biro b ON b.biro_id=u.biro_id AND b.entity_id=br.entity_id
+                LEFT JOIN LATERAL (
+                    SELECT ad.decision, ad.decision_date
+                    FROM public.approval_decision ad
+                    WHERE ad.request_id=br.request_id
+                    ORDER BY ad.decision_date DESC, ad.approval_id DESC
+                    LIMIT 1
+                ) latest_decision ON TRUE
+                WHERE {where_sql}
+                ORDER BY COALESCE(latest_decision.decision_date, br.request_date) DESC,
+                         br.request_id DESC
+                LIMIT %s OFFSET %s
+            """, params+[per_page,(page-1)*per_page])
+            rows=cursor.fetchall()
+        items=[]
+        for row in rows:
+            item={}
+            for key,value in row.items():
+                if isinstance(value, Decimal): item[key]=str(value)
+                elif hasattr(value,"isoformat"): item[key]=value.isoformat()
+                else: item[key]=value
+            items.append(item)
+        return jsonify({"items":items,"pagination":{"page":page,"per_page":per_page,
+            "total":total,"pages":(total+per_page-1)//per_page}})
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat riwayat Approval")
+        return jsonify({"error":"Gagal memuat riwayat Approval."}),500
+    finally:
+        if conn is not None: conn.close()
+
+
+@app.route("/api/approval/batches", methods=["GET"])
+def api_approval_batches():
+    """Daftar batch yang benar-benar berasal dari import Excel."""
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
 
     conn = None
     try:
         conn = get_db_connection()
-        with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT request_id, request_status, request_amount, budget_id
-                    FROM public.budget_request
-                    WHERE request_id = %s
-                    FOR UPDATE
-                """, (request_id,))
-                req = cursor.fetchone()
-                if not req:
-                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
-                if req["request_status"] != "Pending":
-                    return jsonify({"error": "Hanya pengajuan Pending yang dapat disetujui."}), 409
-                if not req["budget_id"]:
-                    return jsonify({"error": "Sumber budget pengajuan tidak ditemukan."}), 409
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT
+                    bb.batch_id,
+                    bb.batch_code,
+                    bb.uploaded_filename,
+                    MIN(br.request_date) AS batch_date,
+                    COUNT(br.request_id)::integer AS total_requests,
+                    COUNT(*) FILTER (WHERE br.request_status = 'Pending')::integer AS pending,
+                    COUNT(*) FILTER (WHERE br.request_status = 'Approved')::integer AS approved,
+                    COUNT(*) FILTER (WHERE br.request_status = 'Rejected')::integer AS rejected,
+                    COALESCE(SUM(br.request_amount), 0) AS total_amount,
+                    MIN(ad_first.first_decision_date) AS first_decision_date
+                FROM public.budget_request_batch bb
+                JOIN public.budget_request br ON br.batch_id = bb.batch_id
+                LEFT JOIN (
+                    SELECT request_id, MIN(decision_date) AS first_decision_date
+                    FROM public.approval_decision
+                    GROUP BY request_id
+                ) ad_first ON ad_first.request_id = br.request_id
+                GROUP BY bb.batch_id, bb.batch_code, bb.uploaded_filename
+                ORDER BY
+                    CASE WHEN COUNT(*) FILTER (WHERE br.request_status = 'Pending') > 0
+                         THEN 0 ELSE 1 END ASC,
+                    CASE WHEN COUNT(*) FILTER (WHERE br.request_status = 'Pending') > 0
+                         THEN MIN(br.request_date) END ASC NULLS LAST,
+                    MIN(ad_first.first_decision_date) ASC NULLS LAST,
+                    bb.batch_id ASC
+            """)
+            rows = cursor.fetchall()
 
-                cursor.execute("""
-                    SELECT budget_id, consumed_budget, available_amount
-                    FROM public.budget_master
-                    WHERE budget_id = %s
-                    FOR UPDATE
-                """, (req["budget_id"],))
-                budget = cursor.fetchone()
-                if not budget:
-                    return jsonify({"error": "Data budget pengajuan tidak ditemukan."}), 409
-
-                request_amount = Decimal(str(req["request_amount"]))
-                available_amount = Decimal(str(budget["available_amount"]))
-                if available_amount < request_amount:
-                    shortage = request_amount - available_amount
-                    return jsonify({
-                        "error": (
-                            "Available Budget belum mencukupi. "
-                            f"Masih terdapat shortage {shortage:.2f}. "
-                            "Gunakan Open Budget atau Reallocation Budget."
-                        )
-                    }), 409
-
-                # Konsumsi seluruh Request Amount sebelum status Approved disimpan.
-                _approval_consume_request(
-                    cursor=cursor,
-                    budget_id=req["budget_id"],
-                    request_id=request_id,
-                    request_amount=request_amount,
-                    old_consumed=budget["consumed_budget"],
-                    old_available=budget["available_amount"]
-                )
-
-                cursor.execute("""
-                    UPDATE public.budget_request
-                    SET request_status = 'Approved', budget_status = 'Budget Cukup'
-                    WHERE request_id = %s
-                """, (request_id,))
-                _approval_record_decision(
-                    cursor, request_id, "Approve", request_amount, instruction
-                )
-
-        return jsonify({
-            "message": "Pengajuan berhasil disetujui tanpa Open Budget.",
-            "request_status": "Approved",
-            "budget_status": "Budget Cukup",
-            "approval_decision": "Approve",
-            "approved_amount": str(request_amount)
-        })
+        items = []
+        for row in rows:
+            item = {}
+            for key, value in row.items():
+                if isinstance(value, Decimal):
+                    item[key] = str(value)
+                elif hasattr(value, "isoformat"):
+                    item[key] = value.isoformat()
+                else:
+                    item[key] = value
+            items.append(item)
+        return jsonify({"items": items, "total": len(items)})
     except psycopg2.Error:
-        app.logger.exception("Gagal menyetujui pengajuan tanpa Open Budget")
-        return jsonify({"error": "Approve gagal diproses. Tidak ada perubahan yang disimpan."}), 500
+        app.logger.exception("Gagal memuat daftar batch approval")
+        return jsonify({"error": "Daftar Batch Approval gagal dimuat."}), 500
     finally:
         if conn is not None:
             conn.close()
 
+
+@app.route("/api/approval/batches/<int:batch_id>", methods=["GET"])
+def api_approval_batch_detail(batch_id):
+    """Seluruh pengajuan yang menjadi anggota satu batch Excel."""
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT batch_id, batch_code, uploaded_filename
+                FROM public.budget_request_batch
+                WHERE batch_id = %s
+            """, (batch_id,))
+            batch = cursor.fetchone()
+            if not batch:
+                return jsonify({"error": "Batch tidak ditemukan."}), 404
+
+            cursor.execute("""
+                SELECT
+                    br.request_id,
+                    br.request_date,
+                    br.request_amount,
+                    br.shortage_amount,
+                    br.budget_status,
+                    br.request_status,
+                    br.pic,
+                    u.username AS requester_username,
+                    ue.unit_entity,
+                    b.biro_name,
+                    ci.commitment_item_code,
+                    ci.commitment_item_name,
+                    latest_decision.decision AS approval_decision
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.biro b
+                    ON b.biro_id = u.biro_id AND b.entity_id = br.entity_id
+                LEFT JOIN public.commitment_item ci
+                    ON ci.commitment_item_id = br.mapped_commitment_item_id
+                LEFT JOIN LATERAL (
+                    SELECT ad.decision
+                    FROM public.approval_decision ad
+                    WHERE ad.request_id = br.request_id
+                    ORDER BY ad.decision_date DESC, ad.approval_id DESC
+                    LIMIT 1
+                ) latest_decision ON TRUE
+                WHERE br.batch_id = %s
+                ORDER BY br.request_id ASC
+            """, (batch_id,))
+            rows = cursor.fetchall()
+
+        def serialize(row):
+            item = {}
+            for key, value in row.items():
+                if isinstance(value, Decimal):
+                    item[key] = str(value)
+                elif hasattr(value, "isoformat"):
+                    item[key] = value.isoformat()
+                else:
+                    item[key] = value
+            return item
+
+        batch_data = serialize(batch)
+        request_items = [serialize(row) for row in rows]
+        return jsonify({"batch": batch_data, "items": request_items, "total": len(request_items)})
+    except psycopg2.Error:
+        app.logger.exception("Gagal memuat detail batch approval %s", batch_id)
+        return jsonify({"error": "Detail Batch Approval gagal dimuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route("/api/approval/requests/batch-approve", methods=["POST"])
+def api_approval_batch_approve():
+    guard=approval_mutation_guard()
+    if guard is not None: return guard
+    payload=request.get_json(silent=True) or {}
+    raw_ids=payload.get('request_ids')
+    raw_batch=payload.get('batch_id')
+    instruction=str(payload.get('instruction') or '').strip()
+    if not isinstance(raw_ids,list) or not raw_ids or len(raw_ids)>200:
+        return jsonify({'error':'Pilih 1 sampai 200 pengajuan.'}),400
+    if len(instruction)>2000: return jsonify({'error':'Instruksi maksimal 2.000 karakter.'}),400
+    if raw_batch is not None and (isinstance(raw_batch,bool) or not str(raw_batch).isdigit()):
+        return jsonify({'error':'Batch ID tidak valid.'}),400
+    if any(isinstance(v,bool) or not str(v).isdigit() or int(v)<=0 for v in raw_ids):
+        return jsonify({'error':'Request ID tidak valid.'}),400
+    ids=[int(x) for x in raw_ids]
+    if len(set(ids))!=len(ids): return jsonify({'error':'Request ID duplikat.'}),400
+    conn=None
+    try:
+        conn=get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Lock seluruh request terlebih dahulu, agar tidak ada transaksi lain
+                # mengubah status saat batch sedang diproses.
+                cur.execute('SELECT request_id FROM public.budget_request WHERE request_id=ANY(%s) ORDER BY request_id FOR UPDATE',(sorted(ids),))
+                if len(cur.fetchall())!=len(ids): raise ApprovalEngineError('Salah satu pengajuan tidak ditemukan.')
+                results=[execute_approval(cur,session['user_id'],rid,'approve',instruction=instruction,
+                             expected_batch_id=int(raw_batch) if raw_batch is not None else None)
+                         for rid in sorted(ids)]
+        return jsonify({'message':f'{len(results)} pengajuan berhasil disetujui dalam satu Batch Approval.',
+                        'request_status':'Approved','approved_count':len(results),
+                        'approved':[{'request_id':r['request_id'],'approved_amount':r['approved_amount']} for r in results]})
+    except (ApprovalEngineError,ValueError) as exc:
+        if conn: conn.rollback()
+        return jsonify({'error':str(exc)}),409
+    except psycopg2.Error:
+        if conn: conn.rollback()
+        app.logger.exception('Batch approve gagal')
+        return jsonify({'error':'Batch Approval gagal. Tidak ada perubahan disimpan.'}),500
+    finally:
+        if conn: conn.close()
 
 @app.route("/api/approval/requests/<int:request_id>/open-budget", methods=["POST"])
 def api_approval_open_budget(request_id):
-    guard = approval_mutation_guard()
-    if guard is not None:
-        return guard
-    payload = request.get_json(silent=True) or {}
+    guard=approval_mutation_guard()
+    if guard is not None: return guard
+    payload=request.get_json(silent=True) or {}
+    try: amount=_approval_decimal(payload.get('amount'),'Nominal Open Budget')
+    except ValueError as exc: return jsonify({'error':str(exc)}),400
+    instruction=str(payload.get('instruction') or '').strip()
+    if len(instruction)>2000: return jsonify({'error':'Instruksi maksimal 2.000 karakter.'}),400
+    conn=None
     try:
-        amount = _approval_decimal(payload.get("amount"), "Nominal Open Budget")
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-    instruction = str(payload.get("instruction", "")).strip()
-    if len(instruction) > 2000:
-        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
-
-    conn = None
-    try:
-        conn = get_db_connection()
+        conn=get_db_connection()
         with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT br.request_id, br.request_status, br.request_amount,
-                           br.budget_id, br.budget_scope
-                    FROM public.budget_request br
-                    WHERE br.request_id = %s
-                    FOR UPDATE
-                """, (request_id,))
-                req = cursor.fetchone()
-                if not req:
-                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
-                if req["request_status"] != "Pending":
-                    return jsonify({"error": "Pengajuan ini bukan berstatus Pending."}), 409
-                if not req["budget_id"]:
-                    return jsonify({"error": "Sumber budget pengajuan tidak ditemukan."}), 409
-
-                cursor.execute("""
-                    SELECT budget_id, current_budget, consumable_budget,
-                           consumed_budget, available_amount, budget_scope
-                    FROM public.budget_master
-                    WHERE budget_id = %s
-                    FOR UPDATE
-                """, (req["budget_id"],))
-                budget = cursor.fetchone()
-                if not budget:
-                    return jsonify({"error": "Data budget tujuan tidak ditemukan."}), 409
-
-                hold = Decimal(str(budget["current_budget"])) - Decimal(str(budget["consumable_budget"]))
-                live_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - Decimal(str(budget["available_amount"])))
-                if live_shortage <= 0:
-                    return jsonify({"error": "Available Budget saat ini sudah mencukupi. Open Budget tidak diperlukan."}), 409
-                if hold < live_shortage:
-                    return jsonify({"error": "Approval Hold tidak mencukupi untuk menutup seluruh shortage. Gunakan Open Budget with Reallocation."}), 409
-                if hold < amount:
-                    return jsonify({"error": f"Nominal melebihi Approval Hold. Maksimal dapat dibuka {hold:.2f}."}), 409
-                if amount > live_shortage:
-                    return jsonify({"error": f"Nominal melebihi shortage saat ini. Maksimal yang diperlukan {live_shortage:.2f}."}), 409
-
-                old_consumable = Decimal(str(budget["consumable_budget"]))
-                old_available = Decimal(str(budget["available_amount"]))
-                new_consumable = old_consumable + amount
-                new_available = old_available + amount
-                cursor.execute("""
-                    UPDATE public.budget_master
-                    SET consumable_budget = %s, available_amount = %s
-                    WHERE budget_id = %s
-                """, (new_consumable, new_available, req["budget_id"]))
-
-                remaining_shortage = max(Decimal("0"), Decimal(str(req["request_amount"])) - new_available)
-                fully_covered = remaining_shortage == 0
-
-                # Setelah pembukaan menutup shortage, konsumsi seluruh pengajuan.
-                if fully_covered:
-                    _approval_consume_request(
-                        cursor=cursor,
-                        budget_id=req["budget_id"],
-                        request_id=request_id,
-                        request_amount=req["request_amount"],
-                        old_consumed=budget["consumed_budget"],
-                        old_available=new_available
-                    )
-
-                cursor.execute("""
-                    UPDATE public.budget_request
-                    SET request_status = %s, budget_status = %s
-                    WHERE request_id = %s
-                """, ("Approved" if fully_covered else "Pending",
-                      "Budget Cukup" if fully_covered else "Open", request_id))
-
-                _approval_record_decision(cursor, request_id, "Open Budget", amount, instruction)
-                cursor.execute("""
-                    INSERT INTO public.budget_allocation
-                        (request_id, source_budget_id, target_budget_id,
-                         allocation_type, amount, instruction, approved_by)
-                    VALUES (%s, NULL, %s, 'Open Budget', %s, %s, %s)
-                """, (request_id, req["budget_id"], amount, instruction, session["user_id"]))
-                _approval_record_history(cursor, req["budget_id"], request_id,
-                    "Open Budget", "consumable_budget", old_consumable, new_consumable, amount)
-                _approval_record_history(cursor, req["budget_id"], request_id,
-                    "Open Budget", "available_amount", old_available, new_available, amount)
-
-        return jsonify({
-            "message": "Open Budget berhasil diproses.",
-            "request_status": "Approved" if fully_covered else "Pending",
-            "budget_status": "Budget Cukup" if fully_covered else "Open",
-            "opened_amount": str(amount),
-            "remaining_shortage": str(remaining_shortage)
-        })
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                result=execute_approval(cur,session['user_id'],request_id,'open',instruction=instruction,open_amount=amount)
+        return jsonify(result)
+    except (ApprovalEngineError,ValueError) as exc:
+        if conn: conn.rollback()
+        return jsonify({'error':str(exc)}),409
     except psycopg2.Error:
-        app.logger.exception("Gagal memproses Open Budget")
-        return jsonify({"error": "Open Budget gagal diproses. Tidak ada perubahan yang disimpan."}), 500
+        if conn: conn.rollback()
+        app.logger.exception('Open Budget gagal')
+        return jsonify({'error':'Open Budget gagal. Tidak ada perubahan disimpan.'}),500
     finally:
-        if conn is not None:
-            conn.close()
-
+        if conn: conn.close()
 
 @app.route("/api/approval/requests/<int:request_id>/reallocate", methods=["POST"])
 def api_approval_reallocate(request_id):
-    """Buka Approval Hold, realokasikan sisa shortage, lalu konsumsi request penuh."""
+    guard=approval_mutation_guard()
+    if guard is not None: return guard
+    payload=request.get_json(silent=True) or {}
+    raw=payload.get('allocations')
+    if not isinstance(raw,list) or not raw:
+        raw=[{'source_budget_id':payload.get('source_budget_id'),
+              'amount':payload.get('amount'),'allocation_date':payload.get('allocation_date'),
+              'instruction':payload.get('instruction','')}]
+    if len(raw)>50: return jsonify({'error':'Maksimal 50 baris realokasi.'}),400
+    instruction=str(payload.get('instruction') or '').strip()
+    if len(instruction)>2000: return jsonify({'error':'Instruksi maksimal 2.000 karakter.'}),400
+    try:
+        allocs=[]
+        for idx,item in enumerate(raw,1):
+            if not isinstance(item,dict): raise ValueError(f'Baris {idx} tidak valid.')
+            bid=item.get('source_budget_id')
+            if isinstance(bid,bool) or not str(bid or '').isdigit() or int(bid)<=0:
+                raise ValueError(f'Sumber budget pada baris {idx} wajib dipilih.')
+            dt=date.fromisoformat(str(item.get('allocation_date') or ''))
+            allocs.append({**item,'source_budget_id':int(bid),
+                           'amount':_approval_decimal(item.get('amount'),f'Nominal baris {idx}'),
+                           'allocation_date':dt})
+    except (ValueError,TypeError) as exc:
+        return jsonify({'error':str(exc)}),400
+    conn=None
+    try:
+        conn=get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                result=execute_approval(cur,session['user_id'],request_id,'reallocate',allocations=allocs,instruction=instruction)
+        return jsonify(result)
+    except (ApprovalEngineError,ValueError) as exc:
+        if conn: conn.rollback()
+        return jsonify({'error':str(exc)}),409
+    except psycopg2.Error:
+        if conn: conn.rollback()
+        app.logger.exception('Reallocation gagal')
+        return jsonify({'error':'Reallocation gagal. Tidak ada perubahan disimpan.'}),500
+    finally:
+        if conn: conn.close()
+
+# ============================================================
+# APPROVAL EXCEL IMPORT: UPLOAD -> PREVIEW -> CONFIRM
+# Partial success per Request ID. Invalid rows remain Pending.
+# ============================================================
+
+@app.route("/api/approval/batches/<int:batch_id>/upload", methods=["POST"])
+def api_approval_excel_upload(batch_id):
     guard = approval_mutation_guard()
     if guard is not None:
         return guard
 
-    payload = request.get_json(silent=True) or {}
-    raw_allocations = payload.get("allocations")
-    if not isinstance(raw_allocations, list) or not raw_allocations:
-        raw_allocations = [{
-            "source_budget_id": payload.get("source_budget_id"),
-            "amount": payload.get("amount"),
-            "allocation_date": payload.get("allocation_date"),
-            "instruction": payload.get("instruction", "")
-        }]
-    if len(raw_allocations) > 50:
-        return jsonify({"error": "Maksimal 50 baris realokasi dalam satu keputusan."}), 400
-
-    allocations = []
-    try:
-        for index, item in enumerate(raw_allocations, start=1):
-            if not isinstance(item, dict):
-                raise ValueError(f"Format baris realokasi {index} tidak valid.")
-            source_id = item.get("source_budget_id")
-            if isinstance(source_id, bool) or not str(source_id or "").isdigit():
-                raise ValueError(f"Sumber budget pada baris {index} wajib dipilih.")
-            amount = _approval_decimal(item.get("amount"), f"Nominal realokasi baris {index}")
-            date_text = str(item.get("allocation_date") or "").strip()
-            try:
-                allocation_date = date.fromisoformat(date_text)
-            except ValueError:
-                raise ValueError(f"Tanggal realokasi pada baris {index} tidak valid.")
-            row_instruction = str(item.get("instruction") or "").strip()
-            if len(row_instruction) > 2000:
-                raise ValueError(f"Instruksi baris {index} maksimal 2.000 karakter.")
-            allocations.append({
-                "source_budget_id": int(source_id),
-                "amount": amount,
-                "allocation_date": allocation_date,
-                "instruction": row_instruction,
-                "entity_id": str(item.get("entity_id") or ""),
-                "biro_id": str(item.get("biro_id") or ""),
-                "fund_code": str(item.get("fund_code") or "").strip().upper(),
-                "funds_center_code": str(item.get("funds_center_code") or "").strip().upper(),
-                "commitment_item_code": str(item.get("commitment_item_code") or "").strip().upper()
-            })
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-    instruction = str(payload.get("instruction") or "").strip()
-    if len(instruction) > 2000:
-        return jsonify({"error": "Instruksi maksimal 2.000 karakter."}), 400
-
     conn = None
+    file = request.files.get("file")
+    if not file or not file.filename or not file.filename.lower().endswith(".xlsx"):
+        return jsonify({"error": "Pilih file template Approval berformat .xlsx."}), 400
+
+    raw = file.read(15 * 1024 * 1024 + 1)
+    if len(raw) > 15 * 1024 * 1024:
+        return jsonify({"error": "Ukuran file maksimal 15 MB."}), 413
+
+    filename = file.filename.replace("\\", "/").rsplit("/", 1)[-1][:255]
+    digest = hashlib.sha256(raw).hexdigest()
+    parsed_rows = []
     try:
+        wb = load_workbook(BytesIO(raw), read_only=True, data_only=True)
+        required_sheets = {"APPROVAL", "REQUEST_MAP"}
+        if not required_sheets.issubset(set(wb.sheetnames)):
+            return jsonify({"error": "Sheet APPROVAL dan REQUEST_MAP wajib tersedia. Unduh template terbaru."}), 422
+
+        ws = wb["APPROVAL"]
+        header_row = None
+        for rn in range(1, min(ws.max_row or 1, 10) + 1):
+            headers = [str(ws.cell(rn, c).value or "").strip().upper() for c in range(1, 8)]
+            if headers[0:5] == ["DATE", "INSTRUCTION", "FUND", "FUNDS CENTER", "COMMITMENT ITEM"] and headers[6] == "AMOUNT":
+                header_row = rn
+                break
+        if not header_row:
+            return jsonify({"error": "Susunan kolom sheet APPROVAL tidak sesuai template SILOG."}), 422
+
+        map_ws = wb["REQUEST_MAP"]
+        map_headers = [str(c.value or "").strip().upper() for c in next(map_ws.iter_rows(min_row=1, max_row=1))]
+        if map_headers[:5] != ["REQUEST ID", "BATCH ID", "STATUS", "APPROVAL ROW START", "APPROVAL ROW END"]:
+            return jsonify({"error": "Susunan kolom REQUEST_MAP tidak sesuai template SILOG."}), 422
+
+        mappings = []
+        seen_ids = set()
+        for vals in map_ws.iter_rows(min_row=2, values_only=True):
+            if not vals or vals[0] in (None, ""):
+                continue
+            try:
+                rid, map_batch = int(vals[0]), int(vals[1])
+                row_start, row_end = int(vals[3]), int(vals[4])
+            except (TypeError, ValueError, IndexError):
+                return jsonify({"error": "REQUEST_MAP berisi Request ID, Batch ID, atau rentang baris yang tidak valid."}), 422
+            if rid in seen_ids or row_start < header_row + 1 or row_end < row_start:
+                return jsonify({"error": f"REQUEST_MAP duplikat atau rentang baris tidak valid untuk Request ID {rid}."}), 422
+            seen_ids.add(rid)
+            mappings.append({"request_id": rid, "batch_id": map_batch, "start": row_start, "end": row_end})
+
+        if not mappings:
+            return jsonify({"error": "REQUEST_MAP tidak berisi pengajuan."}), 422
+
+        # A row may belong to exactly one Request ID; overlapping ranges are ambiguous.
+        occupied_rows = {}
+        for mapping in mappings:
+            if mapping["end"] > (ws.max_row or header_row):
+                return jsonify({"error": f"Rentang APPROVAL untuk REQ-{mapping['request_id']} melebihi jumlah baris."}), 422
+            for excel_row in range(mapping["start"], mapping["end"] + 1):
+                if excel_row in occupied_rows:
+                    return jsonify({"error": f"Rentang APPROVAL tumpang tindih antara REQ-{occupied_rows[excel_row]} dan REQ-{mapping['request_id']}."}), 422
+                occupied_rows[excel_row] = mapping["request_id"]
+
+        for rn in range(header_row + 1, (ws.max_row or header_row) + 1):
+            vals = [ws.cell(rn, c).value for c in range(1, 8)]
+            if not any(v not in (None, "") for v in vals):
+                continue
+            dt, instruction, fund, fc, ci, source_entity_raw, amount_raw = vals
+            source_biro_raw = ws.cell(rn, 8).value
+
+            # Baris petunjuk pada template (mis. "(TANGGAL)", "(+/-) OPSIONAL",
+            # "(LINK COSTCENTER)", "(LINK G/L)", "(NOMINAL)") bukan transaksi.
+            # Abaikan baris tersebut sebelum mencari REQUEST_MAP agar tidak tampil
+            # sebagai orphan/invalid row pada Preview.
+            instruction_text = str(instruction or "").strip()
+            placeholder_values = {
+                str(v or "").strip().upper()
+                for v in (dt, instruction, fund, fc, ci, amount_raw)
+                if v not in (None, "")
+            }
+            is_instruction_guide = (
+                instruction_text.upper() not in ("+", "-")
+                and any(
+                    token in placeholder_values
+                    for token in ("(TANGGAL)", "(+/-) OPSIONAL", "(LINK COSTCENTER)",
+                                  "(LINK G/L)", "(NOMINAL)")
+                )
+            )
+            if is_instruction_guide:
+                continue
+            mapping = next((m for m in mappings if m["start"] <= rn <= m["end"]), None)
+            item = {
+                "request_id": mapping["request_id"] if mapping else None,
+                "excel_row_number": rn,
+                "instruction": str(instruction or "").strip(),
+                "fund_code": str(fund or "").strip().upper(),
+                "funds_center_code": str(fc or "").strip().upper(),
+                "commitment_item_code": str(ci or "").strip().upper(),
+                "amount": None,
+                "source_entity_name": str(source_entity_raw or "").strip(),
+                "source_biro_code": str(source_biro_raw or "").strip(),
+                "allocation_date": dt.isoformat() if hasattr(dt, "isoformat") else str(dt or ""),
+                "validation_status": "invalid",
+                "validation_message": ""
+            }
+            if not mapping:
+                item["validation_message"] = "Baris tidak terhubung dengan Request ID pada REQUEST_MAP."
+            elif item["instruction"] not in ("+", "-"):
+                item["validation_message"] = "INSTRUCTION harus berupa + atau -."
+            elif not item["commitment_item_code"] or (item["instruction"] == "+" and not item["fund_code"]):
+                item["validation_message"] = "COMMITMENT ITEM wajib diisi; FUND wajib untuk instruksi target (+)."
+            else:
+                try:
+                    amount = Decimal(str(amount_raw).replace(",", "").strip())
+                    if not amount.is_finite() or amount <= 0 or amount.quantize(Decimal("0.01")) != amount:
+                        raise ValueError()
+                    item["amount"] = amount
+                    item["validation_status"] = "valid"
+                except Exception:
+                    item["validation_message"] = "AMOUNT harus berupa angka positif dengan maksimal dua desimal."
+            parsed_rows.append(item)
+
+        if not parsed_rows:
+            return jsonify({"error": "Tidak ada instruksi pada sheet APPROVAL."}), 422
+
+        parsed_request_ids = {row["request_id"] for row in parsed_rows if row["request_id"] is not None}
+        missing_instruction_ids = [m["request_id"] for m in mappings if m["request_id"] not in parsed_request_ids]
+        if missing_instruction_ids:
+            labels = ", ".join(f"REQ-{rid}" for rid in missing_instruction_ids)
+            return jsonify({"error": f"REQUEST_MAP memiliki pengajuan tanpa instruksi APPROVAL: {labels}."}), 422
+
+        # Ensure the workbook belongs to the selected batch and each mapped request is a member.
         conn = get_db_connection()
         with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT br.request_id, br.request_status, br.request_amount,
-                           br.budget_id, br.entity_id, u.biro_id
-                    FROM public.budget_request br
-                    JOIN public.users u ON u.user_id = br.user_id
-                    WHERE br.request_id = %s
-                    FOR UPDATE OF br
-                """, (request_id,))
-                req = cursor.fetchone()
-                if not req:
-                    return jsonify({"error": "Pengajuan tidak ditemukan."}), 404
-                if req["request_status"] != "Pending":
-                    return jsonify({"error": "Pengajuan ini bukan berstatus Pending."}), 409
-                if not req["budget_id"]:
-                    return jsonify({"error": "Sumber budget tujuan tidak ditemukan."}), 409
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT batch_id FROM public.budget_request_batch WHERE batch_id = %s", (batch_id,))
+                if not cur.fetchone():
+                    return jsonify({"error": "Batch tidak ditemukan."}), 404
 
-                target_id = req["budget_id"]
-                source_ids = [x["source_budget_id"] for x in allocations]
-                if target_id in source_ids:
-                    return jsonify({"error": "Sumber dan target budget tidak boleh sama."}), 400
+                if any(m["batch_id"] != batch_id for m in mappings):
+                    return jsonify({"error": "REQUEST_MAP memuat Batch ID yang berbeda dari batch yang sedang dibuka."}), 422
 
-                all_ids = sorted(set(source_ids + [target_id]))
-                cursor.execute("""
-                    SELECT
-                        bm.budget_id, bm.entity_id, bm.biro_id, bm.budget_year,
-                        UPPER(TRIM(bm.budget_scope)) AS budget_scope,
-                        bm.funds_center_id, bm.commitment_item_id,
-                        bm.current_budget, bm.consumable_budget,
-                        bm.consumed_budget, bm.available_amount,
-                        f.fund_code, fc.funds_center_code, ci.commitment_item_code
-                    FROM public.budget_master bm
-                    LEFT JOIN public.funds_center fc ON fc.funds_center_id = bm.funds_center_id
-                    LEFT JOIN public.commitment_item ci ON ci.commitment_item_id = bm.commitment_item_id
-                    LEFT JOIN LATERAL (
-                        SELECT br_source.mapped_fund_id
-                        FROM public.budget_request br_source
-                        WHERE br_source.budget_id = bm.budget_id
-                          AND br_source.mapped_fund_id IS NOT NULL
-                        ORDER BY br_source.request_date DESC, br_source.request_id DESC
-                        LIMIT 1
-                    ) source_request ON TRUE
-                    LEFT JOIN public.fund f ON f.fund_id = source_request.mapped_fund_id
-                    WHERE bm.budget_id = ANY(%s)
-                    ORDER BY bm.budget_id
-                    FOR UPDATE OF bm
-                """, (all_ids,))
-                locked = {row["budget_id"]: row for row in cursor.fetchall()}
-                if len(locked) != len(all_ids):
-                    return jsonify({"error": "Salah satu sumber atau target budget tidak ditemukan."}), 404
+                cur.execute("""
+                    SELECT request_id, batch_id, request_status, budget_id,
+                           request_amount, shortage_amount
+                    FROM public.budget_request
+                    WHERE request_id = ANY(%s)
+                """, ([m["request_id"] for m in mappings],))
+                reqs = {r["request_id"]: r for r in cur.fetchall()}
+                if len(reqs) != len(mappings):
+                    return jsonify({"error": "Ada Request ID pada REQUEST_MAP yang tidak ditemukan."}), 422
 
-                target = locked[target_id]
-                scope = str(target["budget_scope"] or "").strip().upper()
-                if scope not in ("FC_CI", "CI_ONLY"):
-                    return jsonify({"error": "Budget Scope target tidak dikenali."}), 409
+                for m in mappings:
+                    req = reqs[m["request_id"]]
+                    if req["batch_id"] != batch_id:
+                        return jsonify({"error": f"REQ-{m['request_id']} bukan anggota batch ini."}), 422
+                    if req["request_status"] != "Pending":
+                        for row in parsed_rows:
+                            if row["request_id"] == m["request_id"]:
+                                row["validation_status"] = "invalid"
+                                row["validation_message"] = f"Status pengajuan bukan Pending (status saat ini: {req['request_status']})."
 
-                request_amount = Decimal(str(req["request_amount"]))
-                target_available = Decimal(str(target["available_amount"]))
-                shortage = max(Decimal("0"), request_amount - target_available)
-                if shortage <= 0:
-                    return jsonify({"error": "Available Budget target saat ini sudah mencukupi. Realokasi tidak diperlukan."}), 409
+                # Validate groups by Request ID. One '+' is direct approve candidate;
+                # one '+' target plus one or more '-' sources is a reallocation candidate.
+                grouped = {}
+                for row in parsed_rows:
+                    if row["request_id"] is not None:
+                        grouped.setdefault(row["request_id"], []).append(row)
 
-                target_current = Decimal(str(target["current_budget"]))
-                target_consumable = Decimal(str(target["consumable_budget"]))
-                target_hold = max(Decimal("0"), target_current - target_consumable)
-                hold_to_open = min(target_hold, shortage)
-                required_reallocation = shortage - hold_to_open
-                if required_reallocation <= 0:
-                    return jsonify({"error": "Approval Hold masih mencukupi. Gunakan Open Budget, bukan Reallocation."}), 409
+                for rid, group in grouped.items():
+                    if any(x["validation_status"] != "valid" for x in group):
+                        continue
+                    plus = [x for x in group if x["instruction"] == "+"]
+                    minus = [x for x in group if x["instruction"] == "-"]
+                    if len(plus) != 1:
+                        msg = "Setiap Request ID harus memiliki tepat satu baris instruksi + sebagai target."
+                        for x in group:
+                            x["validation_status"], x["validation_message"] = "invalid", msg
+                        continue
 
-                aggregated = {}
-                for index, allocation in enumerate(allocations, start=1):
-                    source = locked[allocation["source_budget_id"]]
-                    if source["entity_id"] == target["entity_id"] and source["biro_id"] == target["biro_id"]:
-                        return jsonify({"error": f"Sumber pada baris {index} harus berasal dari biro atau entity lain."}), 409
-                    if source["budget_year"] != target["budget_year"]:
-                        return jsonify({"error": f"Tahun anggaran sumber pada baris {index} tidak sama dengan target."}), 409
-                    if str(source["budget_scope"] or "").strip().upper() != scope:
-                        return jsonify({"error": f"Budget Scope sumber pada baris {index} tidak sama dengan target."}), 409
-                    if scope == "CI_ONLY":
-                        if source["commitment_item_id"] != target["commitment_item_id"]:
-                            return jsonify({"error": f"Commitment Item sumber pada baris {index} tidak sesuai."}), 409
-                    elif (source["funds_center_id"] != target["funds_center_id"]
-                          or source["commitment_item_id"] != target["commitment_item_id"]):
-                        return jsonify({"error": f"Funds Center dan Commitment Item sumber pada baris {index} tidak sesuai."}), 409
+                    # Target '+' must match the mapped budget of this request.
+                    cur.execute("""
+                        SELECT f.fund_code, fc.funds_center_code, ci.commitment_item_code
+                        FROM public.budget_request br
+                        LEFT JOIN public.fund f ON f.fund_id = br.mapped_fund_id
+                        LEFT JOIN public.funds_center fc ON fc.funds_center_id = br.mapped_funds_center_id
+                        LEFT JOIN public.commitment_item ci ON ci.commitment_item_id = br.mapped_commitment_item_id
+                        WHERE br.request_id = %s
+                    """, (rid,))
+                    target_codes = cur.fetchone()
+                    p = plus[0]
+                    if not target_codes or (
+                        p["fund_code"] != str(target_codes["fund_code"] or "").strip().upper()
+                        or (target_codes["funds_center_code"] and
+                            p["funds_center_code"] != str(target_codes["funds_center_code"]).strip().upper())
+                        or p["commitment_item_code"] != str(target_codes["commitment_item_code"] or "").strip().upper()
+                    ):
+                        for x in group:
+                            x["validation_status"], x["validation_message"] = "invalid", "Instruksi + harus sesuai dengan mapping budget target pengajuan."
+                        continue
 
-                    # Cocokkan pilihan manual frontend dengan record budget yang dikunci.
-                    for field in ("entity_id", "biro_id"):
-                        if allocation[field] and allocation[field] != str(source[field]):
-                            return jsonify({"error": f"{field.replace('_', ' ').title()} pada baris {index} tidak sesuai dengan sumber budget."}), 409
-                    # Budget master SILOG tidak memiliki fund_id. Jangan mensyaratkan
-                    # riwayat pengajuan untuk memvalidasi Fund sumber.
-                    supplied_fund = allocation["fund_code"]
-                    if not supplied_fund:
-                        return jsonify({"error": f"Fund pada baris {index} wajib diisi."}), 400
-                    historical_fund = str(source["fund_code"] or "").strip().upper()
-                    if historical_fund and supplied_fund != historical_fund:
-                        return jsonify({"error": f"Fund pada baris {index} berbeda dengan mapping riwayat sumber."}), 409
-                    cursor.execute("""
-                        SELECT 1
-                        FROM public.fund f
-                        WHERE UPPER(TRIM(f.fund_code)) = %s
-                          AND EXISTS (
-                              SELECT 1 FROM public.master_fund mf
-                              WHERE mf.target_fund_id = f.fund_id
-                          )
-                        LIMIT 1
-                    """, (supplied_fund,))
-                    if cursor.fetchone() is None:
-                        return jsonify({"error": f"Fund pada baris {index} tidak ditemukan di master_fund."}), 409
-                    for field in ("funds_center_code", "commitment_item_code"):
-                        supplied = allocation[field]
-                        expected = str(source[field] or "").strip().upper()
-                        if not supplied or supplied != expected:
-                            return jsonify({"error": f"{field.replace('_', ' ').title()} pada baris {index} tidak sesuai dengan master budget."}), 409
+                    if not minus:
+                        # One '+' means approval using automatic Available -> Hold priority.
+                        continue
 
-                    bucket = aggregated.setdefault(allocation["source_budget_id"], {"amount": Decimal("0")})
-                    bucket["amount"] += allocation["amount"]
+                    if sum(x["amount"] for x in minus) != p["amount"]:
+                        for x in group:
+                            x["validation_status"], x["validation_message"] = "invalid", "Total instruksi - harus sama dengan instruksi + (nominal realokasi) pada Request ID ini."
+                        continue
 
-                total_reallocation = sum((x["amount"] for x in allocations), Decimal("0"))
-                if total_reallocation != required_reallocation:
-                    return jsonify({
-                        "error": (
-                            f"Total realokasi harus tepat {required_reallocation:.2f}. "
-                            f"Shortage {shortage:.2f} terlebih dahulu dipenuhi dari "
-                            f"Approval Hold sebesar {hold_to_open:.2f}."
-                        ),
-                        "live_shortage": str(shortage),
-                        "hold_to_open": str(hold_to_open),
-                        "required_reallocation": str(required_reallocation),
-                        "submitted_reallocation": str(total_reallocation)
-                    }), 409
+                    cur.execute("""
+                        SELECT bm.budget_id, bm.entity_id, bm.biro_id, bm.budget_year,
+                               UPPER(TRIM(bm.budget_scope)) AS budget_scope,
+                               bm.funds_center_id, bm.commitment_item_id,
+                               bm.available_amount
+                        FROM public.budget_master bm
+                        WHERE bm.budget_id = %s
+                    """, (reqs[rid]["budget_id"],))
+                    target_budget = cur.fetchone()
+                    if not target_budget:
+                        for x in group:
+                            x["validation_status"], x["validation_message"] = "invalid", "Budget target pengajuan tidak ditemukan."
+                        continue
 
-                for source_id, bucket in aggregated.items():
-                    source_available = Decimal(str(locked[source_id]["available_amount"]))
-                    if source_available < bucket["amount"]:
-                        return jsonify({
-                            "error": f"Available Budget sumber ID {source_id} tidak mencukupi. Maksimal {source_available:.2f}."
-                        }), 409
+                    scope = str(target_budget["budget_scope"] or "").strip().upper()
+                    # Identifikasi sumber dari informasi bisnis yang diisi Approval,
+                    # bukan dari budget_id internal. Kandidat bisa dilihat pada sheet
+                    # DONOR_OPTIONS. Pair (unit_entity, biro_code) + scope + CI (+FC)
+                    # harus menunjuk SATU budget_master; jangan pilih secara acak.
+                    selected_donor_amounts = {}
+                    for line in minus:
+                        source_entity = line.get("source_entity_name", "").strip().upper()
+                        source_biro = " ".join(line.get("source_biro_code", "").split()).upper()
+                        if not source_entity or not source_biro:
+                            msg = (
+                                "Instruksi - wajib mengisi SOURCE ENTITY (kolom F) "
+                                "dan SOURCE BIRO (kolom H), sesuai sheet DONOR_OPTIONS."
+                            )
+                            for x in group:
+                                x["validation_status"], x["validation_message"] = "invalid", msg
+                            break
 
-                # Simpan snapshot target sebelum mutasi.
-                target_old = {
-                    key: Decimal(str(target[key]))
-                    for key in ("current_budget", "consumable_budget", "consumed_budget", "available_amount")
-                }
-
-                # Tahap 1: buka Approval Hold yang tersedia pada target.
-                target_after_hold = dict(target_old)
-                target_after_hold["consumable_budget"] += hold_to_open
-                target_after_hold["available_amount"] += hold_to_open
-                if hold_to_open > 0:
-                    cursor.execute("""
-                        UPDATE public.budget_master
-                        SET consumable_budget = %s, available_amount = %s
-                        WHERE budget_id = %s
-                    """, (target_after_hold["consumable_budget"], target_after_hold["available_amount"], target_id))
-                    for field in ("consumable_budget", "available_amount"):
-                        _approval_record_history(
-                            cursor, target_id, request_id, "Open Budget",
-                            field, target_old[field], target_after_hold[field], hold_to_open
+                        cur.execute("""
+                            SELECT bm.budget_id, bm.available_amount, bm.entity_id,
+                                   bm.biro_id, bm.budget_scope, bm.funds_center_id,
+                                   fc.funds_center_code, ci.commitment_item_code,
+                                   ue.unit_entity, b.biro_code,
+                                   hist.fund_code AS historical_fund_code
+                            FROM public.budget_master bm
+                            JOIN public.commitment_item ci
+                              ON ci.commitment_item_id = bm.commitment_item_id
+                            JOIN public.unit_entity ue
+                              ON ue.entity_id = bm.entity_id
+                            JOIN public.biro b
+                              ON b.biro_id = bm.biro_id AND b.entity_id = bm.entity_id
+                            LEFT JOIN public.funds_center fc
+                              ON fc.funds_center_id = bm.funds_center_id
+                            LEFT JOIN LATERAL (
+                                SELECT f.fund_code
+                                FROM public.budget_request old_req
+                                JOIN public.fund f ON f.fund_id = old_req.mapped_fund_id
+                                WHERE old_req.budget_id = bm.budget_id
+                                ORDER BY old_req.request_date DESC, old_req.request_id DESC
+                                LIMIT 1
+                            ) hist ON TRUE
+                            WHERE bm.budget_year = %s
+                              AND UPPER(TRIM(bm.budget_scope)) = %s
+                              AND bm.commitment_item_id = %s
+                              AND (bm.entity_id IS DISTINCT FROM %s
+                                   OR bm.biro_id IS DISTINCT FROM %s)
+                              AND bm.budget_id <> %s
+                              AND (%s <> 'FC_CI' OR bm.funds_center_id = %s)
+                              AND UPPER(TRIM(ue.unit_entity)) = %s
+                              AND (UPPER(TRIM(b.biro_code)) = %s
+                                   OR UPPER(REGEXP_REPLACE(TRIM(b.biro_name), '[[:space:]]+', ' ', 'g')) = %s)
+                            ORDER BY bm.budget_id
+                        """, (
+                            target_budget["budget_year"], scope,
+                            target_budget["commitment_item_id"],
+                            target_budget["entity_id"], target_budget["biro_id"],
+                            reqs[rid]["budget_id"], scope,
+                            target_budget["funds_center_id"],
+                            source_entity, source_biro, source_biro
+                        ))
+                        candidates = cur.fetchall() if scope in ("FC_CI", "CI_ONLY") else []
+                        if len(candidates) != 1:
+                            msg = (
+                                f"Sumber {source_entity} / Biro {source_biro} menghasilkan "
+                                f"{len(candidates)} budget; harus tepat satu. "
+                                "Periksa SOURCE ENTITY, nama/kode SOURCE BIRO, dan kandidat DONOR_OPTIONS."
+                            )
+                            for x in group:
+                                x["validation_status"], x["validation_message"] = "invalid", msg
+                            break
+                        candidate = candidates[0]
+                        # Fund pada baris donor adalah referensi, bukan kunci budget.
+                        # Riwayat Fund donor dapat NULL dan tidak boleh menjadi
+                        # syarat validasi donor; target (+) tetap divalidasi mappingnya.
+                        if scope == "FC_CI" and line["funds_center_code"] != str(candidate["funds_center_code"] or "").strip().upper():
+                            msg = "FUNDS CENTER sumber FC_CI tidak sesuai budget donor."
+                        elif line["commitment_item_code"] != str(candidate["commitment_item_code"] or "").strip().upper():
+                            msg = "COMMITMENT ITEM donor tidak sesuai."
+                        else:
+                            msg = None
+                        if msg:
+                            for x in group:
+                                x["validation_status"], x["validation_message"] = "invalid", msg
+                            break
+                        selected_donor_amounts[candidate["budget_id"]] = (
+                            selected_donor_amounts.get(candidate["budget_id"], Decimal("0")) + line["amount"]
                         )
-                    cursor.execute("""
-                        INSERT INTO public.budget_allocation
-                            (request_id, source_budget_id, target_budget_id,
-                             allocation_type, amount, instruction, approved_by)
-                        VALUES (%s, NULL, %s, 'Open Budget', %s, %s, %s)
+                        if selected_donor_amounts[candidate["budget_id"]] > Decimal(str(candidate["available_amount"] or 0)):
+                            msg = "Total realokasi dari sumber ini melebihi Available Budget donor."
+                            for x in group:
+                                x["validation_status"], x["validation_message"] = "invalid", msg
+                            break
+                        line["source_budget_id"] = candidate["budget_id"]
+
+                    # Nominal realokasi harus tepat sama dengan kekurangan setelah
+                    # available sendiri dan approval hold sendiri diprioritaskan.
+                    if all(x["validation_status"] == "valid" for x in group):
+                        cur.execute("""
+                            SELECT current_budget, consumable_budget, available_amount
+                            FROM public.budget_master WHERE budget_id = %s
+                        """, (reqs[rid]["budget_id"],))
+                        live_target = cur.fetchone()
+                        shortage = max(Decimal("0"), Decimal(str(reqs[rid]["request_amount"])) - Decimal(str(live_target["available_amount"])))
+                        hold = max(Decimal("0"), Decimal(str(live_target["current_budget"])) - Decimal(str(live_target["consumable_budget"])))
+                        required = max(Decimal("0"), shortage - hold)
+                        if required <= 0 or p["amount"] != required:
+                            msg = f"Nominal realokasi harus sama dengan shortage setelah Hold: {required:.2f}."
+                            for x in group:
+                                x["validation_status"], x["validation_message"] = "invalid", msg
+
+
+                # Create import batch record. Re-uploading identical bytes returns the existing preview.
+                cur.execute("""
+                    INSERT INTO public.approval_import_batches
+                        (batch_id, uploaded_by, uploaded_filename, file_sha256,
+                         import_status, total_rows, valid_rows, invalid_rows, previewed_at)
+                    VALUES (%s, %s, %s, %s, 'previewed', %s, %s, %s, NOW())
+                    ON CONFLICT (batch_id, file_sha256) DO UPDATE SET
+                        uploaded_filename = EXCLUDED.uploaded_filename,
+                        import_status = 'previewed',
+                        total_rows = EXCLUDED.total_rows,
+                        valid_rows = EXCLUDED.valid_rows,
+                        invalid_rows = EXCLUDED.invalid_rows,
+                        previewed_at = NOW()
+                    RETURNING approval_import_id
+                """, (
+                    batch_id, session["user_id"], filename, digest, len(parsed_rows),
+                    sum(x["validation_status"] == "valid" for x in parsed_rows),
+                    sum(x["validation_status"] != "valid" for x in parsed_rows)
+                ))
+                import_id = cur.fetchone()["approval_import_id"]
+                cur.execute("DELETE FROM public.approval_import_rows WHERE approval_import_id = %s", (import_id,))
+                for row in parsed_rows:
+                    # Orphan rows without a Request ID are shown in preview but cannot be staged
+                    # because request_id is a required foreign key.
+                    if row["request_id"] is None:
+                        continue
+                    cur.execute("""
+                        INSERT INTO public.approval_import_rows
+                            (approval_import_id, request_id, excel_row_number, instruction,
+                             fund_code, funds_center_code, commitment_item_code, amount,
+                             validation_status, validation_message, source_budget_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
-                        request_id, target_id, hold_to_open,
-                        f"Membuka Approval Hold sebelum realokasi. {instruction}".strip(),
-                        session["user_id"]
+                        import_id, row["request_id"], row["excel_row_number"], row["instruction"],
+                        row["fund_code"] or None, row["funds_center_code"], row["commitment_item_code"],
+                        row["amount"] if row["amount"] is not None else Decimal("0.01"),
+                        row["validation_status"], row["validation_message"], row.get("source_budget_id")
                     ))
-
-                # Tahap 2: kurangi sumber dan catat histori per sumber.
-                for source_id, bucket in aggregated.items():
-                    source = locked[source_id]
-                    amount_for_source = bucket["amount"]
-                    src_old = {
-                        key: Decimal(str(source[key]))
-                        for key in ("current_budget", "consumable_budget", "available_amount")
-                    }
-                    src_new = {key: value - amount_for_source for key, value in src_old.items()}
-                    if any(value < 0 for value in src_new.values()):
-                        raise ValueError(f"Realokasi membuat saldo sumber ID {source_id} negatif.")
-                    cursor.execute("""
-                        UPDATE public.budget_master
-                        SET current_budget = %s, consumable_budget = %s, available_amount = %s
-                        WHERE budget_id = %s
-                    """, (src_new["current_budget"], src_new["consumable_budget"],
-                          src_new["available_amount"], source_id))
-                    for field in ("current_budget", "consumable_budget", "available_amount"):
-                        _approval_record_history(
-                            cursor, source_id, request_id, "Reallocation Out",
-                            field, src_old[field], src_new[field], amount_for_source
-                        )
-
-                # Tahap 3: tambahkan realokasi ke target.
-                target_after_reallocation = dict(target_after_hold)
-                target_after_reallocation["current_budget"] += total_reallocation
-                target_after_reallocation["consumable_budget"] += total_reallocation
-                target_after_reallocation["available_amount"] += total_reallocation
-                cursor.execute("""
-                    UPDATE public.budget_master
-                    SET current_budget = %s, consumable_budget = %s, available_amount = %s
-                    WHERE budget_id = %s
-                """, (target_after_reallocation["current_budget"],
-                      target_after_reallocation["consumable_budget"],
-                      target_after_reallocation["available_amount"], target_id))
-                for field in ("current_budget", "consumable_budget", "available_amount"):
-                    _approval_record_history(
-                        cursor, target_id, request_id, "Reallocation In",
-                        field, target_after_hold[field], target_after_reallocation[field],
-                        total_reallocation
-                    )
-
-                # Simpan detail tiap baris sumber. Tanggal dicantumkan pada instruksi
-                # karena tabel budget_allocation yang digunakan aplikasi tidak memakai kolom tanggal.
-                allocation_type = "Reallocation FC_CI" if scope == "FC_CI" else "Reallocation CI_Only"
-                for allocation in allocations:
-                    row_instruction = f"Tanggal realokasi: {allocation['allocation_date'].isoformat()}"
-                    if allocation["instruction"]:
-                        row_instruction += f" | {allocation['instruction']}"
-                    cursor.execute("""
-                        INSERT INTO public.budget_allocation
-                            (request_id, source_budget_id, target_budget_id,
-                             allocation_type, amount, instruction, approved_by)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        request_id, allocation["source_budget_id"], target_id,
-                        allocation_type, allocation["amount"], row_instruction,
-                        session["user_id"]
-                    ))
-
-                # Tahap 4: konsumsi seluruh Request Amount setelah saldo cukup.
-                available_before_consume = target_after_reallocation["available_amount"]
-                remaining_shortage = max(Decimal("0"), request_amount - available_before_consume)
-                if remaining_shortage != 0:
-                    raise ValueError("Saldo target setelah Open Budget dan Reallocation belum cukup untuk konsumsi penuh.")
-                _approval_consume_request(
-                    cursor=cursor,
-                    budget_id=target_id,
-                    request_id=request_id,
-                    request_amount=request_amount,
-                    old_consumed=target_old["consumed_budget"],
-                    old_available=available_before_consume
-                )
-
-                cursor.execute("""
-                    UPDATE public.budget_request
-                    SET request_status = 'Approved', budget_status = 'Budget Cukup'
-                    WHERE request_id = %s
-                """, (request_id,))
-                _approval_record_decision(
-                    cursor, request_id, "Approve with Reallocation", request_amount, instruction
-                )
 
         return jsonify({
-            "message": "Approve with Reallocation berhasil diproses. Approval Hold dibuka terlebih dahulu, kekurangan dipenuhi melalui realokasi, lalu seluruh Request Amount dikonsumsi.",
-            "request_status": "Approved",
-            "budget_status": "Budget Cukup",
-            "approved_amount": str(request_amount),
-            "opened_from_hold": str(hold_to_open),
-            "allocated_amount": str(total_reallocation),
-            "remaining_shortage": "0"
+            "success": True, "approval_import_id": import_id, "batch_id": batch_id,
+            "filename": filename, "total": len(parsed_rows),
+            "valid": sum(x["validation_status"] == "valid" for x in parsed_rows),
+            "invalid": sum(x["validation_status"] != "valid" for x in parsed_rows),
+            "rows": [{
+                **{k: (str(v) if isinstance(v, Decimal) else v) for k, v in x.items() if k not in ("source_budget_id", "donor_budget_id")},
+                "request_label": f"REQ-{x['request_id']}" if x["request_id"] else "—"
+            } for x in parsed_rows]
         })
-    except ValueError as exc:
-        if conn is not None:
-            conn.rollback()
-        return jsonify({"error": str(exc)}), 409
+    except (ValueError, KeyError, InvalidOperation):
+        app.logger.exception("Format Excel Approval tidak valid")
+        return jsonify({"error": "Format Excel Approval tidak valid. Periksa kembali template."}), 422
     except psycopg2.Error:
-        app.logger.exception("Gagal memproses realokasi budget")
-        return jsonify({"error": "Reallocation gagal diproses. Tidak ada perubahan yang disimpan."}), 500
+        app.logger.exception("Gagal menyimpan preview Excel Approval")
+        return jsonify({"error": "Gagal menyimpan preview ke database. Periksa log aplikasi."}), 500
     finally:
         if conn is not None:
             conn.close()
 
 
-def _budget_export_file(user_mode=False, request_id=None):
+@app.route("/api/approval/batches/<int:batch_id>/confirm/<int:import_id>", methods=["POST"])
+def api_approval_excel_confirm(batch_id, import_id):
+    guard=approval_mutation_guard()
+    if guard is not None: return guard
+    conn=None
+    try:
+        conn=get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute('''SELECT approval_import_id,import_status FROM public.approval_import_batches
+                WHERE approval_import_id=%s AND batch_id=%s''',(import_id,batch_id))
+            imp=cur.fetchone()
+            if not imp: return jsonify({'error':'Preview import tidak ditemukan.'}),404
+            if imp['import_status'] not in ('previewed','partially_processed'):
+                return jsonify({'error':'File sudah diproses atau tidak dapat diproses ulang.'}),409
+            cur.execute('''SELECT request_id,instruction,fund_code,funds_center_code,
+                           commitment_item_code,amount,source_budget_id,validation_status
+                           FROM public.approval_import_rows WHERE approval_import_id=%s
+                           ORDER BY request_id,excel_row_number''',(import_id,))
+            staged=cur.fetchall()
+        conn.close();conn=None
+        grouped={}
+        for line in staged: grouped.setdefault(line['request_id'],[]).append(line)
+        results=[]
+        for rid,lines in grouped.items():
+            if any(x['validation_status']!='valid' for x in lines):
+                results.append({'request_id':rid,'status':'invalid',
+                                'message':'Seluruh instruksi dibatalkan karena ada baris invalid.'})
+                continue
+            plus=[x for x in lines if x['instruction']=='+']
+            minus=[x for x in lines if x['instruction']=='-']
+            if len(plus)!=1:
+                results.append({'request_id':rid,'status':'invalid','message':'Harus ada tepat satu baris +.'})
+                continue
+            per_conn=None
+            try:
+                allocs=[]
+                for x in minus:
+                    if x['source_budget_id'] is None: raise ApprovalEngineError('Donor belum tervalidasi.')
+                    allocs.append({'source_budget_id':int(x['source_budget_id']),
+                                   'amount':x['amount'],'allocation_date':date.today(),
+                                   'instruction':f'Excel Approval Import {import_id}',
+                                   'fund_code':x['fund_code'],
+                                   'funds_center_code':x['funds_center_code'],
+                                   'commitment_item_code':x['commitment_item_code']})
+                per_conn=get_db_connection()
+                with per_conn:
+                    with per_conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        result=execute_approval(cur,session['user_id'],rid,
+                            'reallocate' if allocs else 'auto',
+                            allocations=allocs,instruction=f'Excel Approval Import {import_id}',
+                            expected_batch_id=batch_id)
+                msg=result['message']
+                if result['approval_decision']=='Approve':
+                    msg='1 pengajuan berhasil disetujui dalam satu Batch Approval.'
+                results.append({'request_id':rid,'status':'processed','message':msg})
+            except (ApprovalEngineError,ValueError,psycopg2.Error) as exc:
+                if per_conn: per_conn.rollback()
+                if isinstance(exc,psycopg2.Error):
+                    app.logger.exception('Excel confirm gagal untuk REQ-%s',rid)
+                    msg='Terjadi kesalahan database saat konfirmasi.'
+                else: msg=str(exc)
+                results.append({'request_id':rid,'status':'invalid','message':msg})
+            finally:
+                if per_conn: per_conn.close()
+        conn=get_db_connection()
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Prevent replay of the same import result.
+                cur.execute('''SELECT import_status FROM public.approval_import_batches
+                    WHERE approval_import_id=%s AND batch_id=%s FOR UPDATE''',(import_id,batch_id))
+                current=cur.fetchone()
+                if not current or current['import_status'] not in ('previewed','partially_processed'):
+                    raise ApprovalEngineError('Preview sudah diproses oleh proses lain.')
+                for result in results:
+                    cur.execute('''UPDATE public.approval_import_rows
+                        SET validation_status=%s,validation_message=%s
+                        WHERE approval_import_id=%s AND request_id=%s''',
+                        ('processed' if result['status']=='processed' else 'invalid',
+                         result['message'],import_id,result['request_id']))
+                processed=sum(x['status']=='processed' for x in results)
+                failed=len(results)-processed
+                state='completed' if failed==0 else ('partially_processed' if processed else 'failed')
+                cur.execute('''UPDATE public.approval_import_batches
+                    SET import_status=%s,confirmed_at=NOW(),
+                    completed_at=CASE WHEN %s IN ('completed','partially_processed')
+                      THEN NOW() ELSE completed_at END
+                    WHERE approval_import_id=%s''',(state,state,import_id))
+        return jsonify({'success':processed>0,'processed':processed,'failed':failed,'results':results})
+    except (ApprovalEngineError,ValueError) as exc:
+        if conn: conn.rollback()
+        return jsonify({'error':str(exc)}),409
+    except psycopg2.Error:
+        if conn: conn.rollback()
+        app.logger.exception('Konfirmasi Excel gagal')
+        return jsonify({'error':'Pemrosesan gagal. Periksa log aplikasi.'}),500
+    finally:
+        if conn: conn.close()
+
+
+
+
+def _budget_export_file(user_mode=False, request_id=None, batch_id=None):
     """
     Export template budget untuk sisi Approval.
     Kedua sheet selalu mengikuti filter request yang sama:
@@ -4795,6 +5319,9 @@ def _budget_export_file(user_mode=False, request_id=None):
             if request_id is not None:
                 where.append("br.request_id = %s")
                 params.append(request_id)
+            if batch_id is not None:
+                where.append("br.batch_id = %s")
+                params.append(batch_id)
 
             where_sql = (" WHERE " + " AND ".join(where)) if where else ""
 
@@ -4913,20 +5440,76 @@ def _budget_export_file(user_mode=False, request_id=None):
                 """, (request_ids,))
                 decisions = cursor.fetchall()
 
+            # Kandidat donor aktual berdasarkan prioritas scope pada PDF.
+            # Hanya menampilkan kode bisnis, bukan budget_id internal.
+            donor_options = []
+            for r in requests_data:
+                if str(r["request_status"] or "").lower() != "pending":
+                    continue
+                cursor.execute("""
+                    SELECT d.budget_scope, ue.unit_entity, b.biro_code, b.biro_name,
+                           fc.funds_center_code, ci.commitment_item_code,
+                           d.available_amount, source_fund_ref.fund_code AS fund_reference
+                    FROM public.budget_request br
+                    JOIN public.budget_master target ON target.budget_id = br.budget_id
+                    JOIN public.budget_master d
+                      ON d.budget_year = target.budget_year
+                     AND d.budget_scope = target.budget_scope
+                     AND d.commitment_item_id = target.commitment_item_id
+                     AND d.budget_id <> target.budget_id
+                     AND (d.entity_id IS DISTINCT FROM target.entity_id
+                          OR d.biro_id IS DISTINCT FROM target.biro_id)
+                     AND (target.budget_scope <> 'FC_CI'
+                          OR d.funds_center_id = target.funds_center_id)
+                     JOIN public.unit_entity ue ON ue.entity_id = d.entity_id
+                    JOIN public.biro b ON b.biro_id = d.biro_id AND b.entity_id = d.entity_id
+                    JOIN public.commitment_item ci ON ci.commitment_item_id = d.commitment_item_id
+                    LEFT JOIN public.funds_center fc ON fc.funds_center_id = d.funds_center_id
+                    LEFT JOIN LATERAL (
+                        SELECT f.fund_code FROM public.budget_request older
+                        JOIN public.fund f ON f.fund_id = older.mapped_fund_id
+                        WHERE older.budget_id = d.budget_id
+                        ORDER BY older.request_date DESC, older.request_id DESC LIMIT 1
+                    ) source_fund_ref ON TRUE
+                    WHERE br.request_id = %s AND d.available_amount > 0
+                    ORDER BY d.available_amount DESC, ue.unit_entity, b.biro_code
+                """, (r["request_id"],))
+                for row in cursor.fetchall():
+                    donor_options.append((r["request_id"], row))
+
         wb = Workbook()
         ws_a = wb.active
-        ws_a.title = "APPROVEL"
+        ws_a.title = "APPROVAL"
         ws_u = wb.create_sheet("USER")
+        ws_map = wb.create_sheet("REQUEST_MAP")
+        ws_donor = wb.create_sheet("DONOR_OPTIONS")
+        ws_donor.append(["REQUEST ID", "BUDGET SCOPE", "SOURCE ENTITY", "SOURCE BIRO", "BIRO CODE", "FUNDS CENTER", "COMMITMENT ITEM", "AVAILABLE", "FUND REFERENSI"])
+        for rid, candidate in donor_options:
+            ws_donor.append([rid, candidate["budget_scope"], candidate["unit_entity"],
+                             candidate["biro_name"], candidate["biro_code"],
+                             candidate["funds_center_code"], candidate["commitment_item_code"],
+                             float(candidate["available_amount"] or 0), candidate["fund_reference"]])
+        ws_donor.freeze_panes = "A2"
+        ws_donor.auto_filter.ref = f"A1:I{ws_donor.max_row}"
+        for idx, width in enumerate([16, 18, 28, 36, 18, 22, 24, 20, 20], 1):
+            ws_donor.column_dimensions[get_column_letter(idx)].width = width
+        for cell in ws_donor[1]:
+            cell.font = Font(color="FFFFFF", bold=True)
+            cell.fill = PatternFill("solid", fgColor="ED1C24")
+        for rno in range(2, ws_donor.max_row + 1):
+            ws_donor.cell(rno, 1).number_format = "0"
+            ws_donor.cell(rno, 8).number_format = '#,##0.00'
+
 
         # Header dan urutan kolom dipertahankan sesuai template 10 November.
         ws_a.append(["BUDGET"])
         ws_a.append([
             "DATE", "INSTRUCTION", "FUND", "FUNDS CENTER",
-            "COMMITMENT ITEM", None, "AMOUNT"
+            "COMMITMENT ITEM", "SOURCE ENTITY", "AMOUNT", "SOURCE BIRO"
         ])
         ws_a.append([
             "(TANGGAL)", "(+/-) OPSIONAL", "(LINK COSTCENTER)",
-            "(LINK COSTCENTER)", "(LINK G/L)", None, "(NOMINAL)"
+            "(LINK COSTCENTER)", "(LINK G/L)", "(ENTITY DONOR UNTUK -)", "(NOMINAL)", "(BIRO DONOR UNTUK -)"
         ])
 
         ws_u.append([None, "DATABASE"])
@@ -4959,8 +5542,12 @@ def _budget_export_file(user_mode=False, request_id=None):
         for d in decisions:
             decisions_by_request.setdefault(d["request_id"], []).append(d)
 
-        # APPROVEL: setiap pengajuan mendapat baris sesuai keadaan pengajuannya.
+        # REQUEST_MAP menghubungkan setiap Request ID dengan baris APPROVAL.
+        ws_map.append(["REQUEST ID", "BATCH ID", "STATUS", "APPROVAL ROW START", "APPROVAL ROW END"])
+
+        # APPROVAL: setiap pengajuan mendapat baris sesuai keadaan pengajuannya.
         for r in requests_data:
+            approval_row_start = ws_a.max_row + 1
             rid = r["request_id"]
             request_allocations = allocations_by_request.get(rid, [])
             request_decisions = decisions_by_request.get(rid, [])
@@ -4968,21 +5555,52 @@ def _budget_export_file(user_mode=False, request_id=None):
             request_date = r["transaction_date"] or r["request_date"]
 
             if request_allocations:
-                # Pengajuan realokasi: tulis pasangan minus sumber dan plus target.
-                for a in request_allocations:
-                    dt = a["allocation_date"] or request_date
-                    amount = float(a["amount"] or 0)
+                # Ini ekspor referensi historis, BUKAN template untuk re-upload.
+                # Open Budget berasal dari Approval Hold target, BUKAN donor (-).
+                # Reallocation menghasilkan baris (-) donor dan (+) target.
+                opened_lines = [a for a in request_allocations
+                                if a["allocation_type"] == "Open Budget"]
+                donor_lines = [a for a in request_allocations
+                               if a["allocation_type"] in (
+                                   "Reallocation FC_CI", "Reallocation CI_Only")]
+                for a in opened_lines:
+                    row_idx = ws_a.max_row + 1
                     ws_a.append([
-                        dt, "-", a["source_fund"], a["source_fc"],
-                        a["source_ci"], None, amount
+                        a["allocation_date"] or request_date, "+",
+                        a["target_fund"] or r["fund_code"],
+                        a["target_fc"] or r["funds_center_code"],
+                        a["target_ci"] or r["commitment_item_code"],
+                        None, float(a["amount"] or 0)
                     ])
+                    ws_a.cell(row_idx, 7).comment = Comment(
+                        "Open Budget dari Approval Hold; bukan total Approved Amount.",
+                        "SILOG Budget Monitoring"
+                    )
+                if donor_lines:
+                    total_reallocation = sum(
+                        (Decimal(str(a["amount"] or 0)) for a in donor_lines),
+                        Decimal("0")
+                    )
+                    for a in donor_lines:
+                        ws_a.append([
+                            a["allocation_date"] or request_date, "-",
+                            a["source_fund"], a["source_fc"],
+                            a["source_ci"], None, float(a["amount"] or 0)
+                        ])
+                    first = donor_lines[0]
                     ws_a.append([
-                        dt, "+", a["target_fund"], a["target_fc"],
-                        a["target_ci"], None, amount
+                        first["allocation_date"] or request_date, "+",
+                        first["target_fund"] or r["fund_code"],
+                        first["target_fc"] or r["funds_center_code"],
+                        first["target_ci"] or r["commitment_item_code"],
+                        None, float(total_reallocation)
                     ])
+                ws_map.append([rid, batch_id if batch_id is not None else None,
+                               r["request_status"], approval_row_start, ws_a.max_row])
                 continue
 
-            # Jika sudah ada keputusan, gunakan nilai keputusan aktual.
+            # Tanpa alokasi, nilai Approved Amount bisnis = total pengajuan.
+            # Jangan gunakan approved_amount mentah pada histori lama.
             if request_decisions:
                 for d in request_decisions:
                     decision = str(d["decision"] or "").strip().lower()
@@ -4997,8 +5615,9 @@ def _budget_export_file(user_mode=False, request_id=None):
                             d["funds_center_code"] or r["funds_center_code"],
                             d["commitment_item_code"] or r["commitment_item_code"],
                             None,
-                            float(d["approved_amount"] or 0)
+                            float(r["request_amount"] or 0)
                         ])
+                ws_map.append([rid, batch_id if batch_id is not None else None, r["request_status"], approval_row_start, ws_a.max_row])
                 continue
 
             # Pending: tampilkan rancangan penambahan (+), bukan transaksi aktual.
@@ -5024,6 +5643,43 @@ def _budget_export_file(user_mode=False, request_id=None):
                     "bukan nominal yang sudah disetujui.",
                     "SILOG Budget Monitoring"
                 )
+            ws_map.append([rid, batch_id if batch_id is not None else None, r["request_status"], approval_row_start, ws_a.max_row])
+
+        # Request ID must remain numeric; never inherit date formatting.
+        for map_row in range(2, ws_map.max_row + 1):
+            ws_map.cell(row=map_row, column=1).number_format = "0"
+            ws_map.cell(row=map_row, column=2).number_format = "0"
+            ws_map.cell(row=map_row, column=4).number_format = "0"
+            ws_map.cell(row=map_row, column=5).number_format = "0"
+
+        # Petunjuk menjelaskan format input dan relasi antar-sheet.
+        ws_help = wb.create_sheet("PETUNJUK")
+        instructions = [
+            ["PETUNJUK PENGGUNAAN TEMPLATE APPROVAL SILOG"],
+            ["1. APPROVAL", "Isi/ubah instruksi dengan tanda + untuk penambahan atau - untuk pengurangan anggaran. Satu baris mewakili satu instruksi budget."],
+            ["2. Kolom DATE", "Gunakan tanggal transaksi dengan format tanggal Excel."],
+            ["3. Kolom FUND / FUNDS CENTER / COMMITMENT ITEM", "Gunakan kode yang sesuai master data SILOG."],
+            ["3a. Sumber realokasi", "Untuk instruksi (-), isi SOURCE ENTITY (kolom F) dan NAMA SOURCE BIRO (kolom H) dari sheet DONOR_OPTIONS. FUND donor boleh kosong bila referensinya tidak tersedia; untuk (+), FUND hasil mapping pengajuan wajib terisi."],
+            ["3b. DONOR_OPTIONS", "Berisi donor sesuai Scope, CI, serta FC jika FC_CI. Salin SOURCE ENTITY + nama SOURCE BIRO. FUND REFERENSI hanya informasi historis, bukan kunci donor. Saldo diperiksa ulang saat konfirmasi."],
+            ["4. Kolom AMOUNT", "Isi nominal positif. Arah transaksi ditentukan oleh INSTRUCTION (+/-)."],
+            ["5. USER", "Berisi data asal pengajuan dari Pengusul sebagai referensi. Jangan mengubah data sumber."],
+            ["6. REQUEST_MAP", "Menghubungkan Request ID dengan rentang baris terkait pada sheet APPROVAL. Gunakan untuk mengetahui pengajuan mana yang dirujuk."],
+            ["7. Catatan", "Template ini merupakan lembar kerja referensi untuk satu batch. Upload/konfirmasi keputusan tetap mengikuti validasi SILOG."],
+            ["8. Histori Alokasi", "Baris + Open Budget menunjukkan pembukaan Hold; baris -/+ Reallocation menunjukkan perpindahan dana. Total Approved Amount adalah Request Amount di sheet USER, bukan penjumlahan seluruh baris +."],
+        ]
+        for row in instructions:
+            ws_help.append(row)
+        ws_help.column_dimensions["A"].width = 34
+        ws_help.column_dimensions["B"].width = 110
+        ws_help.freeze_panes = "A2"
+        ws_help["A1"].font = Font(bold=True, color="FFFFFF", size=14)
+        ws_help["A1"].fill = PatternFill("solid", fgColor="ED1C24")
+        ws_help.merge_cells("A1:B1")
+        for row in ws_help.iter_rows(min_row=2):
+            row[0].font = Font(bold=True, color="30394B")
+            row[0].alignment = Alignment(vertical="top", wrap_text=True)
+            row[1].alignment = Alignment(vertical="top", wrap_text=True)
+            ws_help.row_dimensions[row[0].row].height = 34
 
         # Format visual mengikuti template dan tidak menambah kolom baru.
         header_fill = PatternFill("solid", fgColor="ED1C24")
@@ -5031,8 +5687,9 @@ def _budget_export_file(user_mode=False, request_id=None):
         thin = Side(style="thin", color="D9DEE7")
 
         for ws, header_row, widths in [
-            (ws_a, 2, [16, 16, 20, 22, 24, 3, 20]),
-            (ws_u, 2, [16, 22, 20, 22, 20, 20, 48])
+            (ws_a, 2, [16, 16, 20, 22, 24, 28, 20, 18]),
+            (ws_u, 2, [16, 22, 20, 22, 20, 20, 48]),
+            (ws_map, 1, [18, 14, 18, 22, 22])
         ]:
             ws.freeze_panes = f"A{header_row + 1}"
             ws.auto_filter.ref = (
@@ -5049,10 +5706,10 @@ def _budget_export_file(user_mode=False, request_id=None):
             for row in ws.iter_rows(min_row=header_row + 1):
                 for cell in row:
                     cell.border = Border(bottom=thin)
-                    if cell.column == 1:
+                    if cell.column == 1 and ws.title != "REQUEST_MAP":
                         cell.number_format = "dd/mm/yyyy"
                     if (
-                        (ws.title == "APPROVEL" and cell.column == 7)
+                        (ws.title == "APPROVAL" and cell.column == 7)
                         or (ws.title == "USER" and cell.column == 6)
                     ):
                         cell.number_format = '#,##0.00'
@@ -5062,7 +5719,8 @@ def _budget_export_file(user_mode=False, request_id=None):
         wb.save(output)
         output.seek(0)
 
-        suffix = f"_REQ_{request_id}" if request_id is not None else "_SEMUA"
+        suffix = (f"_REQ_{request_id}" if request_id is not None else
+                  f"_BATCH_{batch_id}" if batch_id is not None else "_SEMUA")
         role_name = "pengusul" if user_mode else "approval"
         return send_file(
             output,
@@ -5077,6 +5735,602 @@ def _budget_export_file(user_mode=False, request_id=None):
         if conn is not None:
             conn.close()
 
+
+
+# ============================================================
+# EXPORT RIWAYAT APPROVAL - LAPORAN AUDIT (READ ONLY)
+# Mengikuti filter Riwayat Approval tanpa pembatasan pagination.
+# Tidak mengubah transaksi, status, atau budget_master.
+# ============================================================
+@app.route("/approval/export-history.xlsx", methods=["GET"])
+def export_approval_history_audit():
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    kind = request.args.get("kind", "ALL").strip().upper()
+    status = request.args.get("status", "ALL").strip()
+    keyword = request.args.get("q", "").strip()
+    if kind not in {"ALL", "SATUAN", "BATCH"}:
+        return jsonify({"error": "Jenis pengajuan tidak valid."}), 400
+    if status not in {"ALL", "Approved", "Rejected"}:
+        return jsonify({"error": "Status pengajuan tidak valid."}), 400
+    if len(keyword) > 150:
+        return jsonify({"error": "Pencarian terlalu panjang."}), 400
+
+    where = ["br.request_status IN ('Approved','Rejected')"]
+    params = []
+    if kind == "SATUAN":
+        where.append("br.batch_id IS NULL")
+    elif kind == "BATCH":
+        where.append("br.batch_id IS NOT NULL")
+    if status != "ALL":
+        where.append("br.request_status = %s")
+        params.append(status)
+    if keyword:
+        where.append("""(
+            CAST(br.request_id AS TEXT) ILIKE %s
+            OR COALESCE(br.pic,'') ILIKE %s
+            OR COALESCE(br.request_description,'') ILIKE %s
+            OR COALESCE(u.username,'') ILIKE %s
+            OR COALESCE(bb.batch_code,'') ILIKE %s
+        )""")
+        params.extend([f"%{keyword}%"] * 5)
+    where_sql = " AND ".join(where)
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Query sama dengan API /api/approval/history untuk memastikan
+            # filter dan urutan ekspor cocok dengan tabel pada website.
+            cur.execute(f"""
+                SELECT br.request_id, br.batch_id, bb.batch_code,
+                       bb.uploaded_filename, br.request_date, br.pic,
+                       br.request_amount, br.request_description,
+                       br.request_status, br.budget_status,
+                       br.budget_id, br.budget_scope,
+                       u.username AS requester_username,
+                       ue.unit_entity,
+                       COALESCE(b.biro_name, budget_biro.biro_name) AS biro_name,
+                       ci.commitment_item_code, ci.commitment_item_name,
+                       latest_decision.decision AS approval_decision,
+                       latest_decision.decision_date,
+                       latest_decision.instruction AS approval_instruction,
+                       latest_decision.approved_amount,
+                       approver.username AS approval_username
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.budget_request_batch bb ON bb.batch_id = br.batch_id
+                LEFT JOIN public.unit_entity ue ON ue.entity_id = br.entity_id
+                LEFT JOIN public.biro b ON b.biro_id = u.biro_id AND b.entity_id = br.entity_id
+                LEFT JOIN public.budget_master audit_bm ON audit_bm.budget_id = br.budget_id
+                LEFT JOIN public.biro budget_biro ON budget_biro.biro_id = audit_bm.biro_id
+                    AND budget_biro.entity_id = audit_bm.entity_id
+                LEFT JOIN public.commitment_item ci ON ci.commitment_item_id = br.mapped_commitment_item_id
+                LEFT JOIN LATERAL (
+                    SELECT ad.decision, ad.decision_date, ad.instruction,
+                           ad.approved_amount, ad.approval_user_id
+                    FROM public.approval_decision ad
+                    WHERE ad.request_id = br.request_id
+                    ORDER BY ad.decision_date DESC, ad.approval_id DESC
+                    LIMIT 1
+                ) latest_decision ON TRUE
+                LEFT JOIN public.users approver ON approver.user_id = latest_decision.approval_user_id
+                WHERE {where_sql}
+                ORDER BY COALESCE(latest_decision.decision_date, br.request_date) DESC,
+                         br.request_id DESC
+            """, params)
+            rows = cur.fetchall()
+            ids = [int(row["request_id"]) for row in rows]
+            allocations = []
+            mutations = []
+            if ids:
+                cur.execute("""
+                    SELECT ba.allocation_id, ba.request_id, ba.allocation_type,
+                           ba.source_budget_id, ba.target_budget_id,
+                           ba.amount, ba.instruction, maker.username AS approved_by,
+                           src_ue.unit_entity AS source_entity, src_b.biro_name AS source_biro,
+                           dst_ue.unit_entity AS target_entity, dst_b.biro_name AS target_biro
+                    FROM public.budget_allocation ba
+                    LEFT JOIN public.users maker ON maker.user_id = ba.approved_by
+                    LEFT JOIN public.budget_master src ON src.budget_id = ba.source_budget_id
+                    LEFT JOIN public.unit_entity src_ue ON src_ue.entity_id = src.entity_id
+                    LEFT JOIN public.biro src_b ON src_b.biro_id = src.biro_id AND src_b.entity_id = src.entity_id
+                    LEFT JOIN public.budget_master dst ON dst.budget_id = ba.target_budget_id
+                    LEFT JOIN public.unit_entity dst_ue ON dst_ue.entity_id = dst.entity_id
+                    LEFT JOIN public.biro dst_b ON dst_b.biro_id = dst.biro_id AND dst_b.entity_id = dst.entity_id
+                    WHERE ba.request_id = ANY(%s)
+                    ORDER BY ba.request_id, ba.allocation_id
+                """, (ids,))
+                allocations = cur.fetchall()
+                cur.execute("""
+                    SELECT bh.history_id, bh.request_id, bh.transaction_date,
+                           bh.budget_id, bh.action, bh.field_name,
+                           bh.previous_value, bh.updated_value, bh.amount,
+                           actor.username AS created_by
+                    FROM public.budget_history bh
+                    LEFT JOIN public.users actor ON actor.user_id = bh.created_by
+                    WHERE bh.request_id = ANY(%s)
+                    ORDER BY bh.transaction_date, bh.history_id
+                """, (ids,))
+                mutations = cur.fetchall()
+
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        from zoneinfo import ZoneInfo
+        from datetime import timezone
+
+        jakarta = ZoneInfo("Asia/Jakarta")
+        def local_dt(value):
+            if value is None:
+                return None
+            if isinstance(value, datetime):
+                if value.tzinfo is None:
+                    value = value.replace(tzinfo=timezone.utc)
+                return value.astimezone(jakarta).replace(tzinfo=None)
+            return value
+
+        # Supaya nilai yang diawali = + - @ tidak ditafsir Excel sebagai formula.
+        def safe_cell(value):
+            if value is None:
+                return None
+            if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+                return "'" + value
+            return value
+
+        wb = Workbook()
+        ws_history = wb.active
+        ws_history.title = "Riwayat Approval"
+        ws_allocation = wb.create_sheet("Detail Alokasi")
+        ws_mutation = wb.create_sheet("Mutasi Budget")
+
+        def render_sheet(ws, title, headers, records, widths, money_cols=(), date_cols=()):
+            ncol = len(headers)
+            ws.sheet_view.showGridLines = False
+            ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=ncol)
+            c = ws.cell(1, 1, title)
+            c.font = Font(name="Aptos", size=15, bold=True, color="FFFFFF")
+            c.fill = PatternFill("solid", fgColor="B51228")
+            c.alignment = Alignment(vertical="center")
+            ws.row_dimensions[1].height = 33
+            ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=ncol)
+            ws.cell(2, 1, f"Jenis: {kind} | Status: {status} | Pencarian: {keyword or 'Semua'} | Ekspor: {datetime.now(jakarta):%d/%m/%Y %H:%M} WIB")
+            ws.cell(2, 1).font = Font(size=10, italic=True, color="566273")
+            ws.row_dimensions[2].height = 26
+            for j, name in enumerate(headers, 1):
+                cell = ws.cell(4, j, name)
+                cell.fill = PatternFill("solid", fgColor="263345")
+                cell.font = Font(color="FFFFFF", bold=True, size=10)
+                cell.alignment = Alignment(vertical="center", wrap_text=True)
+            ws.row_dimensions[4].height = 30
+            for i, record in enumerate(records, 5):
+                for j, value in enumerate(record, 1):
+                    cell = ws.cell(i, j, safe_cell(value))
+                    cell.font = Font(name="Aptos", size=10, color="243043")
+                    cell.alignment = Alignment(vertical="center", wrap_text=False)
+                    if i % 2 == 0:
+                        cell.fill = PatternFill("solid", fgColor="F2F5F8")
+                    if j in money_cols and value is not None:
+                        cell.number_format = '"Rp" #,##0.00;[Red]("Rp" #,##0.00)'
+                    if j in date_cols and value is not None:
+                        cell.number_format = "dd/mm/yyyy hh:mm"
+            for j, width in enumerate(widths, 1):
+                ws.column_dimensions[get_column_letter(j)].width = width
+            ws.freeze_panes = "A5"
+            last_row = max(5, 4 + len(records))
+            ws.auto_filter.ref = f"A4:{get_column_letter(ncol)}{last_row}"
+            ws.sheet_properties.pageSetUpPr.fitToPage = True
+            ws.print_options.horizontalCentered = True
+            ws.sheet_properties.outlinePr.summaryBelow = True
+            ws.sheet_view.zoomScale = 90
+
+        render_sheet(ws_history, "LAPORAN RIWAYAT APPROVAL — SILOG", [
+            "Request ID", "Tanggal Pengajuan (WIB)", "Tanggal Keputusan (WIB)",
+            "Jenis Pengajuan", "Kode Batch", "Nama File Excel", "Pengusul", "PIC",
+            "Unit Entity", "Biro", "Commitment Item", "Nama Commitment Item",
+            "Budget ID", "Budget Scope", "Nominal Pengajuan (Rp)",
+            "Nominal Disetujui (Rp)", "Keputusan", "Status", "Approver", "Instruksi / Catatan"
+        ], [(
+            f"REQ-{r['request_id']}", local_dt(r['request_date']), local_dt(r['decision_date']),
+            "Excel" if r['batch_id'] is not None else "Satuan", r['batch_code'], r['uploaded_filename'],
+            r['requester_username'], r['pic'], r['unit_entity'], r['biro_name'],
+            r['commitment_item_code'], r['commitment_item_name'], r['budget_id'], r['budget_scope'],
+            r['request_amount'], (r['request_amount'] if r['request_status'] == 'Approved' else Decimal('0')), r['approval_decision'],
+            r['request_status'], r['approval_username'], r['approval_instruction']
+        ) for r in rows], [16,23,24,17,27,30,20,22,25,23,20,31,14,15,23,23,26,15,20,44],
+        money_cols=(15,16), date_cols=(2,3))
+
+        render_sheet(ws_allocation, "DETAIL ALOKASI — SILOG", [
+            "Request ID", "Allocation ID", "Jenis Alokasi", "Budget Donor ID", "Entity Donor",
+            "Biro Donor", "Budget Tujuan ID", "Entity Tujuan", "Biro Tujuan",
+            "Nominal (Rp)", "Disetujui Oleh", "Catatan Alokasi"
+        ], [(
+            f"REQ-{r['request_id']}", r['allocation_id'], r['allocation_type'],
+            r['source_budget_id'], r['source_entity'], r['source_biro'],
+            r['target_budget_id'], r['target_entity'], r['target_biro'],
+            r['amount'], r['approved_by'], r['instruction']
+        ) for r in allocations], [16,17,25,20,27,24,21,27,24,23,21,45], money_cols=(10,))
+
+        render_sheet(ws_mutation, "MUTASI BUDGET — SILOG", [
+            "Request ID", "History ID", "Tanggal Mutasi (WIB)", "Budget ID", "Action",
+            "Field", "Nilai Sebelum (Rp)", "Nilai Sesudah (Rp)",
+            "Nominal Mutasi (Rp)", "Diproses Oleh"
+        ], [(
+            f"REQ-{r['request_id']}", r['history_id'], local_dt(r['transaction_date']),
+            r['budget_id'], r['action'], r['field_name'], r['previous_value'],
+            r['updated_value'], r['amount'], r['created_by']
+        ) for r in mutations], [16,16,24,17,23,25,23,23,24,23],
+        money_cols=(7,8,9), date_cols=(3,))
+
+        # Ringkasan finansial per Request ID tanpa penggandaan field history.
+        # Perubahan dihitung hanya dari field yang menjadi tolok ukur nominal:
+        # consumable_budget untuk Open; current_budget untuk Reallocation In;
+        # consumed_budget untuk Consume. Donor dicatat terpisah dari target.
+        ws_summary = wb.create_sheet("Ringkasan Finansial", 1)
+        by_request = {}
+        for entry in mutations:
+            rid = int(entry['request_id'])
+            item = by_request.setdefault(rid, {
+                'opened': Decimal('0'), 'reallocation_in': Decimal('0'),
+                'reallocation_out': Decimal('0'), 'consumed': Decimal('0')
+            })
+            delta = Decimal(str(entry['updated_value'] or 0)) - Decimal(str(entry['previous_value'] or 0))
+            if entry['action'] == 'Open Budget' and entry['field_name'] == 'consumable_budget':
+                item['opened'] += delta
+            elif entry['action'] == 'Reallocation In' and entry['field_name'] == 'current_budget':
+                item['reallocation_in'] += delta
+            elif entry['action'] == 'Reallocation Out' and entry['field_name'] == 'current_budget':
+                item['reallocation_out'] -= delta
+            elif entry['action'] == 'Consume Budget' and entry['field_name'] == 'consumed_budget':
+                item['consumed'] += delta
+        summary_rows = []
+        for r in rows:
+            rid = int(r['request_id'])
+            item = by_request.get(rid, {})
+            opened = item.get('opened', Decimal('0'))
+            incoming = item.get('reallocation_in', Decimal('0'))
+            outgoing = item.get('reallocation_out', Decimal('0'))
+            consumed = item.get('consumed', Decimal('0'))
+            approved = Decimal(str(r['request_amount'])) if r['request_status'] == 'Approved' else Decimal('0')
+            summary_rows.append((
+                f"REQ-{rid}", local_dt(r['decision_date']), r['budget_scope'],
+                r['unit_entity'], r['biro_name'], r['budget_id'],
+                r['request_amount'], approved, r['approval_decision'],
+                opened, incoming, outgoing, consumed,
+                'OK' if r['request_status'] == 'Approved'
+                    and consumed == approved and incoming == outgoing else
+                ('DITOLAK' if r['request_status'] == 'Rejected' else 'PERIKSA'),
+                'Perhitungan dari histori field spesifik; bukan penjumlahan semua mutasi'
+            ))
+        render_sheet(ws_summary, "RINGKASAN FINANSIAL PER REQUEST — SILOG", [
+            "Request ID", "Tanggal Keputusan (WIB)", "Budget Scope",
+            "Unit Entity", "Biro", "Budget ID", "Nominal Pengajuan (Rp)",
+            "Nominal Disetujui (Rp)", "Keputusan", "Open Budget (Rp)",
+            "Reallocation In (Rp)", "Reallocation Out (Rp)",
+            "Consume Budget (Rp)", "Rekonsiliasi", "Catatan Metode"
+        ], summary_rows, [16,24,15,25,33,14,23,23,28,21,23,23,23,17,67],
+            money_cols=(7,8,10,11,12,13), date_cols=(2,))
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return send_file(output, as_attachment=True,
+                         download_name=f"SILOG_Riwayat_Approval_{datetime.now(jakarta):%Y%m%d_%H%M}.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except psycopg2.Error:
+        app.logger.exception("Gagal mengekspor audit riwayat Approval")
+        return jsonify({"error": "Laporan Riwayat Approval gagal dibuat."}), 500
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+
+
+# ============================================================
+# EXPORT RIWAYAT APPROVAL - FORMAT APPROVAL / USER (READ ONLY)
+# Dua sheet sesuai format operasional, terpisah dari laporan audit.
+# Tidak digunakan sebagai template upload approval: tidak memuat
+# REQUEST_MAP atau metadata validasi untuk memproses keputusan.
+# ============================================================
+@app.route("/approval/export-history-format.xlsx", methods=["GET"])
+def export_approval_history_format():
+    """Read-only export of stored input, never synthetic approval instructions.
+
+    APPROVAL reflects rows from *processed* Excel approval imports only.
+    A row which is missing in the archive is shown as unavailable, NOT
+    reconstructed from the request amount or from allocation records.
+    """
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+
+    kind = request.args.get("kind", "ALL").strip().upper()
+    status = request.args.get("status", "ALL").strip()
+    keyword = request.args.get("q", "").strip()
+    if kind not in {"ALL", "SATUAN", "BATCH"}:
+        return jsonify({"error": "Jenis pengajuan tidak valid."}), 400
+    if status not in {"ALL", "Approved", "Rejected"}:
+        return jsonify({"error": "Status pengajuan tidak valid."}), 400
+    if len(keyword) > 150:
+        return jsonify({"error": "Pencarian terlalu panjang."}), 400
+
+    where = ["br.request_status IN ('Approved','Rejected')"]
+    params = []
+    if kind == "SATUAN":
+        where.append("br.batch_id IS NULL")
+    elif kind == "BATCH":
+        where.append("br.batch_id IS NOT NULL")
+    if status != "ALL":
+        where.append("br.request_status = %s")
+        params.append(status)
+    if keyword:
+        where.append("""(
+            CAST(br.request_id AS TEXT) ILIKE %s
+            OR COALESCE(br.pic,'') ILIKE %s
+            OR COALESCE(br.request_description,'') ILIKE %s
+            OR COALESCE(u.username,'') ILIKE %s
+            OR COALESCE(bb.batch_code,'') ILIKE %s
+        )""")
+        params.extend([f"%{keyword}%"] * 5)
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(f"""
+                SELECT br.request_id, br.transaction_date, br.request_date,
+                       br.pic, br.input_profit_center, br.input_gl_account,
+                       br.input_cost_center, br.request_amount, br.request_description,
+                       br.request_status, br.batch_id,
+                       latest_decision.decision_date
+                FROM public.budget_request br
+                JOIN public.users u ON u.user_id = br.user_id
+                LEFT JOIN public.budget_request_batch bb ON bb.batch_id = br.batch_id
+                LEFT JOIN LATERAL (
+                    SELECT ad.decision_date
+                    FROM public.approval_decision ad
+                    WHERE ad.request_id = br.request_id
+                    ORDER BY ad.decision_date DESC, ad.approval_id DESC LIMIT 1
+                ) latest_decision ON TRUE
+                WHERE {' AND '.join(where)}
+                ORDER BY COALESCE(latest_decision.decision_date, br.request_date) DESC,
+                         br.request_id DESC
+            """, params)
+            records = cur.fetchall()
+            request_ids = [int(rec['request_id']) for rec in records]
+            input_rows = {}
+            if request_ids:
+                # A completed import can hold several instructions per request.
+                # Pick the most recent processed import, never a new preview.
+                cur.execute("""
+                    SELECT air.request_id, air.excel_row_number,
+                           air.instruction, air.fund_code,
+                           air.funds_center_code, air.commitment_item_code,
+                           air.amount, air.source_budget_id,
+                           aib.uploaded_filename, aib.approval_import_id,
+                           aib.confirmed_at,
+                           donor_ue.unit_entity AS resolved_source_entity,
+                           donor_b.biro_name AS resolved_source_biro
+                    FROM public.approval_import_rows air
+                    JOIN public.approval_import_batches aib
+                      ON aib.approval_import_id = air.approval_import_id
+                    LEFT JOIN public.budget_master donor_bm
+                      ON donor_bm.budget_id = air.source_budget_id
+                    LEFT JOIN public.unit_entity donor_ue
+                      ON donor_ue.entity_id = donor_bm.entity_id
+                    LEFT JOIN public.biro donor_b
+                      ON donor_b.biro_id = donor_bm.biro_id
+                     AND donor_b.entity_id = donor_bm.entity_id
+                    WHERE air.request_id = ANY(%s)
+                      AND air.validation_status = 'processed'
+                      AND aib.import_status IN ('completed','partially_processed')
+                    ORDER BY air.request_id, aib.confirmed_at DESC NULLS LAST,
+                             aib.approval_import_id DESC, air.excel_row_number
+                """, (request_ids,))
+                for item in cur.fetchall():
+                    rid = int(item['request_id'])
+                    if rid not in input_rows:
+                        input_rows[rid] = {'import_id': item['approval_import_id'], 'rows': []}
+                    if input_rows[rid]['import_id'] == item['approval_import_id']:
+                        input_rows[rid]['rows'].append(item)
+
+        from datetime import timezone
+        from zoneinfo import ZoneInfo
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        jakarta = ZoneInfo('Asia/Jakarta')
+
+        def local_date(value):
+            if isinstance(value, datetime):
+                if value.tzinfo is None:
+                    value = value.replace(tzinfo=timezone.utc)
+                return value.astimezone(jakarta).date()
+            if isinstance(value, date):
+                return value
+            return None
+
+        def excel_text(value):
+            if value is None:
+                return ''
+            value = str(value)
+            return "'" + value if value.lstrip().startswith(('=', '+', '-', '@')) else value
+
+        wb = Workbook()
+        ws_approval = wb.active
+        ws_approval.title = 'APPROVAL'
+        ws_user = wb.create_sheet('USER')
+        ws_notes = wb.create_sheet('KETERANGAN')
+        # First six fields retain the familiar, input-oriented order.
+        ws_approval.append([
+            'DATE', 'Instruction', 'FUND', 'FUNDS CENTER',
+            'COMMITMENT ITEM', 'AMOUNT', 'REQUEST ID',
+            'SOURCE ENTITY (resolved)', 'SOURCE BIRO (resolved)',
+            'SUMBER / CATATAN'
+        ])
+        ws_approval.append([
+            '(Tanggal keputusan sistem; BUKAN tanggal di Excel)',
+            '(+/- dari impor yang diproses)', '(Kode tersimpan dari impor)',
+            '(Kode tersimpan dari impor)', '(Kode tersimpan dari impor)',
+            '(Nominal instruksi impor; BUKAN request amount)',
+            '(ID pengajuan)', '(Donor dicocokkan dari budget_master)',
+            '(Donor dicocokkan dari budget_master)', '(Lihat sheet KETERANGAN)'
+        ])
+        ws_user.append([
+            'Tanggal', 'PIC', 'CoA / GL', 'Nominal', 'Ket',
+            'Cost Center', 'Profit Center', 'REQUEST ID', 'SUMBER DATA'
+        ])
+        ws_user.append([
+            '(Tanggal transaksi tersimpan; jika kosong: tanggal pengajuan)',
+            '(PIC tersimpan)', '(Input GL tersimpan)',
+            '(Nominal pengajuan, bukan nominal instruksi approval)',
+            '(Keterangan tersimpan)', '(Input Cost Center tersimpan)',
+            '(Input Profit Center tersimpan)', '(ID pengajuan)',
+            '(budget_request; bukan file mentah yang diunggah)'
+        ])
+
+        for rec in records:
+            rid = int(rec['request_id'])
+            date_approval = local_date(rec['decision_date'])
+            date_user = local_date(rec['transaction_date']) or local_date(rec['request_date'])
+            stored = input_rows.get(rid)
+            if stored:
+                for line in stored['rows']:
+                    # '+'/'-' are the *actual* numeric instructions from the
+                    # persisted Excel import. Do not replace with request_amount.
+                    ws_approval.append([
+                        date_approval, str(line['instruction']).strip(),
+                        excel_text(line['fund_code']),
+                        excel_text(line['funds_center_code']),
+                        excel_text(line['commitment_item_code']),
+                        float(line['amount']), f'REQ-{rid}',
+                        excel_text(line['resolved_source_entity']),
+                        excel_text(line['resolved_source_biro']),
+                        f"Impor #{line['approval_import_id']} | "
+                        f"{excel_text(line['uploaded_filename'])} | "
+                        f"baris asli {line['excel_row_number']}; "
+                        'SOURCE diresolusi dari budget donor saat ekspor; bukan teks Excel mentah'
+                        if str(line['instruction']).strip() == '-' else
+                        f"Impor #{line['approval_import_id']} | "
+                        f"{excel_text(line['uploaded_filename'])} | "
+                        f"baris asli {line['excel_row_number']}"
+                    ])
+            else:
+                # Explicit missing evidence is better than a fabricated '+' row.
+                ws_approval.append([
+                    date_approval, 'TIDAK TERSEDIA', '', '', '', None,
+                    f'REQ-{rid}', '', '',
+                    'Instruksi input asli tidak ditemukan pada impor Excel '
+                    'berstatus processed; tidak direkonstruksi dari hasil approval.'
+                ])
+            ws_user.append([
+                date_user, excel_text(rec['pic']),
+                excel_text(rec['input_gl_account']),
+                float(rec['request_amount']) if rec['request_amount'] is not None else None,
+                excel_text(rec['request_description']),
+                excel_text(rec['input_cost_center']),
+                excel_text(rec['input_profit_center']), f'REQ-{rid}',
+                'Data input tersimpan di budget_request; dapat dinormalisasi SILOG, bukan salinan file mentah'
+            ])
+
+        header_fill = PatternFill('solid', fgColor='C8102E')
+        guide_fill = PatternFill('solid', fgColor='FDECEF')
+        thin = Side(style='hair', color='E2E6ED')
+        for ws, widths, money_col in [
+            (ws_approval, [18,21,22,25,24,22,16,28,34,83], 6),
+            (ws_user, [18,23,22,24,53,25,25,16,69], 4)
+        ]:
+            ws.sheet_view.showGridLines = False
+            ws.freeze_panes = 'A3'
+            ws.sheet_view.zoomScale = 85
+            for col, width in enumerate(widths, 1):
+                ws.column_dimensions[get_column_letter(col)].width = width
+            ws.row_dimensions[1].height = 32
+            ws.row_dimensions[2].height = 43
+            for cell in ws[1]:
+                cell.fill = header_fill
+                cell.font = Font(name='Aptos', bold=True, color='FFFFFF', size=10)
+                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            for cell in ws[2]:
+                cell.fill = guide_fill
+                cell.font = Font(name='Aptos', color='8D3440', italic=True, size=9)
+                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            for cells in ws.iter_rows(min_row=3):
+                for cell in cells:
+                    cell.font = Font(name='Aptos', size=10, color='273445')
+                    cell.alignment = Alignment(vertical='center', wrap_text=cell.column in (5,10))
+                    cell.border = Border(bottom=thin)
+                    if cell.row % 2 == 0:
+                        cell.fill = PatternFill('solid', fgColor='F5F7FA')
+                cells[0].number_format = 'dd/mm/yyyy'
+                cells[money_col-1].number_format = '#,##0.00'
+                if ws.title == 'APPROVAL':
+                    cells[1].data_type = 's'
+            if ws.max_row >= 3:
+                ws.auto_filter.ref = f'A1:{get_column_letter(ws.max_column)}{ws.max_row}'
+
+        # A read-only provenance guide: never present reconstructed data as raw Excel input.
+        ws_notes.append(['BAGIAN', 'KOLOM / DATA', 'SUMBER YANG DIGUNAKAN', 'BATASAN / CARA MEMBACA'])
+        for line in [
+            ['APPROVAL', 'DATE', 'approval_decision.decision_date',
+             'Tanggal keputusan sistem (WIB). Tanggal yang diketik di Excel Approval asli tidak tersimpan pada kolom ini.'],
+            ['APPROVAL', 'Instruction, FUND, FUNDS CENTER, COMMITMENT ITEM, AMOUNT',
+             'approval_import_rows pada impor Excel yang sudah diproses',
+             'Nominal AMOUNT adalah instruksi + / - yang disimpan, BUKAN nominal pengajuan atau approved_amount.'],
+            ['APPROVAL', 'REQUEST ID', 'budget_request.request_id',
+             'Penghubung ke pengajuan. Bukan kolom wajib pada template impor yang sama.'],
+            ['APPROVAL', 'SOURCE ENTITY / SOURCE BIRO (resolved)',
+             'budget_master donor yang terhubung melalui source_budget_id',
+             'Identitas donor hasil pencocokan pada saat ekspor. Bukan bukti teks SOURCE yang diketik persis di file Excel asli.'],
+            ['APPROVAL', 'TIDAK TERSEDIA', 'Tidak ada baris impor processed yang bisa ditelusuri',
+             'Bukan instruksi Approval. Tidak boleh diartikan nol, tanda +, atau penolakan.'],
+            ['USER', 'Tanggal', 'budget_request.transaction_date; fallback request_date',
+             'Tanggal transaksi tersimpan; bila tidak ada digunakan tanggal pengajuan. Bukan jaminan format tanggal mentah Excel.'],
+            ['USER', 'PIC, CoA/GL, Nominal, Ket, Cost Center, Profit Center',
+             'Kolom input tersimpan pada budget_request',
+             'Menunjukkan data pengajuan yang disimpan/dinormalisasi sistem, bukan salinan byte-per-byte dari Excel sumber.'],
+            ['KEDUA SHEET', 'Keterkaitan', 'REQUEST ID',
+             'Cocokkan REQ-xx pada kedua sheet untuk membaca input pengusul dan instruksi approval yang terkait.'],
+            ['KEDUA SHEET', 'Batasan penggunaan', 'Arsip baca-saja',
+             'BUKAN template untuk diunggah ulang; tidak memuat REQUEST_MAP dan proses validasi impor.'],
+            ['AUDIT FINANSIAL', 'Hasil transaksi', 'File ekspor Riwayat Approval terpisah',
+             'Gunakan Riwayat Approval untuk keputusan akhir, Open Budget, Reallocation, Consume, serta saldo sebelum/sesudah.'],
+        ]:
+            ws_notes.append(line)
+        ws_notes.sheet_view.showGridLines = False
+        ws_notes.freeze_panes = 'A2'
+        ws_notes.sheet_view.zoomScale = 85
+        for col, width in enumerate([23, 55, 62, 112], 1):
+            ws_notes.column_dimensions[get_column_letter(col)].width = width
+        ws_notes.row_dimensions[1].height = 32
+        for cell in ws_notes[1]:
+            cell.fill = header_fill
+            cell.font = Font(name='Aptos', bold=True, color='FFFFFF', size=10)
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        for cells in ws_notes.iter_rows(min_row=2):
+            ws_notes.row_dimensions[cells[0].row].height = 42
+            for cell in cells:
+                cell.font = Font(name='Aptos', size=10, color='273445')
+                cell.alignment = Alignment(vertical='center', wrap_text=True)
+                cell.border = Border(bottom=thin)
+                if cell.row % 2 == 0:
+                    cell.fill = PatternFill('solid', fgColor='F5F7FA')
+        ws_notes.auto_filter.ref = f'A1:D{ws_notes.max_row}'
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return send_file(
+            output, as_attachment=True,
+            download_name=f'SILOG_Riwayat_Format_Approval_User_{datetime.now(jakarta):%Y%m%d_%H%M}.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except psycopg2.Error:
+        app.logger.exception('Gagal mengekspor format Approval/User')
+        return jsonify({'error': 'Export format Approval/User gagal dibuat.'}), 500
+    finally:
+        if conn is not None:
+            conn.close()
 
 @app.route("/approval/export-budget.xlsx")
 def export_budget_approval_all():
@@ -5093,7 +6347,15 @@ def export_budget_approval_one(request_id):
         return guard
     return _budget_export_file(user_mode=False, request_id=request_id)
 
+
+@app.route("/approval/export-budget/batch/<int:batch_id>.xlsx")
+def export_budget_approval_batch(batch_id):
+    """Unduh workbook Approval untuk seluruh pengajuan dalam satu batch Excel."""
+    guard = approval_api_guard()
+    if guard is not None:
+        return guard
+    return _budget_export_file(user_mode=False, batch_id=batch_id)
+
 # menjalankan aplikasi flask lokal
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
-    
+    app.run(debug=True, port=5001)

@@ -395,11 +395,109 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 @media(max-width:800px){.ma-reallocation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.ma-reallocation-grid{grid-template-columns:1fr}.ma-reallocation-card{padding:11px}}
 
-/* Jumlah data per halaman — mengikuti Budget Detail Approval */
-.ma-page-size-control{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 10px;border:1px solid #dfe5ec;border-radius:8px;background:#fff;color:#687386;font-size:11px;font-weight:650;white-space:nowrap}
-.ma-page-size-control select{height:25px;min-width:48px;padding:0 20px 0 8px;border:1px solid #dfe5ec;border-radius:6px;background:#fff;color:#48546a;font-size:11px;font-weight:600;outline:none;cursor:pointer}
-.ma-page-size-control select:focus{border-color:#cbd4df;box-shadow:0 0 0 2px rgba(104,115,134,.08)}
-@media(max-width:650px){.ma-history-filterbar .ma-page-size-control{grid-column:1/-1;justify-self:start}}
+/* Tab Approval Satuan / Approval Batch */
+.ma-mode-tabs{display:flex;gap:8px;margin:0 0 16px;padding:5px;background:#fff;border:1px solid var(--line);border-radius:12px;width:max-content;max-width:100%}
+.ma-mode-tab{border:0;background:transparent;color:#667085;border-radius:9px;padding:10px 17px;font-size:12px;font-weight:750}
+.ma-mode-tab.active{background:#fff0f1;color:var(--red-dark);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ma-batch-view{display:none}
+.ma-batch-view.active{display:block}
+.ma-batch-back{border:1px solid #dfe4ec;background:#fff;border-radius:8px;padding:8px 12px;color:#475467;font-size:11px;font-weight:700}
+.ma-batch-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.ma-batch-meta-item{background:#fafbfc;border:1px solid #edf0f4;border-radius:9px;padding:11px 12px;min-width:0}
+.ma-batch-meta-item span{display:block;color:#8791a1;font-size:10px;font-weight:700;margin-bottom:5px}
+.ma-batch-meta-item strong{display:block;color:#30394b;font-size:15px;font-weight:800;overflow-wrap:anywhere}
+.ma-batch-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.ma-batch-actions .hint{font-size:11px;color:#778191}
+@media(max-width:700px){.ma-batch-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-mode-tabs{width:100%}.ma-mode-tab{flex:1;padding:10px 8px}.ma-batch-actions{align-items:stretch;flex-direction:column}}
+#batchApprovalToolbar{display:none!important}
+#singleSelectHeader,#requestRows tr td:first-child{display:none}
+
+
+
+
+/* Typography mengikuti halaman Budget Detail Approval */
+body,.ma-layout,.ma-main,.ma-content,.ma-panel,.ma-table,
+.ma-control,.ma-btn,.ma-detail-btn,.ma-refresh,.ma-page-btn,
+input,select,button{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+}
+.ma-heading h1{font-size:23px!important;font-weight:750!important;letter-spacing:-.4px}
+.ma-heading p{font-size:12px!important;line-height:1.5}
+.ma-panel-head h2{font-size:17px!important;font-weight:700!important;letter-spacing:-.2px}
+.ma-panel-head p{font-size:12px!important}
+.ma-table th{font-size:10px!important;font-weight:700!important;letter-spacing:.25px!important}
+.ma-table td{font-size:11px!important;line-height:1.45}
+.ma-id,.ma-money{font-size:11px!important}
+.ma-muted{font-size:10px!important}
+.ma-pill{font-size:10px!important}
+.ma-control,.ma-search-input{font-size:12px!important}
+.ma-detail-btn,.ma-refresh,.ma-page-btn{font-size:11px!important}
+.ma-kpi .label{font-size:11px!important}
+.ma-kpi .value{font-size:27px!important}
+.ma-modal-label{font-size:10px!important}
+.ma-modal-value{font-size:13px!important}
+
+
+.ma-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 9px;border:1px solid #e7e8ed;border-radius:8px;background:#fff;color:#707783;font-size:12px;font-weight:600;cursor:pointer}
+.ma-page-btn:hover:not(:disabled):not(.active){background:#fff0f1;border-color:#ffd3d7;color:var(--red)}
+.ma-page-btn.active{background:var(--red);border-color:var(--red);color:#fff}
+.ma-page-btn:disabled{opacity:.4;cursor:not-allowed}
+.ma-page-ellipsis{display:inline-flex;align-items:center;justify-content:center;min-width:18px;color:#8992a1;font-size:12px}
+.ma-toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+
+/* ===== SILOG UI POLISH: konsisten dengan halaman Pengajuan Budget ===== */
+:root{--ma-font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--ma-text:#313949;--ma-secondary:#687587}
+body,body button,body input,body select,body textarea,body table{font-family:var(--ma-font)!important}
+.ma-heading h1{font-size:26px!important;font-weight:700!important;letter-spacing:normal!important}
+.ma-panel-head h2{font-size:17px!important;font-weight:700!important}
+.ma-kpi .label,.ma-modal-label,.ma-budget-grid .ma-modal-label{font-size:12px!important;line-height:1.45;color:#687587}
+.ma-kpi .sub,.ma-muted,.ma-panel-head p{font-size:11px!important;line-height:1.5}
+.ma-table th{font-size:11px!important;line-height:1.4;letter-spacing:.1px}
+.ma-table td,.ma-id,.ma-money{font-size:12px!important;line-height:1.5}
+.ma-pill{font-size:11px!important}
+.ma-detail-btn,.ma-refresh,.ma-page-btn,.ma-mode-tab,.ma-btn,.ma-reset-btn{font-size:12px!important}
+.ma-modal-value,.ma-budget-grid .ma-modal-value{font-size:13px!important;line-height:1.5;font-weight:650}
+.ma-detail-section{padding:18px 19px;margin-bottom:13px;border-color:#e7ebf1;border-radius:11px}
+.ma-detail-section h3{font-size:15px!important;font-weight:700;margin-bottom:16px;color:var(--ma-text)}
+#detailModal .modal-title{font-size:16px;font-weight:700;color:#303742}
+#detailModal .modal-header{padding:17px 22px}
+#detailModal .modal-body{padding:18px 20px}
+#detailModal .modal-footer{padding:12px 20px}
+.ma-reallocation-summary{background:#fff;border-color:#e7eaf0;padding:15px 17px}
+.ma-reallocation-summary-title{font-size:14px;font-weight:700;margin-bottom:13px}
+.ma-reallocation-summary-label,.ma-step-value-label{font-size:12px!important;line-height:1.45;font-weight:600}
+.ma-reallocation-summary-value{font-size:17px;font-weight:750}
+.ma-reallocation-summary-total .ma-reallocation-summary-value{font-size:20px}
+.ma-reallocation-summary-help{font-size:11px;line-height:1.5;margin-top:8px}
+.ma-action-panel{padding:17px 18px;background:#fffafa}
+.ma-action-panel h3{font-size:15px;font-weight:700;margin-bottom:7px}
+.ma-action-panel p{font-size:12px;line-height:1.55;margin-bottom:13px;color:#657386}
+.ma-action-btn,.ma-action-submit,.ma-action-cancel{font-size:12px!important;min-height:39px;font-weight:700}
+.ma-action-form .form-label{font-size:12px;font-weight:650}
+.ma-action-form .form-control,.ma-action-form .form-select{font-size:12px;min-height:40px}
+.ma-action-note,.ma-action-feedback{font-size:11px;line-height:1.55}
+.ma-two-step{gap:12px}
+.ma-step-card{padding:16px 17px;border-color:#e5e9ef}
+.ma-step-number{font-size:12px;width:25px;height:25px;flex-basis:25px}
+.ma-step-title{font-size:14px;font-weight:700}
+.ma-step-subtitle{font-size:12px;line-height:1.55;color:#657386;margin-bottom:13px}
+.ma-step-value-number{font-size:15px}
+.ma-step-locked{font-size:11px;line-height:1.5;padding:8px 11px;margin-top:12px}
+.ma-reallocation-card{padding:16px;border-color:#e5e9ef}
+.ma-reallocation-card-title{font-size:13px;font-weight:700}
+.ma-reallocation-field label{font-size:12px;font-weight:650;color:#556171;margin-bottom:7px}
+.ma-reallocation-field .form-control,.ma-reallocation-field .form-select{font-size:12px;min-height:40px;height:40px;padding:8px 11px}
+.ma-reallocation-remove{font-size:11px}
+.ma-reallocation-field [data-role="validation"]{font-size:11px;line-height:1.5}
+.ma-reallocation-field[hidden]{display:none!important}
+.ma-reallocation-field[data-role="validation-wrap"]{padding:9px 11px;background:#f6f8fa;border:1px solid #e7ebef;border-radius:8px}
+.ma-reallocation-field[data-role="validation-wrap"]:has(.text-success){background:#edf8f2;border-color:#d8ecdf}
+.ma-reallocation-field[data-role="validation-wrap"]:has(.text-danger){background:#fff1f2;border-color:#f5d9dc}
+.ma-history-filtergroup label,.ma-filters.ma-history-toolbar .ma-history-filtergroup label{font-size:11px}
+.ma-filters.ma-history-toolbar select.ma-history-select{font-size:12px}
+.ma-filters.ma-history-toolbar .ma-history-apply,.ma-filters.ma-history-toolbar .ma-history-reset{font-size:12px}
+@media(max-width:650px){.ma-heading h1{font-size:22px!important}.ma-detail-section{padding:14px}.ma-step-card{padding:14px}.ma-reallocation-summary-total{gap:8px}}
 </style>
 </head>
 <body>
@@ -439,7 +537,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 </header>
 <section class="ma-content">
   <div class="ma-heading">
-    <div><h1><i class="bi bi-clipboard-check"></i>Manajemen Approval</h1><p>Kelola & tinjau pengajuan tambahan anggaran dari seluruh Unit Entity & Biro</p></div>
+    <div><h1><i class="bi bi-clipboard-check"></i>Manajemen Approval</h1><p></p></div>
     <button class="ma-refresh" id="refreshBtn"><i class="bi bi-arrow-clockwise me-1"></i> Refresh Data</button>
   </div>
   <div class="ma-kpis">
@@ -460,8 +558,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
       <div class="ma-kpi-icon rejected"><i class="bi bi-x-circle"></i></div>
     </div>
   </div>
-  <div class="ma-panel">
-    <div class="ma-panel-head"><div><h2>Daftar Pengajuan Budget</h2><p>Seluruh pengajuan tambahan anggaran dari Pengusul</p></div><div class="d-flex align-items-center gap-2"><a class="ma-detail-btn" href="/approval/export-budget.xlsx"><i class="bi bi-file-earmark-excel me-1"></i>Export Excel</a><span class="ma-pill p-pending" id="pendingTag">Memuat...</span></div></div>
+  <div class="ma-mode-tabs" role="tablist" aria-label="Jenis approval">
+    <button type="button" class="ma-mode-tab active" id="singleModeTab" role="tab" aria-selected="true"><i class="bi bi-file-earmark-text me-1"></i>Approval Satuan</button>
+    <button type="button" class="ma-mode-tab" id="batchModeTab" role="tab" aria-selected="false"><i class="bi bi-files me-1"></i>Approval Batch Excel</button>
+    <button type="button" class="ma-mode-tab" id="historyModeTab" role="tab" aria-selected="false"><i class="bi bi-clock-history me-1"></i>Riwayat Approval</button>
+  </div>
+  <div class="ma-panel" id="singleApprovalPanel">
+    <div class="ma-panel-head"><div><h2>Daftar Pengajuan Budget</h2><p></p></div><div class="ma-toolbar-actions"><button class="ma-refresh" type="button" id="refreshSingleBtn"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button></div></div>
     <div class="ma-filters ma-history-toolbar">
       <label class="ma-search-wrap ma-history-search" for="searchInput">
         <i class="bi bi-search"></i>
@@ -469,18 +572,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
                placeholder="Cari Request ID, PIC, Pengusul, Commitment Item..." autocomplete="off">
       </label>
       <div class="ma-history-filterbar">
-        <label class="ma-page-size-control" for="pageSizeSelect">
-          <span>Tampilkan</span>
-          <select id="pageSizeSelect" aria-label="Jumlah data per halaman">
-            <option value="5" selected>5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="30">30</option>
-            <option value="40">40</option>
-            <option value="50">50</option>
-          </select>
-          <span>Data</span>
-        </label>
         <div class="ma-history-filtergroup">
           <label for="statusFilter">Status Pengajuan</label>
           <select class="ma-control ma-history-select" id="statusFilter">
@@ -494,10 +585,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
         <button class="ma-reset-btn ma-history-reset" id="resetFilter" type="button">Reset</button>
       </div>
     </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" id="batchApprovalToolbar">
+      <div class="small text-secondary"><strong id="batchSelectedCount">0 pengajuan dipilih</strong> · Batch hanya menerima pengajuan Pending dengan Available Budget mencukupi.</div>
+      <div class="d-flex align-items-center gap-2">
+        <button class="ma-reset-btn" id="clearBatchSelection" type="button">Bersihkan Pilihan</button>
+        <button class="ma-action-submit" id="batchApproveButton" type="button" disabled><i class="bi bi-check2-all me-1"></i>Batch Approval</button>
+      </div>
+    </div>
     <div class="ma-table-wrap">
       <table class="ma-table">
-        <thead><tr><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Approval Decision</th><th>Request Status</th><th>Aksi</th></tr></thead>
-        <tbody id="requestRows"><tr><td colspan="10" class="ma-loading"><i class="bi bi-arrow-repeat me-1"></i>Memuat pengajuan...</td></tr></tbody>
+        <thead><tr><th id="singleSelectHeader" style="width:42px"><input type="checkbox" id="selectCurrentPage" aria-label="Pilih semua pengajuan Pending di halaman ini"></th><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Approval Decision</th><th>Request Status</th><th>Aksi</th></tr></thead>
+        <tbody id="requestRows"><tr><td colspan="11" class="ma-loading"><i class="bi bi-arrow-repeat me-1"></i>Memuat pengajuan...</td></tr></tbody>
       </table>
     </div>
     <div class="ma-footer">
@@ -505,13 +604,93 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
       <div class="ma-pages" id="paginationControls" aria-label="Navigasi halaman"></div>
     </div>
   </div>
+
+  <div class="ma-panel ma-batch-view" id="batchListPanel">
+    <div class="ma-panel-head"><div><h2>Approval Batch Excel</h2></div><div class="ma-toolbar-actions"><button class="ma-refresh" type="button" id="refreshBatchesBtn"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button></div></div>
+    <div class="ma-filters ma-history-toolbar" id="batchFilterToolbar">
+      <label class="ma-search-wrap ma-history-search" for="batchSearchInput">
+        <i class="bi bi-search"></i>
+        <input class="ma-search-input" id="batchSearchInput" type="search"
+               placeholder="Cari kode batch atau nama file Excel..." autocomplete="off">
+      </label>
+      <div class="ma-history-filterbar">
+        <div class="ma-history-filtergroup">
+          <label for="batchStatusFilter">Status Pengajuan</label>
+          <select class="ma-control ma-history-select" id="batchStatusFilter">
+            <option value="ALL">Semua Status</option>
+            <option value="Pending">Ada Pending</option>
+            <option value="Approved">Ada Approved</option>
+            <option value="Rejected">Ada Rejected</option>
+            <option value="Completed">Seluruhnya Selesai</option>
+          </select>
+        </div>
+        <button class="ma-btn ma-history-apply" id="applyBatchFilter" type="button"><i class="bi bi-funnel"></i> Terapkan</button>
+        <button class="ma-reset-btn ma-history-reset" id="resetBatchFilter" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="ma-table-wrap">
+      <table class="ma-table" style="min-width:900px">
+        <thead><tr><th>Kode Batch / Tanggal</th><th>Nama File Excel</th><th>Total Pengajuan</th><th>Pending</th><th>Approved</th><th>Rejected</th><th>Total Nominal</th><th>Aksi</th></tr></thead>
+        <tbody id="batchRows"><tr><td colspan="8" class="ma-loading">Memuat batch...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="ma-footer"><span id="batchListInfo">—</span><div class="ma-pages" id="batchListPages" aria-label="Navigasi halaman Approval Batch Excel"></div></div>
+  </div>
+
+  <div class="ma-panel ma-batch-view" id="batchDetailPanel">
+    <div class="ma-panel-head"><div><h2 id="batchDetailTitle">Detail Batch</h2><p id="batchDetailSubtitle"></p></div><button type="button" class="ma-batch-back" id="backToBatchList"><i class="bi bi-arrow-left me-1"></i>Kembali ke Daftar Batch</button></div>
+    <div class="ma-batch-meta" id="batchDetailMeta"></div>
+    <section class="ma-panel" id="approvalExcelUploadPanel" style="margin:16px 0;padding:16px">
+      <div class="ma-panel-head"><h3 class="mb-0">Upload Excel Approval</h3></div>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <input type="file" id="approvalExcelFile" accept=".xlsx" class="form-control" style="max-width:420px">
+        <button type="button" class="ma-detail-btn" id="approvalExcelUploadButton"><i class="bi bi-upload me-1"></i>Upload & Preview</button>
+      </div>
+      <div class="small text-secondary mt-2">Untuk realokasi, salin SOURCE ENTITY dan <strong>nama SOURCE BIRO</strong> dari sheet DONOR_OPTIONS ke Excel Approval. Kode biro lama juga tetap diterima. Tidak perlu mengisi Budget ID.</div>
+      <div id="approvalExcelPreviewSummary" class="mt-3"></div>
+      <div class="table-responsive mt-2" id="approvalExcelPreviewWrap" style="display:none">
+        <table class="ma-table"><thead><tr><th>Request ID</th><th>Baris</th><th>Instruksi</th><th>Nominal</th><th>Status</th><th>Keterangan</th></tr></thead><tbody id="approvalExcelPreviewBody"></tbody></table>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="button" class="ma-action-submit" id="approvalExcelConfirmButton" disabled><i class="bi bi-check2-circle me-1"></i>Konfirmasi Approval</button>
+      </div>
+      <div id="approvalExcelConfirmSummary" class="mt-3"></div>
+    </section>
+    <div class="ma-batch-actions">
+      <div class="hint"><strong id="batchDetailSelectedCount">0 pengajuan dipilih</strong> · Pilih pengajuan Pending untuk approval massal.</div>
+      <div class="d-flex gap-2 flex-wrap"><button type="button" class="ma-reset-btn" id="clearBatchDetailSelection">Bersihkan Pilihan</button><button type="button" class="ma-action-submit" id="approveCurrentBatchButton" disabled><i class="bi bi-check2-all me-1"></i>Approve Terpilih</button></div>
+    </div>
+    <div class="ma-table-wrap">
+      <table class="ma-table" style="min-width:1050px">
+        <thead><tr><th style="width:38px"><input type="checkbox" id="selectAllBatchDetail" aria-label="Pilih semua pengajuan Pending"></th><th>Request ID / Tanggal</th><th>Pengusul / PIC</th><th>Unit Entity / Biro</th><th>Commitment Item</th><th>Request Amount</th><th>Shortage</th><th>Budget Status</th><th>Approval Decision</th><th>Request Status</th><th>Aksi</th></tr></thead>
+        <tbody id="batchDetailRows"><tr><td colspan="11" class="ma-loading">Pilih batch untuk melihat pengajuan.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ma-panel" id="approvalHistoryPanel" style="display:none">
+    <div class="ma-panel-head"><div><h2>Riwayat Approval</h2></div><div class="ma-toolbar-actions"><a class="ma-detail-btn text-decoration-none" id="exportHistoryExcelBtn" href="/approval/export-history.xlsx" title="Laporan audit lengkap (3 sheet)"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Audit</a><a class="ma-detail-btn text-decoration-none" id="exportHistoryFormatBtn" href="/approval/export-history-format.xlsx" title="Format operasional APPROVAL dan USER (2 sheet)"><i class="bi bi-file-earmark-excel me-1"></i>Export Approval / User</a><span class="ma-pill p-approved" id="historyCount">Memuat...</span></div></div>
+    <div class="ma-filters ma-history-toolbar">
+      <label class="ma-search-wrap ma-history-search" for="historySearch"><i class="bi bi-search"></i><input class="ma-search-input" id="historySearch" type="search" placeholder="Cari Request ID, PIC, pengusul, atau kode batch..."></label>
+      <div class="ma-history-filterbar">
+        <div class="ma-history-filtergroup"><label for="historyKind">Jenis Pengajuan</label><select class="ma-history-select" id="historyKind"><option value="ALL">Semua</option><option value="SATUAN">Satuan</option><option value="BATCH">Excel</option></select></div>
+        <div class="ma-history-filtergroup"><label for="historyStatus">Status</label><select class="ma-history-select" id="historyStatus"><option value="ALL">Semua</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></div>
+        <button class="ma-btn" id="applyHistoryFilter" type="button">Terapkan</button>
+      </div>
+    </div>
+    <div class="ma-table-wrap"><table class="ma-table" style="min-width:950px">
+      <thead><tr><th>Tanggal Keputusan</th><th>Request ID</th><th>Jenis</th><th>Batch / File Excel</th><th>Pengusul / PIC</th><th>Nominal</th><th>Keputusan</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody id="approvalHistoryRows"><tr><td colspan="9" class="ma-loading">Memuat riwayat...</td></tr></tbody>
+    </table></div>
+    <div class="ma-footer"><span id="approvalHistoryInfo">—</span><div class="ma-pages" id="approvalHistoryPages"></div></div>
+  </div>
 </section>
 </main>
 </div>
 
 <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
  <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
-  <div class="modal-header"><div><h5 class="modal-title fw-bold">Detail Pengajuan <span id="detailRequestId"></span></h5><div class="text-secondary small">Informasi pengusul, mapping, dan kondisi anggaran saat ini</div></div><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-header"><div><h5 class="modal-title fw-bold">Detail Pengajuan <span id="detailRequestId"></span></h5><div class="text-secondary small"></div></div><button class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body" id="detailBody"><div class="ma-loading">Memuat detail...</div></div>
   <div class="modal-footer"><button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button></div>
  </div></div>
@@ -520,28 +699,376 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Bl
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 let currentPage = 1, totalPages = 1, pageSize = 5;
+let batchPage = 1, batchPageSize = 5, batchItemsCache = [];
 const money = v => v === null || v === undefined || v === '' ? '—' : new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v));
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statusClass = s => s==='Pending'?'p-pending':s==='Approved'?'p-approved':s==='Rejected'?'p-rejected':'p-review';
 const budgetClass = s => s==='Insufficient'?'p-insufficient':s==='Sufficient'?'p-sufficient':'p-review';
+
+const selectedBatchRequestIds = new Set();
+function updateBatchSelectionUI(){
+ const count=selectedBatchRequestIds.size;
+ const countEl=document.getElementById('batchSelectedCount');
+ const button=document.getElementById('batchApproveButton');
+ if(countEl) countEl.textContent=`${count} pengajuan dipilih`;
+ if(button) button.disabled=count===0;
+}
+function bindBatchSelectionEvents(){
+ document.querySelectorAll('.batch-request-checkbox').forEach(box=>{
+   box.addEventListener('change',()=>{
+     const id=Number(box.dataset.requestId);
+     if(box.checked) selectedBatchRequestIds.add(id); else selectedBatchRequestIds.delete(id);
+     updateBatchSelectionUI();
+     const boxes=[...document.querySelectorAll('.batch-request-checkbox')];
+     const all=document.getElementById('selectCurrentPage');
+     if(all) all.checked=boxes.length>0 && boxes.every(x=>x.checked);
+   });
+ });
+ const selectAll=document.getElementById('selectCurrentPage');
+ if(selectAll){
+   const boxes=[...document.querySelectorAll('.batch-request-checkbox')];
+   selectAll.checked=boxes.length>0 && boxes.every(x=>x.checked);
+   selectAll.addEventListener('change',()=>{
+     boxes.forEach(box=>{
+       box.checked=selectAll.checked;
+       const id=Number(box.dataset.requestId);
+       if(box.checked) selectedBatchRequestIds.add(id); else selectedBatchRequestIds.delete(id);
+     });
+     updateBatchSelectionUI();
+   });
+ }
+ updateBatchSelectionUI();
+}
+async function submitBatchApproval(){
+ const ids=[...selectedBatchRequestIds].sort((a,b)=>a-b);
+ if(!ids.length) return;
+ if(!confirm(`Setujui ${ids.length} pengajuan sekaligus? Seluruh transaksi akan dibatalkan jika salah satu pengajuan tidak memenuhi syarat.`)) return;
+ const button=document.getElementById('batchApproveButton');
+ button.disabled=true;
+ button.innerHTML='<i class="bi bi-arrow-repeat me-1"></i>Memproses...';
+ try{
+   const response=await fetch('/api/approval/requests/batch-approve',{
+     method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+     body:JSON.stringify({request_ids:ids,instruction:'Batch Approval'})
+   });
+   const data=await response.json();
+   if(!response.ok) throw Error(data.error||'Batch Approval gagal diproses.');
+   selectedBatchRequestIds.clear();
+   alert(data.message);
+   await Promise.all([loadSummary(),loadRequests(), activeBatchId ? openBatchDetail(activeBatchId) : Promise.resolve()]);
+ }catch(error){ alert(error.message); }
+ finally{
+   button.innerHTML='<i class="bi bi-check2-all me-1"></i>Batch Approval';
+   updateBatchSelectionUI();
+ }
+}
+
+let activeBatchId = null;
+let activeBatchRequestIds = new Set();
+let activeBatchRows = [];
+
+function setApprovalMode(mode){
+  const single = mode === 'single';
+  const batch = mode === 'batch';
+  document.getElementById('singleApprovalPanel').style.display = single ? '' : 'none';
+  document.getElementById('batchListPanel').classList.toggle('active', batch);
+  document.getElementById('batchDetailPanel').classList.remove('active');
+  document.getElementById('approvalHistoryPanel').style.display = mode === 'history' ? '' : 'none';
+  document.getElementById('singleModeTab').classList.toggle('active', single);
+  document.getElementById('batchModeTab').classList.toggle('active', batch);
+  document.getElementById('historyModeTab').classList.toggle('active', mode === 'history');
+  document.getElementById('singleModeTab').setAttribute('aria-selected', String(single));
+  document.getElementById('batchModeTab').setAttribute('aria-selected', String(batch));
+  document.getElementById('historyModeTab').setAttribute('aria-selected', String(mode === 'history'));
+  if(batch) loadBatches();
+  if(mode === 'history') loadApprovalHistory();
+}
+
+async function loadBatches(){
+  const body = document.getElementById('batchRows');
+  body.innerHTML = '<tr><td colspan="8" class="ma-loading">Memuat batch...</td></tr>';
+  try{
+    const response = await fetch('/api/approval/batches');
+    const data = await response.json();
+    if(!response.ok) throw Error(data.error || 'Gagal memuat daftar batch.');
+    batchItemsCache = data.items || [];
+    renderBatchListPage();
+  }catch(error){
+    batchItemsCache = [];
+    body.innerHTML = `<tr><td colspan="8" class="ma-empty">${esc(error.message)}</td></tr>`;
+    document.getElementById('batchListInfo').textContent = 'Gagal memuat data';
+    document.getElementById('batchListPages').innerHTML = '';
+  }
+}
+
+function renderBatchListPage(){
+  const body = document.getElementById('batchRows');
+  const query = document.getElementById('batchSearchInput').value.trim().toLocaleLowerCase('id-ID');
+  const status = document.getElementById('batchStatusFilter').value;
+  // Filter dilakukan pada daftar batch yang diberikan API; tidak membuang
+  // data Approved/Rejected dari hasil API dan tidak mengubah status transaksi.
+  const filtered = batchItemsCache.filter(x => {
+    const searchText = [x.batch_code, x.batch_id, x.uploaded_filename, x.batch_date]
+      .filter(v => v !== null && v !== undefined).join(' ').toLocaleLowerCase('id-ID');
+    if(query && !searchText.includes(query)) return false;
+    const pending = Number(x.pending || 0);
+    const approved = Number(x.approved || 0);
+    const rejected = Number(x.rejected || 0);
+    if(status === 'Pending') return pending > 0;
+    if(status === 'Approved') return approved > 0;
+    if(status === 'Rejected') return rejected > 0;
+    if(status === 'Completed') return pending === 0 && (approved + rejected) > 0;
+    return true;
+  });
+  // Prioritas: masih Pending di atas (pengajuan terlama dahulu).
+  // Batch selesai: urut berdasarkan waktu keputusan approval pertama, terlama dahulu.
+  // Urutkan sebelum pagination agar hasil konsisten di seluruh halaman.
+  filtered.sort((a, b) => {
+    const aPending = Number(a.pending || 0) > 0;
+    const bPending = Number(b.pending || 0) > 0;
+    if(aPending !== bPending) return aPending ? -1 : 1;
+    const aDate = aPending ? a.batch_date : (a.first_decision_date || a.batch_date);
+    const bDate = bPending ? b.batch_date : (b.first_decision_date || b.batch_date);
+    const dateComparison = String(aDate || '').localeCompare(String(bDate || ''));
+    if(dateComparison !== 0) return dateComparison;
+    return Number(a.batch_id || 0) - Number(b.batch_id || 0);
+  });
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / batchPageSize));
+  batchPage = Math.min(Math.max(1, batchPage), pages);
+  const start = (batchPage - 1) * batchPageSize;
+  const visible = filtered.slice(start, start + batchPageSize);
+
+  if(!total){
+    const filteredActive = Boolean(query) || status !== 'ALL';
+    body.innerHTML = `<tr><td colspan="8" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>${filteredActive ? 'Tidak ada batch yang sesuai pencarian atau filter.' : 'Belum ada batch Excel yang dikembalikan oleh sistem.'}</td></tr>`;
+  }else{
+    body.innerHTML = visible.map(x => `<tr>
+      <td><div class="ma-id">${esc(x.batch_code || `BATCH-${x.batch_id}`)}</div><div class="ma-muted">${esc(x.batch_date?.slice(0,10) || '—')}</div></td>
+      <td>${esc(x.uploaded_filename || 'Nama file tidak tersedia')}</td>
+      <td><strong>${Number(x.total_requests || 0)}</strong></td>
+      <td><span class="ma-pill p-pending">${Number(x.pending || 0)}</span></td>
+      <td><span class="ma-pill p-approved">${Number(x.approved || 0)}</span></td>
+      <td><span class="ma-pill p-rejected">${Number(x.rejected || 0)}</span></td>
+      <td class="ma-money">${money(x.total_amount)}</td>
+      <td><div class="d-flex flex-wrap gap-1">
+        <button type="button" class="ma-detail-btn" onclick="openBatchDetail(${Number(x.batch_id)})"><i class="bi bi-eye me-1"></i>Lihat Pengajuan</button>
+        <a class="ma-detail-btn text-decoration-none" href="/approval/export-budget/batch/${Number(x.batch_id)}.xlsx" title="Unduh template Approval untuk batch ini"><i class="bi bi-file-earmark-excel me-1"></i>Download Excel</a>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  const first = total ? start + 1 : 0;
+  const last = Math.min(start + batchPageSize, total);
+  document.getElementById('batchListInfo').textContent = `Menampilkan ${first}–${last} dari ${total} data`;
+  renderNumberedPagination('batchListPages', batchPage, pages, next => {
+    batchPage = next;
+    renderBatchListPage();
+  });
+}
+
+function renderNumberedPagination(containerId, page, pages, onChange){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '';
+
+  const addButton = (label, target, disabled=false, active=false, aria='') => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ma-page-btn' + (active ? ' active' : '');
+    button.textContent = label;
+    button.disabled = disabled;
+    if(aria) button.setAttribute('aria-label', aria);
+    if(active) button.setAttribute('aria-current','page');
+    button.addEventListener('click', () => onChange(target));
+    container.appendChild(button);
+  };
+
+  addButton('‹', page-1, page===1, false, 'Halaman sebelumnya');
+  let visiblePages;
+  if(pages <= 5) visiblePages = Array.from({length:pages}, (_,i)=>i+1);
+  else if(page <= 3) visiblePages = [1,2,3,4,5];
+  else if(page >= pages-2) visiblePages = [pages-4,pages-3,pages-2,pages-1,pages];
+  else visiblePages = [page-2,page-1,page,page+1,page+2];
+
+  if(visiblePages[0] > 1){
+    addButton('1',1,false,page===1);
+    const dots=document.createElement('span'); dots.className='ma-page-ellipsis'; dots.textContent='…'; container.appendChild(dots);
+  }
+  visiblePages.forEach(n=>addButton(String(n),n,false,n===page));
+  if(visiblePages[visiblePages.length-1] < pages){
+    const dots=document.createElement('span'); dots.className='ma-page-ellipsis'; dots.textContent='…'; container.appendChild(dots);
+    addButton(String(pages),pages,false,page===pages);
+  }
+  addButton('›',page+1,page===pages,false,'Halaman berikutnya');
+}
+
+function updateBatchDetailSelection(){
+  const count = activeBatchRequestIds.size;
+  const label = document.getElementById('batchDetailSelectedCount');
+  const button = document.getElementById('approveCurrentBatchButton');
+  if(label) label.textContent = `${count} pengajuan dipilih`;
+  if(button) button.disabled = count === 0;
+  const boxes = [...document.querySelectorAll('.batch-detail-checkbox')];
+  const selectAll = document.getElementById('selectAllBatchDetail');
+  if(selectAll) selectAll.checked = boxes.length > 0 && boxes.every(x => x.checked);
+}
+
+
+let activeApprovalImportId = null;
+
+async function uploadApprovalExcel(){
+  if(!activeBatchId) return;
+  const input = document.getElementById('approvalExcelFile');
+  const file = input?.files?.[0];
+  if(!file){ alert('Pilih file Excel Approval terlebih dahulu.'); return; }
+  const fd = new FormData(); fd.append('file', file);
+  const button = document.getElementById('approvalExcelUploadButton');
+  button.disabled = true; button.textContent = 'Memeriksa file...';
+  try{
+    const response = await fetch(`/api/approval/batches/${activeBatchId}/upload`, {
+      method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd
+    });
+    const data = await response.json();
+    if(!response.ok) throw Error(data.error || 'Upload gagal.');
+    activeApprovalImportId = Number(data.approval_import_id);
+    document.getElementById('approvalExcelPreviewSummary').innerHTML =
+      `<div class="alert alert-info">File: <strong>${esc(data.filename)}</strong> · Instruksi: <strong>${data.total}</strong> · Valid: <strong>${data.valid}</strong> · Invalid: <strong>${data.invalid}</strong></div>`;
+    document.getElementById('approvalExcelPreviewBody').innerHTML = (data.rows||[]).map(x=>`
+      <tr><td>${esc(x.request_label||'—')}</td><td>${Number(x.excel_row_number)}</td>
+      <td>${esc(x.instruction||'—')}</td><td>${x.amount?money(x.amount):'—'}</td>
+      <td><span class="ma-pill ${x.validation_status==='valid'?'p-approved':'p-rejected'}">${esc(x.validation_status)}</span></td>
+      <td>${esc(x.validation_message||'Siap diproses')}</td></tr>`).join('');
+    document.getElementById('approvalExcelPreviewWrap').style.display = '';
+    document.getElementById('approvalExcelConfirmButton').disabled = Number(data.valid||0) < 1;
+    document.getElementById('approvalExcelConfirmSummary').innerHTML = '';
+  }catch(err){
+    document.getElementById('approvalExcelPreviewSummary').innerHTML = `<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }finally{
+    button.disabled=false; button.innerHTML='<i class="bi bi-upload me-1"></i>Upload & Preview';
+  }
+}
+
+async function confirmApprovalExcel(){
+  if(!activeBatchId || !activeApprovalImportId) return;
+  if(!confirm('Proses semua Request ID yang valid? Pengajuan yang gagal akan tetap Pending.')) return;
+  const button=document.getElementById('approvalExcelConfirmButton');
+  button.disabled=true; button.textContent='Memproses...';
+  try{
+    const response=await fetch(`/api/approval/batches/${activeBatchId}/confirm/${activeApprovalImportId}`,{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:'{}'
+    });
+    const data=await response.json();
+    if(!response.ok) throw Error(data.error||'Pemrosesan gagal.');
+    document.getElementById('approvalExcelConfirmSummary').innerHTML =
+      `<div class="alert alert-${Number(data.failed||0) ? 'warning' : 'success'}">Berhasil diproses: <strong>${Number(data.processed||0)}</strong> · Gagal: <strong>${Number(data.failed||0)}</strong>. Pengajuan gagal tetap Pending.</div>
+       <div class="small mt-2">${(data.results||[]).map(x=>`<div><strong>REQ-${Number(x.request_id)}</strong>: ${esc(x.status)} — ${esc(x.message)}</div>`).join('')}</div>`;
+    await Promise.all([loadSummary(),loadRequests(),openBatchDetail(activeBatchId)]);
+  }catch(err){
+    document.getElementById('approvalExcelConfirmSummary').innerHTML=`<div class="alert alert-danger">${esc(err.message)}</div>`;
+  }finally{
+    button.disabled=false; button.innerHTML='<i class="bi bi-check2-circle me-1"></i>Konfirmasi Approval';
+  }
+}
+
+async function openBatchDetail(batchId){
+  activeBatchId = Number(batchId);
+  activeBatchRequestIds.clear();
+  document.getElementById('singleApprovalPanel').style.display = 'none';
+  document.getElementById('batchListPanel').classList.remove('active');
+  document.getElementById('batchDetailPanel').classList.add('active');
+  document.getElementById('batchDetailRows').innerHTML = '<tr><td colspan="11" class="ma-loading">Memuat seluruh pengajuan dalam batch...</td></tr>';
+  try{
+    const response = await fetch(`/api/approval/batches/${activeBatchId}`);
+    const data = await response.json();
+    if(!response.ok) throw Error(data.error || 'Gagal memuat detail batch.');
+    const batch = data.batch || {};
+    activeBatchRows = data.items || [];
+    document.getElementById('batchDetailTitle').textContent = batch.batch_code || `Batch ${activeBatchId}`;
+    document.getElementById('batchDetailSubtitle').textContent = batch.uploaded_filename || '';
+    const counts = {
+      total: activeBatchRows.length,
+      pending: activeBatchRows.filter(x=>x.request_status==='Pending').length,
+      approved: activeBatchRows.filter(x=>x.request_status==='Approved').length,
+      rejected: activeBatchRows.filter(x=>x.request_status==='Rejected').length
+    };
+    document.getElementById('batchDetailMeta').innerHTML = `
+      <div class="ma-batch-meta-item"><span>NAMA FILE</span><strong>${esc(batch.uploaded_filename || '—')}</strong></div>
+      <div class="ma-batch-meta-item"><span>TOTAL PENGAJUAN</span><strong>${counts.total}</strong></div>
+      <div class="ma-batch-meta-item"><span>PENDING</span><strong>${counts.pending}</strong></div>
+      <div class="ma-batch-meta-item"><span>APPROVED / REJECTED</span><strong>${counts.approved} / ${counts.rejected}</strong></div>`;
+    renderBatchDetailRows();
+  }catch(error){
+    document.getElementById('batchDetailRows').innerHTML = `<tr><td colspan="11" class="ma-empty">${esc(error.message)}</td></tr>`;
+  }
+}
+
+function renderBatchDetailRows(){
+  const body = document.getElementById('batchDetailRows');
+  if(!activeBatchRows.length){
+    body.innerHTML = '<tr><td colspan="11" class="ma-empty">Batch ini belum memiliki pengajuan.</td></tr>';
+    updateBatchDetailSelection();
+    return;
+  }
+  body.innerHTML = activeBatchRows.map(x => `<tr>
+    <td>${x.request_status==='Pending' ? `<input type="checkbox" class="batch-detail-checkbox" data-request-id="${Number(x.request_id)}" ${activeBatchRequestIds.has(Number(x.request_id))?'checked':''} aria-label="Pilih REQ-${String(x.request_id).padStart(6,'0')}">` : ''}</td>
+    <td><div class="ma-id">REQ-${String(x.request_id).padStart(6,'0')}</div><div class="ma-muted">${esc(x.request_date?.slice(0,10) || '—')}</div></td>
+    <td><strong>${esc(x.requester_username)}</strong><div class="ma-muted">${esc(x.pic)}</div></td>
+    <td>${esc(x.unit_entity)}<div class="ma-muted">${esc(x.biro_name)}</div></td>
+    <td>${esc(x.commitment_item_code)}<div class="ma-muted">${esc(x.commitment_item_name)}</div></td>
+    <td class="ma-money">${money(x.request_amount)}</td><td class="ma-money">${money(x.shortage_amount)}</td>
+    <td><span class="ma-pill ${budgetClass(x.budget_status)}">${esc(x.budget_status)}</span></td>
+    <td>${x.approval_decision ? `<span class="ma-pill p-approved">${esc(x.approval_decision)}</span>` : '<span class="ma-muted">—</span>'}</td>
+    <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
+    <td><button type="button" class="ma-detail-btn" onclick="openDetail(${Number(x.request_id)})"><i class="bi bi-eye me-1"></i>Detail / Proses</button></td>
+  </tr>`).join('');
+  document.querySelectorAll('.batch-detail-checkbox').forEach(box=>box.addEventListener('change',()=>{
+    const id=Number(box.dataset.requestId);
+    if(box.checked) activeBatchRequestIds.add(id); else activeBatchRequestIds.delete(id);
+    updateBatchDetailSelection();
+  }));
+  updateBatchDetailSelection();
+}
+
+async function approveSelectedInCurrentBatch(){
+  const ids = [...activeBatchRequestIds].sort((a,b)=>a-b);
+  if(!ids.length || !activeBatchId) return;
+  if(!confirm(`Setujui ${ids.length} pengajuan terpilih dari batch ini? Jika salah satu tidak memenuhi syarat, seluruh proses dibatalkan.`)) return;
+  const button = document.getElementById('approveCurrentBatchButton');
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Memproses...';
+  try{
+    const response = await fetch('/api/approval/requests/batch-approve',{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+      body:JSON.stringify({request_ids:ids,batch_id:activeBatchId,instruction:`Approval Batch ${activeBatchId}`})
+    });
+    const data = await response.json();
+    if(!response.ok) throw Error(data.error || 'Batch Approval gagal diproses.');
+    activeBatchRequestIds.clear();
+    alert(data.message);
+    await Promise.all([loadSummary(),loadRequests(),openBatchDetail(activeBatchId)]);
+  }catch(error){ alert(error.message); }
+  finally{ button.innerHTML = '<i class="bi bi-check2-all me-1"></i>Approve Terpilih'; updateBatchDetailSelection(); }
+}
+
 async function loadSummary(){
  const r=await fetch('/api/approval/summary'); const d=await r.json(); if(!r.ok) throw Error(d.error||'Gagal memuat ringkasan');
  document.getElementById('kpiTotal').textContent=d.total_requests;
  document.getElementById('kpiPending').textContent=d.pending;
  document.getElementById('kpiApproved').textContent=d.approved;
  document.getElementById('kpiRejected').textContent=d.rejected;
- document.getElementById('pendingTag').textContent=d.pending+' Pending';
+
 }
 async function loadRequests(){
  // Backend lama memakai pagination 10 baris. Ambil halaman backend yang
  // diperlukan, lalu tampilkan sesuai pilihan pengguna (5/10/20/.../50).
  // Dengan begitu tidak ada baris hilang atau terduplikasi saat pindah halaman.
  const body=document.getElementById('requestRows');
- body.innerHTML='<tr><td colspan="10" class="ma-loading">Memuat pengajuan...</td></tr>';
+ body.innerHTML='<tr><td colspan="11" class="ma-loading">Memuat pengajuan...</td></tr>';
  const status=document.getElementById('statusFilter').value;
  const q=document.getElementById('searchInput').value.trim();
  const fetchBackendPage=async page=>{
-   const params=new URLSearchParams({page,per_page:10,status,q});
+   const params=new URLSearchParams({page,per_page:5,status,q});
    const response=await fetch('/api/approval/requests?'+params);
    const data=await response.json();
    if(!response.ok) throw Error(data.error||'Gagal memuat data');
@@ -570,11 +1097,12 @@ async function loadRequests(){
      items.push(...(byPage.get(p)||[]).slice(sliceStart,sliceEnd));
    }
  }catch(error){
-   body.innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(error.message)}</td></tr>`;
+   body.innerHTML=`<tr><td colspan="11" class="ma-empty">${esc(error.message)}</td></tr>`;
    return;
  }
- if(!items.length){body.innerHTML='<tr><td colspan="10" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
+ if(!items.length){body.innerHTML='<tr><td colspan="11" class="ma-empty"><i class="bi bi-inbox fs-2 d-block mb-3"></i>Belum ditemukan pengajuan sesuai pencarian atau filter yang dipilih.</td></tr>';}
  else body.innerHTML=items.map(x=>`<tr>
+ <td>${x.request_status==='Pending' ? `<input type="checkbox" class="batch-request-checkbox" data-request-id="${x.request_id}" aria-label="Pilih REQ-${String(x.request_id).padStart(6,'0')}" ${selectedBatchRequestIds.has(Number(x.request_id))?'checked':''}>` : ''}</td>
  <td><div class="ma-id">REQ-${String(x.request_id).padStart(6,'0')}</div><div class="ma-muted">${esc(x.request_date?.slice(0,10))}</div></td>
  <td><strong>${esc(x.requester_username)}</strong><div class="ma-muted">${esc(x.pic)}</div></td>
  <td>${esc(x.unit_entity)}<div class="ma-muted">${esc(x.biro_name)}</div></td>
@@ -587,6 +1115,7 @@ async function loadRequests(){
  </tr>`).join('');
  const firstItem = totalItems ? ((currentPage - 1) * pageSize) + 1 : 0;
  const lastItem = Math.min(currentPage * pageSize, totalItems);
+ bindBatchSelectionEvents();
  document.getElementById('pageInfo').textContent = `Menampilkan ${firstItem}–${lastItem} dari ${totalItems} data`;
  renderPagination();
 }
@@ -669,23 +1198,23 @@ async function openDetail(id){
   <div class="ma-action-panel">
     <h3><i class="bi bi-shield-check me-1" style="color:var(--red)"></i>Tindakan Approval</h3>
     ${liveHold >= liveShortage
-      ? `<p>Approval Hold mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Open Budget.</p>`
-      : `<p>Approval Hold tidak mencukupi untuk menutup shortage. Mekanisme yang tersedia adalah Reallocation dari sumber budget lain.</p>`}
+      ? `<p>Approval Hold mencukupi untuk memenuhi kekurangan anggaran melalui Open Budget.</p>`
+      : `<p>Approval Hold belum mencukupi. Sisa kebutuhan dipenuhi melalui realokasi budget.</p>`}
     ${liveHold < liveShortage ? `
     <div class="ma-reallocation-summary" aria-label="Rincian pemenuhan anggaran">
-      <div class="ma-reallocation-summary-title"><i class="bi bi-calculator"></i>Rincian Pemenuhan Anggaran</div>
+      <div class="ma-reallocation-summary-title"><i class="bi bi-calculator"></i>Ringkasan Kebutuhan Anggaran</div>
       <div class="ma-reallocation-summary-grid">
         <div><div class="ma-reallocation-summary-label">Shortage Budget</div><div class="ma-reallocation-summary-value">${money(liveShortage)}</div></div>
         <div><div class="ma-reallocation-summary-label">Approval Hold yang Digunakan</div><div class="ma-reallocation-summary-value">${money(Math.min(liveShortage,liveHold))}</div></div>
       </div>
       <div class="ma-reallocation-summary-total">
         <div>
-          <div class="ma-reallocation-summary-label">Budget Perlu Direalokasi</div>
-          <div class="ma-reallocation-summary-help">Shortage dikurangi Approval Hold yang dapat dibuka.</div>
+          <div class="ma-reallocation-summary-label">Kebutuhan Realokasi</div>
+          
         </div>
         <div class="ma-reallocation-summary-value">${money(Math.max(0,liveShortage-liveHold))}</div>
       </div>
-      <div class="ma-reallocation-summary-help">Total seluruh baris realokasi harus sama dengan nominal kebutuhan.</div>
+      <div class="ma-reallocation-summary-help">Total nominal donor harus sesuai dengan kebutuhan realokasi.</div>
     </div>` : ''}
     <div class="ma-action-buttons">
       ${liveHold >= liveShortage
@@ -697,20 +1226,20 @@ async function openDetail(id){
         <div class="ma-two-step">
           <section class="ma-step-card" aria-label="Tahap 1 Open Budget">
             <div class="ma-step-header"><span class="ma-step-number">1</span><div class="ma-step-title">Tahap 1 — Open Budget</div></div>
-            <div class="ma-step-subtitle">Gunakan Approval Hold pada budget tujuan terlebih dahulu. Nominal dihitung otomatis dan tidak perlu diinput ulang.</div>
+            <div class="ma-step-subtitle">Approval Hold yang tersedia digunakan secara otomatis sebelum realokasi.</div>
             <div class="ma-step-values">
               <div><div class="ma-step-value-label">Approval Hold Tersedia</div><div class="ma-step-value-number" id="stepHoldAvailable">—</div></div>
               <div><div class="ma-step-value-label">Nominal Dibuka</div><div class="ma-step-value-number" id="stepHoldOpened">—</div></div>
               <div><div class="ma-step-value-label">Sisa Kekurangan</div><div class="ma-step-value-number emphasis" id="stepHoldRemaining">—</div></div>
             </div>
-            <div class="ma-step-locked"><i class="bi bi-info-circle me-1"></i>Open Budget akan dijalankan bersama realokasi setelah konfirmasi akhir.</div>
+            <div class="ma-step-locked"><i class="bi bi-info-circle me-1"></i>Open Budget dan realokasi diproses bersamaan saat dikonfirmasi.</div>
           </section>
           <section class="ma-step-card second" aria-label="Tahap 2 Reallocation Budget">
             <div class="ma-step-header"><span class="ma-step-number">2</span><div class="ma-step-title">Tahap 2 — Reallocation Budget</div></div>
-            <div class="ma-step-subtitle">Isi sumber anggaran untuk menutup sisa kekurangan. Total realokasi harus tepat <strong id="stepReallocationTarget">—</strong>.</div>
+            <div class="ma-step-subtitle">Pilih budget donor untuk memenuhi sisa kebutuhan sebesar <strong id="stepReallocationTarget">—</strong>.</div>
             <div id="reallocationRows" class="ma-reallocation-list"></div>
             <button type="button" class="ma-action-cancel mt-2" onclick="addReallocationRow()"><i class="bi bi-plus-circle me-1"></i>Tambah Baris</button>
-            <div class="ma-action-note mt-3">Nominal awal dibatasi Available Budget sumber. Jika menggunakan beberapa sumber, jumlah seluruh baris wajib sama dengan kebutuhan realokasi.</div>
+            <div class="ma-action-note mt-3">Nominal setiap donor dibatasi oleh Available Budget. Total seluruh donor harus sesuai kebutuhan.</div>
           </section>
         </div>
       </div>
@@ -746,7 +1275,7 @@ async function submitDirectApprove(){
    if(!r.ok) throw Error(d.error||'Approve gagal diproses.');
    feedback.className='ma-action-feedback success';
    feedback.textContent=d.message;
-   await Promise.all([loadSummary(),loadRequests()]);
+   await Promise.all([loadSummary(),loadRequests(), activeBatchId ? openBatchDetail(activeBatchId) : Promise.resolve()]);
    // Modal detail tetap terbuka agar pengguna dapat membaca notifikasi,
    // lalu menekan Tutup untuk kembali ke Manajemen Approval.
  }catch(e){
@@ -841,15 +1370,15 @@ function addReallocationRow(){
   </div>
   <div class="ma-reallocation-grid">
    <div class="ma-reallocation-field"><label>Tanggal Realokasi</label><input class="form-control" data-role="date" type="date" value="${localDateValue()}"></div>
-   <div class="ma-reallocation-field"><label>Fund</label><input class="form-control" data-role="fund" type="text" maxlength="100" autocomplete="off" placeholder="Input Fund"></div>
-   <div class="ma-reallocation-field"><label>Nominal</label><input class="form-control" data-role="amount" data-auto="1" type="number" min="0.01" step="0.01" placeholder="Maksimal Sesuai Nilai Shortage"></div>
+   <div class="ma-reallocation-field"><label>Fund Donor (Referensi)</label><input class="form-control" data-role="fund" type="text" readonly placeholder="Tidak tersedia"></div>
+   <div class="ma-reallocation-field"><label>Nominal Realokasi</label><input class="form-control" data-role="amount" data-auto="1" type="number" min="0.01" step="0.01" placeholder="Nominal realokasi"></div>
    <div class="ma-reallocation-field"><label>Unit Entity</label><select class="form-select" data-role="entity"><option value="">Pilih Unit Entity</option></select></div>
-   <div class="ma-reallocation-field"><label>Funds Center</label><input class="form-control" data-role="fc" type="text" maxlength="100" autocomplete="off" placeholder="Input Funds Center"></div>
-   <div class="ma-reallocation-field"><label>Instruction</label><input class="form-control" data-role="instruction" type="text" maxlength="2000" placeholder="Instruksi Untuk Baris"></div>
+   <div class="ma-reallocation-field" data-role="fc-field"><label>Funds Center Donor</label><input class="form-control" data-role="fc" type="text" readonly placeholder="Terisi otomatis jika FC_CI"></div>
+   <div class="ma-reallocation-field"><label>Catatan Realokasi (opsional)</label><input class="form-control" data-role="instruction" type="text" maxlength="2000" placeholder="Tambahkan catatan jika diperlukan"></div>
    <div class="ma-reallocation-field"><label>Biro</label><select class="form-select" data-role="biro" disabled><option value="">Pilih Biro</option></select></div>
-   <div class="ma-reallocation-field"><label>Commitment Item</label><input class="form-control" data-role="ci" type="text" maxlength="100" autocomplete="off" placeholder="Input Commitment Item"></div>
+   <div class="ma-reallocation-field"><label>Commitment Item Donor</label><input class="form-control" data-role="ci" type="text" readonly placeholder="Terisi otomatis dari donor"></div>
    <input type="hidden" data-role="source">
-   <div class="ma-reallocation-field" data-role="validation-wrap" style="grid-column:1/-1"><small data-role="validation" class="text-secondary">Pilih Unit Entity dan Biro, lalu input Fund, Funds Center, serta Commitment Item.</small></div>
+   <div class="ma-reallocation-field" data-role="validation-wrap" style="grid-column:1/-1"><small data-role="validation" class="text-secondary">Pilih Unit Entity dan Biro. Data donor terisi otomatis.</small></div>
   </div>`;
  body.appendChild(card);
  const entitySelect=card.querySelector('[data-role="entity"]');
@@ -861,42 +1390,49 @@ function addReallocationRow(){
    amountInput.max='';
    const validation=card.querySelector('[data-role="validation"]');
    validation.className='text-secondary';
-   validation.textContent='Pilih Unit Entity dan Biro, lalu input Fund, Funds Center, serta Commitment Item.';
+   validation.textContent='Pilih Unit Entity dan Biro. Data donor terisi otomatis.';
  };
  const resolveSource=()=>{
    const entityId=entitySelect.value, biroId=biroSelect.value;
-   const fund=card.querySelector('[data-role="fund"]').value.trim().toUpperCase();
-   const fc=card.querySelector('[data-role="fc"]').value.trim().toUpperCase();
-   const ci=card.querySelector('[data-role="ci"]').value.trim().toUpperCase();
    const sourceId=card.querySelector('[data-role="source"]');
+   const fundEl=card.querySelector('[data-role="fund"]');
+   const fcEl=card.querySelector('[data-role="fc"]');
+   const ciEl=card.querySelector('[data-role="ci"]');
    const validation=card.querySelector('[data-role="validation"]');
    sourceId.value=''; amountInput.max='';
-   if(!entityId||!biroId||!fund||!fc||!ci){
+   fundEl.value=''; fcEl.value=''; ciEl.value='';
+   card.querySelector('[data-role="fc-field"]').hidden=false;
+   if(!entityId||!biroId){
      validation.className='text-secondary';
-     validation.textContent='Lengkapi Unit Entity, Biro, Fund, Funds Center, dan Commitment Item.';
+     validation.textContent='Pilih Unit Entity dan Biro donor.';
      if(amountInput.dataset.auto==='1') amountInput.value='';
      return null;
    }
+   // Backend sudah memfilter tahun, scope, CI dan FC (jika FC_CI).
+   // Jangan cocokkan Funds Center untuk CI_ONLY atau Fund historis.
    const matches=reallocationSourceItems.filter(x=>
      String(x.entity_id)===String(entityId) && String(x.biro_id)===String(biroId) &&
-     (!x.fund_code || String(x.fund_code).trim().toUpperCase()===fund) &&
-     String(x.funds_center_code||'').trim().toUpperCase()===fc &&
-     String(x.commitment_item_code||'').trim().toUpperCase()===ci &&
      Number(x.available_amount||0)>0
-   ).sort((a,b)=>Number(b.available_amount||0)-Number(a.available_amount||0));
-   if(!matches.length){
+   );
+   if(matches.length !== 1){
      validation.className='text-danger';
-     validation.textContent='Kombinasi Fund, Funds Center, dan Commitment Item tidak ditemukan pada master budget yang memenuhi Budget Scope.';
+     validation.textContent=matches.length
+       ? 'Ditemukan beberapa budget donor. Pilih Entity/Biro lain agar sumber jelas.'
+       : 'Donor tidak tersedia atau saldo tidak mencukupi.';
      if(amountInput.dataset.auto==='1') amountInput.value='';
      return null;
    }
    const item=matches[0];
    sourceId.value=String(item.budget_id);
    amountInput.max=String(item.available_amount||0);
+   // Informasi referensi tidak dapat diubah: mapping target tetap berasal
+   // dari pengajuan Pengusul, dan identitas donor ditentukan dari budget_master.
+   fundEl.value=item.fund_code||'';
+   fcEl.value=item.budget_scope==='FC_CI' ? (item.funds_center_code||'') : '';
+   ciEl.value=item.commitment_item_code||'';
+   card.querySelector('[data-role="fc-field"]').hidden=item.budget_scope==='CI_ONLY';
    validation.className='text-success';
-   validation.textContent=item.fund_code
-     ? `Kombinasi valid. Available sumber: ${money(item.available_amount)}.`
-     : `Budget sumber ditemukan. Fund akan diverifikasi pada master_fund saat konfirmasi. Available: ${money(item.available_amount)}.`;
+   validation.textContent=`Donor valid · ${item.budget_scope} · Available ${money(item.available_amount)}`;
    if(amountInput.dataset.auto==='1'){
      const remaining=getRemainingReallocationShortage(amountInput);
      const suggested=Math.min(remaining,Math.max(0,Number(item.available_amount)||0));
@@ -912,7 +1448,6 @@ function addReallocationRow(){
    clearResolved(); resolveSource(); updateReallocationTotals();
  });
  biroSelect.addEventListener('change',()=>{clearResolved();resolveSource();updateReallocationTotals();});
- ['fund','fc','ci'].forEach(role=>card.querySelector(`[data-role="${role}"]`).addEventListener('input',()=>{resolveSource();updateReallocationTotals();}));
  amountInput.addEventListener('input',()=>{amountInput.dataset.auto='0';updateReallocationTotals();});
  card.querySelector('.ma-reallocation-remove').addEventListener('click',()=>{card.remove();renumberReallocationRows();updateReallocationTotals();});
  updateReallocationTotals();
@@ -971,7 +1506,7 @@ async function submitApprovalAction(){
    payload.allocation_date=payload.allocations[0]?.allocation_date||'';
    payload.instruction=payload.allocations.map((x,i)=>x.instruction?`Baris ${i+1}: ${x.instruction}`:'').filter(Boolean).join(' | ');
    if(!payload.allocations.length || payload.allocations.some(x=>!x.source_budget_id || !x.amount || Number(x.amount)<=0 || !x.allocation_date)){
-     feedback.className='ma-action-feedback error';feedback.textContent='Lengkapi tanggal, Unit Entity, Biro, Fund, Funds Center, Commitment Item, dan nominal yang valid pada seluruh baris.';return;
+     feedback.className='ma-action-feedback error';feedback.textContent='Lengkapi tanggal, pilih donor Entity/Biro yang valid, dan isi nominal positif pada setiap baris.';return;
    }
    const total=payload.allocations.reduce((sum,x)=>sum+Number(x.amount),0);
 const liveShortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Number(activeApprovalRequest.current_available_amount||0));
@@ -985,12 +1520,111 @@ const liveShortage=Math.max(0,Number(activeApprovalRequest.request_amount||0)-Nu
    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify(payload)});
    const d=await r.json(); if(!r.ok) throw Error(d.error||'Tindakan approval gagal diproses.');
    feedback.className='ma-action-feedback success';feedback.textContent=`${d.message} Status: ${d.request_status}. Dibuka dari Hold: ${money(d.opened_from_hold||0)}. Realokasi: ${money(d.allocated_amount||0)}. Sisa shortage: ${money(d.remaining_shortage||0)}.`;
-   await Promise.all([loadSummary(),loadRequests()]);
+   await Promise.all([loadSummary(),loadRequests(), activeBatchId ? openBatchDetail(activeBatchId) : Promise.resolve()]);
  }catch(e){feedback.className='ma-action-feedback error';feedback.textContent=e.message;}
  finally{submit.disabled=false;submit.textContent='Konfirmasi Tindakan';}
 }
 
-document.getElementById('pageSizeSelect').addEventListener('change',event=>{pageSize=Number(event.target.value)||5;currentPage=1;loadRequests();});
+
+let historyPage = 1;
+async function loadApprovalHistory(){
+ const body=document.getElementById('approvalHistoryRows');
+ body.innerHTML='<tr><td colspan="9" class="ma-loading">Memuat riwayat Approval...</td></tr>';
+ const params=new URLSearchParams({
+   page:String(historyPage), per_page:'5',
+   kind:document.getElementById('historyKind').value,
+   status:document.getElementById('historyStatus').value,
+   q:document.getElementById('historySearch').value.trim()
+ });
+ try{
+  const response=await fetch('/api/approval/history?'+params.toString());
+  const data=await response.json();
+  if(!response.ok) throw Error(data.error||'Gagal memuat riwayat.');
+  const items=data.items||[], pg=data.pagination||{};
+  document.getElementById('historyCount').textContent=`${pg.total||0} Riwayat`;
+  if(!items.length) body.innerHTML='<tr><td colspan="9" class="ma-empty">Belum ada pengajuan yang selesai diputuskan.</td></tr>';
+  else body.innerHTML=items.map(x=>{
+   const isBatch=x.batch_id!==null && x.batch_id!==undefined;
+   const date=x.decision_date||x.request_date||'';
+   return `<tr>
+    <td>${esc(date?new Date(date).toLocaleString('id-ID'):'—')}</td>
+    <td><strong>REQ-${String(x.request_id).padStart(6,'0')}</strong></td>
+    <td><span class="ma-pill ${isBatch?'p-sufficient':'p-review'}">${isBatch?'Excel':'Satuan'}</span></td>
+    <td>${isBatch?`<div class="ma-id">${esc(x.batch_code||'—')}</div><div class="ma-muted">${esc(x.uploaded_filename||'')}</div>`:'—'}</td>
+    <td>${esc(x.requester_username||'—')}<div class="ma-muted">${esc(x.pic||'')}</div></td>
+    <td class="ma-money">${money(x.request_amount)}</td>
+    <td>${esc(x.approval_decision||'—')}</td>
+    <td><span class="ma-pill ${statusClass(x.request_status)}">${esc(x.request_status)}</span></td>
+    <td><div class="d-flex gap-1"><button type="button" class="ma-detail-btn" onclick="openDetail(${Number(x.request_id)})"><i class="bi bi-eye"></i>Detail</button><a class="ma-detail-btn text-decoration-none" href="/approval/export-budget/${Number(x.request_id)}.xlsx" title="Unduh pengajuan"><i class="bi bi-download"></i></a></div></td>
+   </tr>`;
+  }).join('');
+  const historyTotal = Number(pg.total || 0);
+  const historyPerPage = Number(pg.per_page || 5);
+  const historyFirst = historyTotal ? (historyPage - 1) * historyPerPage + 1 : 0;
+  const historyLast = historyTotal ? Math.min(historyFirst + items.length - 1, historyTotal) : 0;
+  document.getElementById('approvalHistoryInfo').textContent = `Menampilkan ${historyFirst}–${historyLast} dari ${historyTotal} data`;
+  renderNumberedPagination('approvalHistoryPages', historyPage, Number(pg.pages||0), next=>{
+   historyPage=next;
+   loadApprovalHistory();
+  });
+ }catch(e){body.innerHTML=`<tr><td colspan="9" class="ma-empty">${esc(e.message)}</td></tr>`;}
+}
+
+document.getElementById('singleModeTab').addEventListener('click',()=>setApprovalMode('single'));
+document.getElementById('batchModeTab').addEventListener('click',()=>setApprovalMode('batch'));
+document.getElementById('historyModeTab').addEventListener('click',()=>setApprovalMode('history'));
+// Export audit mengikuti filter Riwayat Approval yang sedang dipakai, bukan hanya halaman aktif.
+function updateHistoryExportLink(){
+  const params = new URLSearchParams({
+    kind: document.getElementById('historyKind').value,
+    status: document.getElementById('historyStatus').value,
+    q: document.getElementById('historySearch').value.trim()
+  });
+  document.getElementById('exportHistoryExcelBtn').href = '/approval/export-history.xlsx?' + params.toString();
+  document.getElementById('exportHistoryFormatBtn').href = '/approval/export-history-format.xlsx?' + params.toString();
+}
+document.getElementById('exportHistoryExcelBtn').addEventListener('click', updateHistoryExportLink);
+document.getElementById('exportHistoryFormatBtn').addEventListener('click', updateHistoryExportLink);
+document.getElementById('applyHistoryFilter').addEventListener('click',()=>{historyPage=1;loadApprovalHistory();});
+document.getElementById('historySearch').addEventListener('keydown',e=>{if(e.key==='Enter'){historyPage=1;loadApprovalHistory();}});
+document.getElementById('historyKind').addEventListener('change',()=>{historyPage=1;loadApprovalHistory();});
+document.getElementById('historyStatus').addEventListener('change',()=>{historyPage=1;loadApprovalHistory();});
+document.getElementById('refreshSingleBtn').addEventListener('click',async()=>{
+  try{await Promise.all([loadSummary(),loadRequests()]);}
+  catch(e){alert(e.message||'Gagal memuat ulang pengajuan.');}
+});
+document.getElementById('refreshBatchesBtn').addEventListener('click',loadBatches);
+document.getElementById('applyBatchFilter').addEventListener('click',()=>{batchPage=1;renderBatchListPage();});
+document.getElementById('resetBatchFilter').addEventListener('click',()=>{
+  document.getElementById('batchSearchInput').value='';
+  document.getElementById('batchStatusFilter').value='ALL';
+  batchPage=1;
+  renderBatchListPage();
+});
+document.getElementById('batchSearchInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();batchPage=1;renderBatchListPage();}
+});
+document.getElementById('batchStatusFilter').addEventListener('change',()=>{batchPage=1;renderBatchListPage();});
+document.getElementById('backToBatchList').addEventListener('click',()=>{
+  document.getElementById('batchDetailPanel').classList.remove('active');
+  document.getElementById('batchListPanel').classList.add('active');
+  activeBatchId = null; activeBatchRequestIds.clear(); loadBatches();
+});
+document.getElementById('approveCurrentBatchButton').addEventListener('click',approveSelectedInCurrentBatch);
+document.getElementById('clearBatchDetailSelection').addEventListener('click',()=>{
+  activeBatchRequestIds.clear(); renderBatchDetailRows();
+});
+document.getElementById('selectAllBatchDetail').addEventListener('change',event=>{
+  document.querySelectorAll('.batch-detail-checkbox').forEach(box=>{
+    box.checked = event.target.checked;
+    const id = Number(box.dataset.requestId);
+    if(box.checked) activeBatchRequestIds.add(id); else activeBatchRequestIds.delete(id);
+  });
+  updateBatchDetailSelection();
+});
+document.getElementById('batchApproveButton').addEventListener('click',submitBatchApproval);
+document.getElementById('clearBatchSelection').addEventListener('click',()=>{selectedBatchRequestIds.clear();bindBatchSelectionEvents();});
+
 document.getElementById('applyFilter').addEventListener('click',()=>{currentPage=1;loadRequests();});
 document.getElementById('resetFilter').addEventListener('click',()=>{
  document.getElementById('statusFilter').value='ALL';
@@ -1002,7 +1636,13 @@ document.getElementById('refreshBtn').addEventListener('click',async()=>{try{awa
 
 
 document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){currentPage=1;loadRequests();}});
-(async()=>{try{await loadSummary();await loadRequests();}catch(e){document.getElementById('requestRows').innerHTML=`<tr><td colspan="10" class="ma-empty">${esc(e.message)}</td></tr>`;}})();
+(async()=>{try{await loadSummary();await loadRequests();}catch(e){document.getElementById('requestRows').innerHTML=`<tr><td colspan="11" class="ma-empty">${esc(e.message)}</td></tr>`;}})();
 </script>
 </body>
 </html>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('approvalExcelUploadButton')?.addEventListener('click', uploadApprovalExcel);
+  document.getElementById('approvalExcelConfirmButton')?.addEventListener('click', confirmApprovalExcel);
+});
+</script>

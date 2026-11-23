@@ -1177,7 +1177,7 @@
                         <i class="bi bi-cloud-arrow-up" style="font-size:28px;color:#c8102e"></i>
                         <div style="font-size:13px;font-weight:700;color:#465263;margin-top:7px">Pilih File Pengajuan (.XLSX)</div>
                         <input type="file" id="excelImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                        <small style="display:block;color:#98a3b0;margin-top:8px">Tidak ada batas jumlah baris • Maksimal 20 MB per file</small>
+                        <small style="display:block;color:#98a3b0;margin-top:8px">Tidak ada batas jumlah baris • Maksimal 20 MB</small>
                     </div>
                     <div class="import-actions">
                         <button type="button" class="btn-outline-red" id="previewExcelBtn"><i class="bi bi-search"></i> Pemeriksaan Budget</button>
@@ -2068,6 +2068,7 @@ excelModeBtn.addEventListener("click", () => switchEntryMode("excel"));
 const EXCEL_PREVIEW_PAGE_SIZE = 50;
 let excelPreviewPage = 1;
 let excelRenderedRows = [];
+let excelUploadFilename = "";
 
 function renderExcelRows(rows, submitted = false) {
     excelRenderedRows = rows || [];
@@ -2153,6 +2154,7 @@ previewExcelBtn.addEventListener("click", async () => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Validasi Excel gagal.");
         excelPreviewRows = result.rows || [];
+        excelUploadFilename = result.filename || file.name;
         renderExcelRows(excelPreviewRows);
         excelSummary.textContent = `Total ${result.total} baris • Siap dikirim ${result.ready} • Perlu diperbaiki ${result.failed}. Hanya baris berstatus Siap yang dapat dikirim.`;
         submitExcelBtn.disabled = result.ready === 0;
@@ -2167,6 +2169,7 @@ previewExcelBtn.addEventListener("click", async () => {
 excelFileInput.addEventListener("change", () => {
     excelPreviewRows = [];
     excelRenderedRows = [];
+    excelUploadFilename = "";
     excelPreviewPage = 1;
     submitExcelBtn.disabled = true;
     excelTableWrap.hidden = true;
@@ -2183,9 +2186,9 @@ submitExcelBtn.addEventListener("click", async () => {
     previewExcelBtn.disabled = true;
     excelSummary.textContent = "Sedang menyimpan pengajuan. Setiap baris diproses secara terpisah.";
     try {
-        const result = await postJSON(API_IMPORT_SUBMIT, { rows: readyRows });
+        const result = await postJSON(API_IMPORT_SUBMIT, { rows: readyRows, filename: excelUploadFilename });
         renderExcelRows(result.rows || [], true);
-        excelSummary.textContent = `Proses selesai • Berhasil dikirim ${result.sent} • Gagal ${result.failed}. Periksa ID pengajuan dan pesan pada setiap baris.`;
+        excelSummary.textContent = `Proses selesai • Batch ${result.batch_code || "tidak terbentuk"} • Berhasil dikirim ${result.sent} • Gagal ${result.failed}. Periksa ID pengajuan dan pesan pada setiap baris.`;
         excelPreviewRows = [];
     } catch (error) {
         excelSummary.textContent = error.message;
