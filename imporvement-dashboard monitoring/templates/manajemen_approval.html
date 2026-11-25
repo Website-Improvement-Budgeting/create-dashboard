@@ -631,6 +631,35 @@ body,body button,body input,body select,body textarea,body table{font-family:var
   font-weight: inherit;
   margin: 0;
 }
+
+/* Reallocation inline table — compact SAP-like approval entry */
+#detailModal .modal-dialog.modal-xl{width: min(96vw, 1500px);max-width: min(96vw, 1500px)}
+#detailModal .modal-body{overflow-x:hidden}
+.ma-reallocation-table-wrap{display:block;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #e1e6ed;border-radius:8px;background:#fff;scrollbar-gutter:stable}
+.ma-reallocation-table{width:100%;min-width:980px;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:11px}
+.ma-reallocation-table th{background:#f4f6f9;color:#596579;font-size:10px;font-weight:750;text-align:left;padding:10px 8px;border-bottom:1px solid #e1e6ed;white-space:nowrap}
+.ma-reallocation-table td{padding:9px 7px;border-bottom:1px solid #edf0f4;vertical-align:middle;background:#fff}
+.ma-reallocation-table tbody tr:hover td{background:#fcfcfd}
+.ma-reallocation-table tr:last-child td{border-bottom:0}
+.ma-reallocation-table input,.ma-reallocation-table select{display:block;width:100%;min-width:0;height:35px;border:1px solid #dfe4eb;border-radius:5px;padding:6px 7px;font-size:10.5px;color:#344054;background:#fff;box-sizing:border-box}
+.ma-reallocation-table input[readonly]{background:#f7f8fa;font-weight:650;color:#475467}
+.ma-reallocation-table .ma-col-date{width:130px;min-width:130px}.ma-reallocation-table .ma-col-entity{width:270px;min-width:270px}.ma-reallocation-table .ma-col-code{width:145px;min-width:145px}.ma-reallocation-table .ma-col-instruction{width:190px;min-width:190px}.ma-reallocation-table .ma-col-amount{width:150px;min-width:150px}
+.ma-reallocation-table th:last-child,.ma-reallocation-table td:last-child{width:92px;min-width:92px}
+.ma-row-actions{display:flex;gap:5px;white-space:nowrap}
+@media(min-width:1200px){.ma-reallocation-table{min-width:1450px}}
+.ma-reallocation-table .ma-row-status td{padding:5px 10px 9px;background:#fbfcfd;border-bottom:1px solid #e9edf2}
+.ma-reallocation-table .ma-row-status small{display:block;white-space:normal;line-height:1.4;font-size:10px}
+.ma-reallocation-table .ma-row-actions{justify-content:center}
+.ma-reallocation-table [data-role="entity"]{min-width:260px!important;width:260px!important}
+.ma-reallocation-table [data-role="validation"]{display:block;max-width:100%}
+.ma-row-actions{display:flex;gap:5px;white-space:nowrap}
+.ma-row-icon{width:30px;height:30px;border:1px solid #d9e0e8;border-radius:6px;background:#fff;color:#475467;display:inline-flex;align-items:center;justify-content:center}
+.ma-row-icon.add{color:#168253;border-color:#b9dfcc}.ma-row-icon.remove{color:#c52b35;border-color:#f0c5c8}
+.ma-reallocation-status{font-size:10px;color:#667085;padding:8px 2px 0}
+.ma-reallocation-summary-live{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;padding:12px;border:1px solid #e5e9ef;border-radius:9px;background:#f9fafb}
+.ma-reallocation-summary-live .label{font-size:10px;color:#667085}.ma-reallocation-summary-live .value{font-size:14px;font-weight:800;color:#344054;margin-top:3px;font-variant-numeric:tabular-nums}.ma-reallocation-summary-live .value.warn{color:#b4232c}.ma-reallocation-summary-live .value.ok{color:#168253}
+@media(max-width:650px){.ma-reallocation-summary-live{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -1402,9 +1431,18 @@ async function openDetail(id){
           <section class="ma-step-card second" aria-label="Tahap 2 Reallocation Budget">
             <div class="ma-step-header"><span class="ma-step-number">2</span><div class="ma-step-title">Tahap 2 — Reallocation Budget</div></div>
             <div class="ma-step-subtitle">Pilih budget donor untuk memenuhi sisa kebutuhan sebesar <strong id="stepReallocationTarget">—</strong>.</div>
-            <div id="reallocationRows" class="ma-reallocation-list"></div>
-            <button type="button" class="ma-action-cancel mt-2" onclick="addReallocationRow()"><i class="bi bi-plus-circle me-1"></i>Tambah Baris</button>
-            <div class="ma-action-note mt-3">Nominal setiap donor dibatasi oleh Available Budget. Total seluruh donor harus sesuai kebutuhan.</div>
+            <div class="ma-reallocation-table-wrap">
+              <table class="ma-reallocation-table" aria-label="Daftar sumber realokasi">
+                <thead id="reallocationTableHead"><tr><th>Tanggal</th><th>Unit Entity</th><th>Biro</th><th>Commitment Item</th><th>Nominal</th><th>Aksi</th></tr></thead>
+                <tbody id="reallocationRows"></tbody>
+              </table>
+            </div>
+            <div class="ma-reallocation-status">Pilih Unit Entity dan Biro donor. Commitment Item wajib untuk semua scope; Funds Center hanya ditampilkan dan divalidasi untuk FC_CI.</div>
+            <div class="ma-reallocation-summary-live" id="reallocationLiveSummary">
+              <div><div class="label">Kebutuhan Realokasi</div><div class="value" id="reallocationRequired">—</div></div>
+              <div><div class="label">Total Nominal</div><div class="value" id="reallocationTotal">Rp0</div></div>
+              <div><div class="label">Sisa Kebutuhan</div><div class="value warn" id="reallocationRemaining">—</div></div>
+            </div>
           </section>
         </div>
       </div>
@@ -1422,6 +1460,7 @@ let activeApprovalRequestId = null;
 let activeApprovalAction = null;
 let activeApprovalRequest = null;
 let reallocationSourceItems = [];
+let reallocationBudgetScope = "";
 
 async function submitDirectApprove(){
  const instruction=document.getElementById('directApproveInstruction')?.value.trim()||'';
@@ -1522,128 +1561,90 @@ function localDateValue(){
  const offset=now.getTimezoneOffset();
  return new Date(now.getTime()-offset*60000).toISOString().slice(0,10);
 }
-function addReallocationRow(){
- const body=document.getElementById('reallocationRows');
- if(!body) return;
- const rowNumber=body.querySelectorAll('.ma-reallocation-card').length+1;
- const card=document.createElement('div');
- card.className='ma-reallocation-card';
- card.innerHTML=`
-  <div class="ma-reallocation-card-head">
-   <div class="ma-reallocation-card-title">Baris Realokasi ${rowNumber}</div>
-   <button type="button" class="ma-reallocation-remove" title="Hapus baris"><i class="bi bi-trash me-1"></i>Hapus</button>
-  </div>
-  <div class="ma-reallocation-grid">
-   <div class="ma-reallocation-field"><label>Tanggal Realokasi</label><input class="form-control" data-role="date" type="date" value="${localDateValue()}"></div>
-   <div class="ma-reallocation-field"><label>Fund Donor (Referensi)</label><input class="form-control" data-role="fund" type="text" readonly placeholder="Tidak tersedia"></div>
-   <div class="ma-reallocation-field"><label>Nominal Realokasi</label><input class="form-control" data-role="amount" data-auto="1" type="number" min="0.01" step="0.01" placeholder="Nominal realokasi"></div>
-   <div class="ma-reallocation-field"><label>Unit Entity</label><select class="form-select" data-role="entity"><option value="">Pilih Unit Entity</option></select></div>
-   <div class="ma-reallocation-field" data-role="fc-field"><label>Funds Center Donor</label><input class="form-control" data-role="fc" type="text" readonly placeholder="Terisi otomatis jika FC_CI"></div>
-   <div class="ma-reallocation-field"><label>Catatan Realokasi (opsional)</label><input class="form-control" data-role="instruction" type="text" maxlength="2000" placeholder="Tambahkan catatan jika diperlukan"></div>
-   <div class="ma-reallocation-field"><label>Biro</label><select class="form-select" data-role="biro" disabled><option value="">Pilih Biro</option></select></div>
-   <div class="ma-reallocation-field"><label>Commitment Item Donor</label><input class="form-control" data-role="ci" type="text" readonly placeholder="Terisi otomatis dari donor"></div>
-   <input type="hidden" data-role="source">
-   <div class="ma-reallocation-field" data-role="validation-wrap" style="grid-column:1/-1"><small data-role="validation" class="text-secondary">Pilih Unit Entity dan Biro. Data donor terisi otomatis.</small></div>
-  </div>`;
- body.appendChild(card);
- const entitySelect=card.querySelector('[data-role="entity"]');
- const biroSelect=card.querySelector('[data-role="biro"]');
- const amountInput=card.querySelector('[data-role="amount"]');
- getReallocationEntities().forEach(([id,label])=>entitySelect.add(new Option(label,id)));
- const clearResolved=()=>{
-   card.querySelector('[data-role="source"]').value='';
-   amountInput.max='';
-   const validation=card.querySelector('[data-role="validation"]');
-   validation.className='text-secondary';
-   validation.textContent='Pilih Unit Entity dan Biro. Data donor terisi otomatis.';
- };
- const resolveSource=()=>{
-   const entityId=entitySelect.value, biroId=biroSelect.value;
-   const sourceId=card.querySelector('[data-role="source"]');
-   const fundEl=card.querySelector('[data-role="fund"]');
-   const fcEl=card.querySelector('[data-role="fc"]');
-   const ciEl=card.querySelector('[data-role="ci"]');
-   const validation=card.querySelector('[data-role="validation"]');
-   sourceId.value=''; amountInput.max='';
-   fundEl.value=''; fcEl.value=''; ciEl.value='';
-   card.querySelector('[data-role="fc-field"]').hidden=false;
-   if(!entityId||!biroId){
-     validation.className='text-secondary';
-     validation.textContent='Pilih Unit Entity dan Biro donor.';
-     if(amountInput.dataset.auto==='1') amountInput.value='';
-     return null;
-   }
-   // Backend sudah memfilter tahun, scope, CI dan FC (jika FC_CI).
-   // Jangan cocokkan Funds Center untuk CI_ONLY atau Fund historis.
-   const matches=reallocationSourceItems.filter(x=>
-     String(x.entity_id)===String(entityId) && String(x.biro_id)===String(biroId) &&
-     Number(x.available_amount||0)>0
-   );
-   if(matches.length !== 1){
-     validation.className='text-danger';
-     validation.textContent=matches.length
-       ? 'Ditemukan beberapa budget donor. Pilih Entity/Biro lain agar sumber jelas.'
-       : 'Donor tidak tersedia atau saldo tidak mencukupi.';
-     if(amountInput.dataset.auto==='1') amountInput.value='';
-     return null;
-   }
-   const item=matches[0];
-   sourceId.value=String(item.budget_id);
-   amountInput.max=String(item.available_amount||0);
-   // Informasi referensi tidak dapat diubah: mapping target tetap berasal
-   // dari pengajuan Pengusul, dan identitas donor ditentukan dari budget_master.
-   fundEl.value=item.fund_code||'';
-   fcEl.value=item.budget_scope==='FC_CI' ? (item.funds_center_code||'') : '';
-   ciEl.value=item.commitment_item_code||'';
-   card.querySelector('[data-role="fc-field"]').hidden=item.budget_scope==='CI_ONLY';
-   validation.className='text-success';
-   validation.textContent=`Donor valid · ${item.budget_scope} · Available ${money(item.available_amount)}`;
-   if(amountInput.dataset.auto==='1'){
-     const remaining=getRemainingReallocationShortage(amountInput);
-     const suggested=Math.min(remaining,Math.max(0,Number(item.available_amount)||0));
-     amountInput.value=suggested>0?String(suggested):'';
-   }
-   return item;
- };
- entitySelect.addEventListener('change',()=>{
-   const biros=getReallocationBiRows(entitySelect.value);
-   biroSelect.innerHTML='<option value="">Pilih Biro</option>';
-   biros.forEach(b=>biroSelect.add(new Option(b.label,b.id)));
-   biroSelect.disabled=!entitySelect.value||!biros.length;
-   clearResolved(); resolveSource(); updateReallocationTotals();
- });
- biroSelect.addEventListener('change',()=>{clearResolved();resolveSource();updateReallocationTotals();});
- amountInput.addEventListener('input',()=>{amountInput.dataset.auto='0';updateReallocationTotals();});
- card.querySelector('.ma-reallocation-remove').addEventListener('click',()=>{card.remove();renumberReallocationRows();updateReallocationTotals();});
- updateReallocationTotals();
+function renderReallocationTableHead(){
+ const head=document.getElementById('reallocationTableHead');
+ if(!head)return;
+ const fc=reallocationBudgetScope==='FC_CI';
+ head.innerHTML=`<tr><th>Tanggal</th><th>Unit Entity</th><th>Biro</th>${fc?'<th>Funds Center</th>':''}<th>Commitment Item</th><th>Nominal</th><th>Aksi</th></tr>`;
 }
-function renumberReallocationRows(){
- document.querySelectorAll('#reallocationRows .ma-reallocation-card').forEach((card,index)=>{
-   const title=card.querySelector('.ma-reallocation-card-title');
-   if(title) title.textContent=`Baris Realokasi ${index+1}`;
+function addReallocationRow(copyFrom=null){
+ const body=document.getElementById('reallocationRows'); if(!body)return;
+ const fcRequired=reallocationBudgetScope==='FC_CI';
+ const row=document.createElement('tr'); row.className='ma-reallocation-card';
+ row.innerHTML=`
+  <td><input class="ma-col-date" data-role="date" type="date" value="${localDateValue()}"></td>
+  <td><select class="ma-col-entity" data-role="entity"><option value="">Pilih Unit Entity</option></select><input type="hidden" data-role="source"></td>
+  <td><select class="ma-col-entity" data-role="biro" disabled><option value="">Pilih Biro</option></select></td>
+  ${fcRequired?'<td><input class="ma-col-code" data-role="fc" readonly placeholder="Otomatis"></td>':''}
+  <td><input class="ma-col-code" data-role="ci" readonly placeholder="Otomatis"></td>
+  <td><input class="ma-col-amount" data-role="amount" type="number" min="1" step="1" placeholder="Nominal"></td>
+  <td><div class="ma-row-actions"><button type="button" class="ma-row-icon add" title="Duplikasi baris"><i class="bi bi-plus-lg"></i></button><button type="button" class="ma-row-icon remove" title="Hapus baris"><i class="bi bi-trash"></i></button></div></td>`;
+ const colspan=fcRequired?7:6;
+ const statusRow=document.createElement('tr'); statusRow.className='ma-row-status';
+ statusRow.innerHTML=`<td colspan="${colspan}"><small data-role="validation" class="text-secondary">Pilih Unit Entity dan Biro donor.</small></td>`;
+ body.appendChild(row); body.appendChild(statusRow);
+ const entity=row.querySelector('[data-role="entity"]'), biro=row.querySelector('[data-role="biro"]');
+ const entities=[]; reallocationSourceItems.forEach(x=>{if(!entities.some(y=>String(y.id)===String(x.entity_id)))entities.push({id:x.entity_id,label:x.unit_entity||`Entity ${x.entity_id}`});});
+ entities.sort((a,b)=>a.label.localeCompare(b.label)).forEach(x=>entity.add(new Option(x.label,x.id)));
+ const validation=statusRow.querySelector('[data-role="validation"]');
+ const resolve=()=>{
+  const eid=entity.value,bid=biro.value; const source=row.querySelector('[data-role="source"]');
+  source.value=''; if(fcRequired)row.querySelector('[data-role="fc"]').value=''; row.querySelector('[data-role="ci"]').value='';
+  if(!eid||!bid){validation.textContent='Pilih Unit Entity dan Biro donor.';validation.className='text-secondary';updateReallocationTotals();return;}
+  const matches=reallocationSourceItems.filter(x=>String(x.entity_id)===String(eid)&&String(x.biro_id)===String(bid)&&Number(x.available_amount||0)>0);
+  if(matches.length!==1){validation.textContent=matches.length?'Ditemukan beberapa kandidat budget untuk Entity/Biro ini. Perlu identifikasi donor yang lebih spesifik.':'Tidak ada budget donor yang memenuhi syarat atau saldo tersedia.';validation.className='text-danger';updateReallocationTotals();return;}
+  const item=matches[0]; source.value=String(item.budget_id);
+  if(fcRequired)row.querySelector('[data-role="fc"]').value=item.funds_center_code||'';
+  row.querySelector('[data-role="ci"]').value=item.commitment_item_code||'';
+  const amount=row.querySelector('[data-role="amount"]'); amount.max=String(item.available_amount||0);
+  if(!amount.value){const remain=getRemainingReallocationShortage(amount);amount.value=Math.min(remain,Number(item.available_amount)||0)||'';}
+  validation.textContent=`${item.budget_scope} · Available ${money(item.available_amount)} · Commitment Item tervalidasi${fcRequired?' · Funds Center tervalidasi':''}`;
+  validation.className='text-success'; updateReallocationTotals();
+ };
+ entity.addEventListener('change',()=>{
+  const options=reallocationSourceItems.filter(x=>String(x.entity_id)===String(entity.value));
+  const unique=[]; options.forEach(x=>{if(!unique.some(y=>String(y.id)===String(x.biro_id)))unique.push({id:x.biro_id,label:x.biro_name||x.biro_code||`Biro ${x.biro_id}`});});
+  biro.innerHTML='<option value="">Pilih Biro</option>'; unique.sort((a,b)=>a.label.localeCompare(b.label)).forEach(x=>biro.add(new Option(x.label,x.id)));
+  biro.disabled=!entity.value||!unique.length; resolve();
  });
+ biro.addEventListener('change',resolve);
+ row.querySelector('[data-role="amount"]').addEventListener('input',updateReallocationTotals);
+ row.querySelector('.add').addEventListener('click',()=>addReallocationRow(row));
+ row.querySelector('.remove').addEventListener('click',()=>{row.remove();statusRow.remove();updateReallocationTotals();});
+ if(copyFrom){['date','entity','biro','amount'].forEach(k=>{const a=copyFrom.querySelector(`[data-role="${k}"]`),b=row.querySelector(`[data-role="${k}"]`);if(a&&b)b.value=a.value;});entity.dispatchEvent(new Event('change'));if(copyFrom.querySelector('[data-role="biro"]')?.value){biro.value=copyFrom.querySelector('[data-role="biro"]').value;biro.dispatchEvent(new Event('change'));}}
+ updateReallocationTotals(); return row;
 }
-function clearReallocationRowDetails(card){
- ['fc','ci'].forEach(role=>{const el=card.querySelector(`[data-role="${role}"]`);if(el)el.value='';});
- const amount=card.querySelector('[data-role="amount"]');
- if(amount){amount.value='';amount.max='';amount.dataset.auto='1';}
+function getReallocationShortage(){
+ const shortage=Math.max(0,Number(activeApprovalRequest?.request_amount||0)-Number(activeApprovalRequest?.current_available_amount||0));
+ const hold=Math.max(0,Number(activeApprovalRequest?.current_budget||0)-Number(activeApprovalRequest?.consumable_budget||0));
+ return Math.max(0,shortage-Math.min(shortage,hold));
+}
+function getRemainingReallocationShortage(excludeInput=null){
+ const rows=[...document.querySelectorAll('#reallocationRows [data-role="amount"]')];
+ const used=rows.filter(x=>x!==excludeInput).reduce((a,x)=>a+Math.max(0,Number(x.value)||0),0);
+ return Math.max(0,getReallocationShortage()-used);
 }
 function updateReallocationTotals(){
- // Ringkasan total sengaja tidak ditampilkan pada rancangan UI terbaru.
- // Fungsi dipertahankan agar alur event baris yang sudah ada tetap kompatibel.
+ const required=getReallocationShortage();
+ const total=[...document.querySelectorAll('#reallocationRows [data-role="amount"]')].reduce((a,x)=>a+Math.max(0,Number(x.value)||0),0);
+ const remaining=Math.max(0,required-total);
+ const req=document.getElementById('reallocationRequired'),tot=document.getElementById('reallocationTotal'),rem=document.getElementById('reallocationRemaining');
+ if(req)req.textContent=money(required); if(tot)tot.textContent=money(total); if(rem){rem.textContent=money(remaining);rem.className='value '+(Math.abs(required-total)<0.01?'ok':'warn');}
 }
 async function loadReallocationSources(){
  const body=document.getElementById('reallocationRows');
- body.innerHTML='<div class="text-secondary small py-3">Memuat master budget...</div>';
+ body.innerHTML='<tr><td colspan="7" class="text-secondary py-3">Memuat master budget...</td></tr>';
  try{
    const r=await fetch(`/api/approval/requests/${activeApprovalRequestId}/reallocation-sources`);
    const d=await r.json();
    if(!r.ok) throw Error(d.error||'Gagal memuat sumber budget.');
    reallocationSourceItems=d.items||[];
+   reallocationBudgetScope=d.budget_scope||activeApprovalRequest?.budget_scope||'';
+   renderReallocationTableHead();
    body.innerHTML='';
-   if(!reallocationSourceItems.length){body.innerHTML='<div class="text-danger small py-3">Tidak ada sumber budget yang memenuhi ketentuan realokasi.</div>';return;}
+   if(!reallocationSourceItems.length){body.innerHTML=`<tr><td colspan="${reallocationBudgetScope==='FC_CI'?7:6}" class="text-danger py-3">Tidak ada sumber budget yang memenuhi ketentuan realokasi.</td></tr>`;return;}
    addReallocationRow();
- }catch(e){body.innerHTML=`<div class="text-danger small py-3">${esc(e.message)}</div>`;}
+ }catch(e){body.innerHTML=`<tr><td colspan="7" class="text-danger py-3">${esc(e.message)}</td></tr>`;}
 }
 async function submitApprovalAction(){
  const feedback=document.getElementById('approvalActionFeedback');
@@ -1659,11 +1660,10 @@ async function submitApprovalAction(){
    const cards=[...document.querySelectorAll('#reallocationRows .ma-reallocation-card')];
    payload.allocations=cards.map(card=>({
      source_budget_id:card.querySelector('[data-role="source"]')?.value,
-     fund_code:card.querySelector('[data-role="fund"]')?.value.trim(),
-     funds_center_code:card.querySelector('[data-role="fc"]')?.value.trim(),
+     funds_center_code:card.querySelector('[data-role="fc"]')?.value.trim()||null,
      commitment_item_code:card.querySelector('[data-role="ci"]')?.value.trim(),
-     entity_id:card.querySelector('[data-role="entity"]')?.value,
-     biro_id:card.querySelector('[data-role="biro"]')?.value,
+     entity_id:card.querySelector('[data-role="entity"]')?.value||'',
+     biro_id:card.querySelector('[data-role="biro"]')?.value||'',
      amount:card.querySelector('[data-role="amount"]')?.value,
      allocation_date:card.querySelector('[data-role="date"]')?.value,
      instruction:card.querySelector('[data-role="instruction"]')?.value.trim()||''

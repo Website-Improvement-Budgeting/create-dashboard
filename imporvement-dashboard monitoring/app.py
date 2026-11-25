@@ -4320,7 +4320,8 @@ def api_approval_reallocation_sources(request_id):
                     bm.budget_year,
                     UPPER(TRIM(bm.budget_scope)) AS budget_scope,
                     bm.funds_center_id,
-                    bm.commitment_item_id
+                    bm.commitment_item_id,
+                    br.mapped_funds_center_id AS request_mapped_funds_center_id
                 FROM public.budget_request br
                 JOIN public.budget_master bm ON bm.budget_id = br.budget_id
                 WHERE br.request_id = %s
@@ -4352,12 +4353,18 @@ def api_approval_reallocation_sources(request_id):
                     bm.entity_id,
                     ue.unit_entity,
                     bm.biro_id,
-                    f.fund_code,
+                    COALESCE(f.fund_code, imported_fund.fund_code) AS fund_code,
+                    CASE
+                        WHEN f.fund_code IS NOT NULL THEN 'budget_request / master_fund'
+                        WHEN imported_fund.fund_code IS NOT NULL THEN 'approval_import_rows'
+                        ELSE NULL
+                    END AS fund_reference_source,
                     b.biro_code,
                     b.biro_name,
                     UPPER(TRIM(bm.budget_scope)) AS budget_scope,
                     bm.funds_center_id,
                     fc.funds_center_code,
+                    request_fc.funds_center_code AS request_mapped_funds_center_code,
                     bm.commitment_item_id,
                     ci.commitment_item_code,
                     ci.commitment_item_name,
@@ -4373,7 +4380,12 @@ def api_approval_reallocation_sources(request_id):
                         br_source.mapped_fund_id
                     FROM public.budget_request br_source
                     WHERE br_source.budget_id = bm.budget_id
-                    ORDER BY br_source.request_date DESC, br_source.request_id DESC
+                      AND (br_source.mapped_fund_id IS NOT NULL
+                           OR NULLIF(TRIM(br_source.input_profit_center), '') IS NOT NULL)
+                    ORDER BY
+                        (br_source.mapped_fund_id IS NOT NULL) DESC,
+                        br_source.request_date DESC,
+                        br_source.request_id DESC
                     LIMIT 1
                 ) source_request ON TRUE
                 LEFT JOIN LATERAL (
@@ -4392,13 +4404,23 @@ def api_approval_reallocation_sources(request_id):
                 ) source_fund_map ON TRUE
                 LEFT JOIN public.fund f
                     ON f.fund_id = COALESCE(
-                        source_fund_map.target_fund_id,
-                        source_request.mapped_fund_id
+                        source_request.mapped_fund_id,
+                        source_fund_map.target_fund_id
                     )
+                LEFT JOIN LATERAL (
+                    SELECT NULLIF(TRIM(air.fund_code), '') AS fund_code
+                    FROM public.approval_import_rows air
+                    WHERE air.source_budget_id = bm.budget_id
+                      AND NULLIF(TRIM(air.fund_code), '') IS NOT NULL
+                    ORDER BY air.created_at DESC, air.approval_import_row_id DESC
+                    LIMIT 1
+                ) imported_fund ON TRUE
                 LEFT JOIN public.biro b
                     ON b.biro_id = bm.biro_id AND b.entity_id = bm.entity_id
                 LEFT JOIN public.funds_center fc
                     ON fc.funds_center_id = bm.funds_center_id
+                LEFT JOIN public.funds_center request_fc
+                    ON request_fc.funds_center_id = %s
                 LEFT JOIN public.commitment_item ci
                     ON ci.commitment_item_id = bm.commitment_item_id
                 WHERE bm.budget_year IS NOT DISTINCT FROM %s
@@ -4411,14 +4433,14 @@ def api_approval_reallocation_sources(request_id):
                   AND bm.available_amount > 0
                   {scope_condition}
                 ORDER BY bm.available_amount DESC, bm.budget_id
-            """, (target["budget_year"], scope, target["budget_id"],
+            """, (target["request_mapped_funds_center_id"], target["budget_year"], scope, target["budget_id"],
                   target["entity_id"], target["biro_id"]) + scope_params)
             rows = cursor.fetchall()
         items = []
         for row in rows:
             items.append({k: (str(v) if isinstance(v, Decimal) else v)
                           for k, v in row.items()})
-        return jsonify({"items": items})
+        return jsonify({"items": items, "budget_scope": scope})
     except psycopg2.Error:
         app.logger.exception("Gagal memuat sumber realokasi")
         return jsonify({"error": "Sumber realokasi gagal dimuat."}), 500

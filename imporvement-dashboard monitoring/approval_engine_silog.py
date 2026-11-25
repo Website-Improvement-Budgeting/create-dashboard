@@ -69,8 +69,15 @@ def execute_approval(cur, user_id, request_id, mode='auto', allocations=None,
     """
     if mode not in {'auto','approve','open','reallocate'}:
         raise ApprovalEngineError('Jenis Approval tidak dikenali.')
-    cur.execute("""SELECT request_id,request_status,request_amount,budget_id,batch_id
-                   FROM public.budget_request WHERE request_id=%s FOR UPDATE""", (request_id,))
+    cur.execute("""SELECT br.request_id,br.request_status,br.request_amount,br.budget_id,br.batch_id,
+                          f.fund_code AS target_fund_code,
+                          tfc.funds_center_code AS target_funds_center_code,
+                          tci.commitment_item_code AS target_commitment_item_code
+                   FROM public.budget_request br
+                   LEFT JOIN public.fund f ON f.fund_id=br.mapped_fund_id
+                   LEFT JOIN public.funds_center tfc ON tfc.funds_center_id=br.mapped_funds_center_id
+                   LEFT JOIN public.commitment_item tci ON tci.commitment_item_id=br.mapped_commitment_item_id
+                   WHERE br.request_id=%s FOR UPDATE OF br""", (request_id,))
     req=cur.fetchone()
     if not req:
         raise ApprovalEngineError('Pengajuan tidak ditemukan.')
@@ -192,6 +199,18 @@ def execute_approval(cur, user_id, request_id, mode='auto', allocations=None,
             textdate=a.get('allocation_date')
             if hasattr(textdate,'isoformat'): textdate=textdate.isoformat()
             note=f'Tanggal realokasi: {textdate or date.today().isoformat()}'
+            # Snapshot mapping disimpan pada catatan histori realokasi; Fund donor
+            # hanya dicatat jika memang tersedia dari riwayat mapping donor.
+            source_row=locked[a['source_budget_id']]
+            source_fund=source_row.get('fund_code')
+            note += (
+                f" | Source mapping: Fund={source_fund or 'NULL'}"
+                f"; Funds Center={source_row.get('funds_center_code') or 'NULL'}"
+                f"; Commitment Item={source_row.get('commitment_item_code') or 'NULL'}"
+                f" | Target mapping: Fund={req.get('target_fund_code') or 'NULL'}"
+                f"; Funds Center={req.get('target_funds_center_code') or 'NULL'}"
+                f"; Commitment Item={req.get('target_commitment_item_code') or 'NULL'}"
+            )
             if a.get('instruction'): note+=' | '+str(a['instruction'])
             _allocation(cur,user_id,request_id,a['source_budget_id'],req['budget_id'],allocation_type,D(a['amount']),note)
     _consume(cur,user_id,request_id,req['budget_id'],state,amount)
